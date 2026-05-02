@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import type { ChatHistoryItem, ChatProduct } from '@/types/product';
-import ChatPage from '@/app/chat/page';
+import ChatPage from '@/app/(embedded)/chat/page';
 
 const product: ChatProduct = {
   id: 'product-1',
