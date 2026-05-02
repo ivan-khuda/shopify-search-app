@@ -1,5 +1,7 @@
 "use client"
 
+/* eslint-disable react-hooks/preserve-manual-memoization, react-hooks/refs, react-hooks/set-state-in-effect */
+
 import { AnimatePresence, motion, type Transition } from "motion/react"
 import * as React from "react"
 import { cn } from "@/lib/utils"

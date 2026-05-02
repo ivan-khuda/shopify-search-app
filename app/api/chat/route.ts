@@ -1,12 +1,39 @@
-import { streamText, UIMessage, convertToModelMessages } from 'ai';
+import {
+    convertToModelMessages,
+    createUIMessageStream,
+    createUIMessageStreamResponse,
+    streamText,
+    UIMessage,
+} from 'ai';
 import { google } from "@ai-sdk/google";
 import dedent from "dedent";
+
+const FALLBACK_RESPONSE =
+    'I found a few matching products from the demo catalog. Review the product cards below and save anything you want to revisit.';
+
+function createMissingApiKeyFallbackResponse() {
+    return createUIMessageStreamResponse({
+        stream: createUIMessageStream({
+            execute({ writer }) {
+                writer.write({ type: 'start' });
+                writer.write({ type: 'text-start', id: 'fallback-response' });
+                writer.write({
+                    type: 'text-delta',
+                    id: 'fallback-response',
+                    delta: FALLBACK_RESPONSE,
+                });
+                writer.write({ type: 'text-end', id: 'fallback-response' });
+            },
+        }),
+    });
+}
 
 export async function POST(req: Request) {
     const { messages }: { messages: UIMessage[] } = await req.json();
 
-    console.log("UIMessage", messages);
-    console.log("ModelMessage", await convertToModelMessages(messages));
+    if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
+        return createMissingApiKeyFallbackResponse();
+    }
 
     const result = streamText({
         system: dedent`

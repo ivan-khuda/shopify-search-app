@@ -1,5 +1,8 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 'use client';
+
+/* eslint-disable react-hooks/static-components */
+
 import React, { useMemo, type JSX } from 'react';
 import { motion } from 'motion/react';
 import { cn } from '@/lib/utils';

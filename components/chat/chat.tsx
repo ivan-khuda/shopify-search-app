@@ -11,8 +11,11 @@ import {
     Attachments,
 } from "@/components/ai-elements/attachments";
 import { GlobeIcon } from "lucide-react";
-import { memo, useCallback, useState } from "react";
+import { memo, useCallback, useMemo, useState } from "react";
 import { ChatMessage } from '@/components/chat/chat-message';
+import type { ChatHistoryItem, ChatProduct } from '@/types/product';
+import { ProductCard } from '@/components/chat/product-card';
+import { MOCK_PRODUCTS } from '@/components/chat/mock-products';
 
 interface AttachmentItemProps {
     attachment: {
@@ -65,42 +68,105 @@ const PromptInputAttachmentsDisplay = () => {
     );
 };
 
-export default function Chat() {
-    const [input, setInput] = useState('');
+interface ChatProps {
+    savedProducts: ChatProduct[];
+    onToggleSave: (product: ChatProduct) => void;
+    onHistoryAdd: (entry: ChatHistoryItem) => void;
+}
+
+interface ProductAttachmentState {
+    messageId: string;
+    products: ChatProduct[];
+}
+
+interface PendingProductAttachment {
+    anchorMessageId: string | null;
+    products: ChatProduct[];
+}
+
+const buildMockResults = (query: string) => {
+    const searchWords = query
+        .toLowerCase()
+        .split(/\s+/)
+        .filter((word) => word.length > 2);
+
+    return MOCK_PRODUCTS.filter((product) => {
+        const haystack = [
+            product.title,
+            product.description,
+            product.category ?? '',
+            ...(product.tags ?? []),
+        ].join(' ').toLowerCase();
+
+        return searchWords.some((word) => haystack.includes(word));
+    }).slice(0, 3);
+};
+
+export default function Chat({ savedProducts, onToggleSave, onHistoryAdd }: ChatProps) {
+    const [pendingProducts, setPendingProducts] = useState<PendingProductAttachment | null>(null);
     const { messages, sendMessage, status, } = useChat();
-    // const [status, setStatus] = useState<
-    //     "submitted" | "streaming" | "ready" | "error"
-    // >("ready");
+    const savedProductIds = useMemo(
+        () => new Set(savedProducts.map((product) => product.id)),
+        [savedProducts],
+    );
+    const attachedProducts = useMemo<ProductAttachmentState | null>(() => {
+        if (!pendingProducts) {
+            return null;
+        }
 
-    console.log("chat status", status);
+        if (pendingProducts.anchorMessageId) {
+            const anchorIndex = messages.findIndex(
+                (message) => message.id === pendingProducts.anchorMessageId,
+            );
 
+            if (anchorIndex === -1) {
+                return null;
+            }
+
+            const attachedMessage = messages
+                .slice(anchorIndex + 1)
+                .find((message) => message.role === 'assistant');
+
+            return attachedMessage ? {
+                messageId: attachedMessage.id,
+                products: pendingProducts.products,
+            } : null;
+        }
+
+        const firstAssistantMessage = messages.find((message) => message.role === 'assistant');
+
+        return firstAssistantMessage ? {
+            messageId: firstAssistantMessage.id,
+            products: pendingProducts.products,
+        } : null;
+    }, [messages, pendingProducts]);
 
     const handleSubmit = useCallback((message: PromptInputMessage) => {
-        const hasText = Boolean(message.text);
+        const query = message.text.trim();
+        const hasText = Boolean(query);
         const hasAttachments = Boolean(message.files?.length);
 
         if (!(hasText || hasAttachments)) {
             return;
         }
 
-        sendMessage({ text: message.text });
-        setInput('');
+        const products = hasText ? buildMockResults(query) : [];
+        setPendingProducts({
+            anchorMessageId: messages.at(-1)?.id ?? null,
+            products,
+        });
 
-        // setStatus("submitted");
+        if (hasText) {
+            onHistoryAdd({
+                id: `search-${Date.now()}`,
+                query,
+                timestamp: new Date().toLocaleTimeString(),
+                productCount: products.length,
+            });
+        }
 
-        // eslint-disable-next-line no-console
-        console.log("Submitting message:", message);
-
-        // setTimeout(() => {
-        //     setStatus("streaming");
-        // }, SUBMITTING_TIMEOUT);
-
-        // setTimeout(() => {
-        //     setStatus("ready");
-        // }, STREAMING_TIMEOUT);
-    }, [sendMessage]);
-
-    console.log("messages", JSON.stringify(messages));
+        sendMessage({ text: query });
+    }, [messages, onHistoryAdd, sendMessage]);
 
     return (
         <div className="flex flex-col w-full max-w-3xl h-[calc(100vh-100px)] mx-auto stretch gap-6 pt-3">
@@ -114,9 +180,29 @@ export default function Chat() {
                         </p>
                     </div>
                 )}
-                {messages.map(message => (
-                    <ChatMessage key={message.id} message={message} status={status} />
-                ))}
+                {messages.map((message) => {
+                    const productsForMessage = attachedProducts?.messageId === message.id
+                        ? attachedProducts.products
+                        : [];
+
+                    return (
+                        <div key={message.id} className="space-y-4">
+                            <ChatMessage message={message} status={status} />
+                            {productsForMessage.length > 0 ? (
+                                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                                    {productsForMessage.map((product) => (
+                                        <ProductCard
+                                            key={product.id}
+                                            product={product}
+                                            isSaved={savedProductIds.has(product.id)}
+                                            onSave={() => onToggleSave(product)}
+                                        />
+                                    ))}
+                                </div>
+                            ) : null}
+                        </div>
+                    );
+                })}
             </div>
 
             <div className="size-full1">

@@ -2,32 +2,30 @@
 
 import { Tabs, TabsContent, TabsContents, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Chat from '@/components/chat/chat';
+import { HistoryPanel } from '@/components/chat/history-panel';
+import { SavedProductsPanel } from '@/components/chat/saved-products-panel';
 import { Bookmark, HistoryIcon, MessageSquare, PlusIcon, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
-
-
-function TabButton({ id, icon, label, active, onClick }: { id: string, icon: React.ReactNode, label: string, active: string, onClick: (id: string) => void }) {
-    const isActive = active === id;
-    return (
-        <button
-            onClick={() => onClick(id)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${isActive
-                ? 'bg-white text-[#008060] shadow-sm'
-                : 'text-[#6d7175] hover:text-[#202223]'
-                }`}
-        >
-            {icon}
-            <span className="hidden sm:inline">{label}</span>
-        </button>
-    );
-}
+import type { ChatHistoryItem, ChatProduct } from '@/types/product';
 
 export default function ChatPage() {
-    console.log("chat page");
-
     const [selectedTab, setSelectedTab] = useState<string>('chat');
+    const [history, setHistory] = useState<ChatHistoryItem[]>([]);
+    const [savedProducts, setSavedProducts] = useState<ChatProduct[]>([]);
+
+    const handleToggleSave = (product: ChatProduct) => {
+        setSavedProducts((current) =>
+            current.some((item) => item.id === product.id)
+                ? current.filter((item) => item.id !== product.id)
+                : [...current, product],
+        );
+    };
+
+    const handleHistoryAdd = (entry: ChatHistoryItem) => {
+        setHistory((current) => [entry, ...current].slice(0, 10));
+    };
 
     const handleNewChat = () => {
         setSelectedTab('chat');
@@ -93,15 +91,17 @@ export default function ChatPage() {
                 </header>
                 <TabsContents>
                     <TabsContent value="chat">
-                        <Chat />
+                        <Chat
+                            savedProducts={savedProducts}
+                            onToggleSave={handleToggleSave}
+                            onHistoryAdd={handleHistoryAdd}
+                        />
                     </TabsContent>
                     <TabsContent value="history">
-                        {/* <History /> */}
-                        <div>History</div>
+                        <HistoryPanel items={history} onClear={() => setHistory([])} />
                     </TabsContent>
                     <TabsContent value="saved">
-                        {/* <Saved /> */}
-                        <div>Saved</div>
+                        <SavedProductsPanel products={savedProducts} onToggleSave={handleToggleSave} />
                     </TabsContent>
                 </TabsContents>
             </Tabs>
