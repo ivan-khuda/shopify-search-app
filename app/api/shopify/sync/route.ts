@@ -1,4 +1,5 @@
-import { getSessionFromStorage, shopifyClient } from "@/lib/shopify/client";
+import { shopifyClient } from "@/lib/shopify/client";
+import { sessionStorage } from "@/lib/shopify/session-storage";
 import { NextResponse } from 'next/server';
 
 
@@ -6,7 +7,7 @@ export async function POST(req: Request) {
 
     const sessionId = await shopifyClient.session.getOfflineId("segal-jewellery.myshopify.com");
 
-    const session = await getSessionFromStorage(sessionId);
+    const session = await sessionStorage.loadSession(sessionId);
 
     if (!session) {
         return NextResponse.json({ success: false });
