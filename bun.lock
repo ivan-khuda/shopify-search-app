@@ -11,7 +11,7 @@
         "@shopify/app-bridge-react": "^4.2.10",
         "@shopify/polaris": "^13.9.5",
         "@shopify/shopify-api": "^12.3.0",
-        "@shopify/shopify-app-session-storage-prisma": "^9.0.0",
+        "@shopify/shopify-app-session-storage-prisma": "8.0.1",
         "ai": "^6.0.77",
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
@@ -530,7 +530,7 @@
 
     "@shopify/shopify-app-session-storage": ["@shopify/shopify-app-session-storage@5.0.0", "", { "peerDependencies": { "@shopify/shopify-api": "^13.0.0" } }, "sha512-hFUeDGmA4NJmnsq0peYxYIhCzPtXzP9dKjoz04VwWq0XTFzmjy+6yLWY9LFNI4gSiK3Mws3FSLKaatd8TqIj2g=="],
 
-    "@shopify/shopify-app-session-storage-prisma": ["@shopify/shopify-app-session-storage-prisma@9.0.0", "", { "peerDependencies": { "@prisma/client": "^6.19.0", "@shopify/shopify-api": "^13.0.0", "@shopify/shopify-app-session-storage": "^5.0.0", "prisma": "^6.19.0" } }, "sha512-ZsZ9AOL3IYtpB9RYqoBf6H05uGVvZp6x0l9Z8DgujAD27XbatGCNdrmKcA+h/1eH/kyyq55pGd+Gwg/qAQjA+A=="],
+    "@shopify/shopify-app-session-storage-prisma": ["@shopify/shopify-app-session-storage-prisma@8.0.1", "", { "peerDependencies": { "@prisma/client": "^6.19.0", "@shopify/shopify-api": "^12.0.0", "@shopify/shopify-app-session-storage": "^4.0.0", "prisma": "^6.19.0" } }, "sha512-SAV8BXhE4kDFB46nx+L+sPLILwjcqMoMsiqGF+I0DVULbZArkSxXEOwW0r4KnVrzjNgRPgdP4HSBSzGUBcsYsQ=="],
 
     "@shopify/storefront-api-client": ["@shopify/storefront-api-client@1.0.9", "", { "dependencies": { "@shopify/graphql-client": "^1.4.1" } }, "sha512-vgc0ZczMvrbsQQFYcIIONnIiqiafpcMyq5osI8X6PB65DhnmCQEp3kSlXKOjBPzyAWYvp28nLHS0+r4xsp4yQA=="],
 
