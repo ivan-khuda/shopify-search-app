@@ -48,7 +48,7 @@ describe('middleware', () => {
   });
 
   it('extracts shop from valid App Bridge Bearer token', async () => {
-    vi.mocked(shopifyClient.session.decodeSessionToken).mockReturnValue({
+    vi.mocked(shopifyClient.session.decodeSessionToken).mockResolvedValue({
       dest: 'https://test.myshopify.com',
     } as never);
     vi.mocked(shopifyClient.session.getOfflineId).mockReturnValue('offline_test.myshopify.com');

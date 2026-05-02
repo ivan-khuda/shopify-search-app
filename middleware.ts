@@ -10,9 +10,8 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
   if (!shop && authHeader?.startsWith('Bearer ')) {
     const token = authHeader.slice(7);
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const payload = (shopifyClient.session as any).decodeSessionToken(token);
-      shop = (payload.dest as string).replace('https://', '');
+      const payload = await shopifyClient.session.decodeSessionToken(token);
+      shop = new URL(payload.dest as string).hostname;
     } catch {
       return redirectToAuth(request);
     }
@@ -22,8 +21,7 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
     return redirectToAuth(request);
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const offlineSessionId = (shopifyClient.session as any).getOfflineId(shop);
+  const offlineSessionId = shopifyClient.session.getOfflineId(shop);
   const session = await sessionStorage.loadSession(offlineSessionId);
 
   if (!session) {
