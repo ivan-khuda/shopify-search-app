@@ -67,6 +67,8 @@ Required in `.env`:
 - `GOOGLE_GENERATIVE_AI_API_KEY` — Gemini API key (chat falls back gracefully if absent)
 - `DATABASE_URL` — Postgres connection string (Prisma Accelerate URL)
 - `SHOPIFY_API_KEY`, `SHOPIFY_API_SECRET`, `HOST` — Shopify app credentials
+- `SHOPIFY_APP_HANDLE` — App handle slug from Shopify Partner Dashboard (used to construct the post-install redirect URL)
+- `NEXT_PUBLIC_SHOPIFY_API_KEY` — Same value as `SHOPIFY_API_KEY`; exposed to client components for App Bridge initialization
 
 ## Key Design Decisions
 
