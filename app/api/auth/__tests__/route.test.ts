@@ -101,3 +101,36 @@ describe('GET /api/auth/online', () => {
     expect(response.status).toBe(400);
   });
 });
+
+import { GET as onlineCallbackGET } from '../online/callback/route';
+
+describe('GET /api/auth/online/callback', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('stores online session and redirects to onboarding', async () => {
+    const mockSession = new Session({
+      id: 'test.myshopify.com_123',
+      shop: 'test.myshopify.com',
+      state: 'state456',
+      isOnline: true,
+      accessToken: 'shpua_xyz',
+      scope: 'read_products',
+      userId: BigInt(123456),
+    });
+
+    vi.mocked(shopifyClient.auth.callback).mockResolvedValue({
+      session: mockSession,
+      headers: undefined,
+    } as never);
+
+    const request = new Request(
+      'http://localhost/api/auth/online/callback?code=abc&hmac=xyz&shop=test.myshopify.com&state=state456&timestamp=1000'
+    );
+    const response = await onlineCallbackGET(request);
+
+    expect(shopifyClient.auth.callback).toHaveBeenCalledWith({ rawRequest: request });
+    expect(response.status).toBe(302);
+    expect(response.headers.get('Location')).toContain('test.myshopify.com/admin/apps');
+    expect(response.headers.get('Location')).toContain('/onboarding');
+  });
+});
