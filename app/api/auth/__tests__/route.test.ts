@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { GET } from '../route';
 import { GET as callbackGET } from '../callback/route';
+import { GET as onlineGET } from '../online/route';
 import { Session } from '@shopify/shopify-api';
 
 vi.mock('@/lib/shopify/client', () => ({
@@ -69,5 +70,34 @@ describe('GET /api/auth/callback', () => {
     expect(shopifyClient.auth.callback).toHaveBeenCalledWith({ rawRequest: request });
     expect(response.status).toBe(302);
     expect(response.headers.get('Location')).toContain('/api/auth/online');
+  });
+});
+
+describe('GET /api/auth/online', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('begins online OAuth for valid shop', async () => {
+    const mockRedirect = new Response(null, {
+      status: 302,
+      headers: { Location: 'https://test.myshopify.com/admin/oauth/authorize' },
+    });
+    vi.mocked(shopifyClient.auth.begin).mockResolvedValue(mockRedirect as never);
+
+    const request = new Request('http://localhost/api/auth/online?shop=test.myshopify.com');
+    const response = await onlineGET(request);
+
+    expect(shopifyClient.auth.begin).toHaveBeenCalledWith({
+      shop: 'test.myshopify.com',
+      callbackPath: '/api/auth/online/callback',
+      isOnline: true,
+      rawRequest: request,
+    });
+    expect(response.status).toBe(302);
+  });
+
+  it('returns 400 when shop param is missing', async () => {
+    const request = new Request('http://localhost/api/auth/online');
+    const response = await onlineGET(request);
+    expect(response.status).toBe(400);
   });
 });
