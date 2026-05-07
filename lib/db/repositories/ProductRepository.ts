@@ -1,4 +1,4 @@
-import { Product } from "@/app/generated/prisma/browser";
+import type { Product } from "@prisma/client";
 
 export class ProductRepository {
     async upsert(product: Product) {

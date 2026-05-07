@@ -1,5 +1,5 @@
 import '@shopify/shopify-api/adapters/node';
-import { PrismaClient } from "@/app/generated/prisma/client";
+import { PrismaClient } from "@prisma/client";
 import "dotenv/config";
 
 export const prisma = new PrismaClient({
