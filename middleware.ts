@@ -37,6 +37,8 @@ function redirectToAuth(request: NextRequest, shop?: string): NextResponse {
   return NextResponse.redirect(authUrl);
 }
 
+export const runtime = 'nodejs';
+
 export const config = {
   matcher: ['/chat/:path*', '/onboarding/:path*'],
 };
