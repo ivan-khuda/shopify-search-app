@@ -15,6 +15,10 @@ export default function EmbeddedLayout({ children }: { children: React.ReactNode
         src="https://cdn.shopify.com/shopifycloud/app-bridge.js"
         strategy="beforeInteractive"
       />
+      <Script
+        src="https://cdn.shopify.com/shopifycloud/polaris.js"
+        strategy="beforeInteractive"
+      />
       <EmbeddedProviders>{children}</EmbeddedProviders>
     </>
   );
