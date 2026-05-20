@@ -58,6 +58,28 @@ describe('POST /api/shopify/sync', () => {
     expect(body.error).toBe('invalid_token');
   });
 
+  it('returns 401 when payload.dest is not a parseable URL', async () => {
+    (shopifyClient.session.decodeSessionToken as ReturnType<typeof vi.fn>).mockResolvedValue({
+      dest: 'not-a-url',
+    });
+
+    const res = await POST(makeRequest({ Authorization: 'Bearer good' }));
+    expect(res.status).toBe(401);
+    const body = await res.json();
+    expect(body.error).toBe('invalid_token');
+  });
+
+  it('returns 401 when payload.dest hostname is not a *.myshopify.com domain', async () => {
+    (shopifyClient.session.decodeSessionToken as ReturnType<typeof vi.fn>).mockResolvedValue({
+      dest: 'https://attacker.example.com',
+    });
+
+    const res = await POST(makeRequest({ Authorization: 'Bearer good' }));
+    expect(res.status).toBe(401);
+    const body = await res.json();
+    expect(body.error).toBe('invalid_token');
+  });
+
   it('returns 401 when no offline session exists for the shop', async () => {
     (shopifyClient.session.decodeSessionToken as ReturnType<typeof vi.fn>).mockResolvedValue({
       dest: 'https://example-shop.myshopify.com',

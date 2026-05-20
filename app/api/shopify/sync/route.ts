@@ -21,7 +21,17 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'invalid_token' }, { status: 401 });
   }
 
-  const shop = new URL(payload.dest).hostname;
+  let shop: string;
+  try {
+    shop = new URL(payload.dest).hostname;
+  } catch {
+    return NextResponse.json({ error: 'invalid_token' }, { status: 401 });
+  }
+
+  if (!shop.endsWith('.myshopify.com')) {
+    return NextResponse.json({ error: 'invalid_token' }, { status: 401 });
+  }
+
   const sessionId = shopifyClient.session.getOfflineId(shop);
   const session = await sessionStorage.loadSession(sessionId);
 
@@ -29,8 +39,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'no_offline_session' }, { status: 401 });
   }
 
-  // Stub sync work: real syncProducts() is tracked separately.
-  void session;
+  // TODO: wire real syncProducts(session). Tracked in docs/superpowers/specs/2026-05-20-onboarding-app-home-design.md (out of scope).
 
   return NextResponse.json({ success: true });
 }

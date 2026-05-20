@@ -32,7 +32,6 @@ export default function OnboardingPage() {
   return (
     <s-page heading="Welcome to SmartDiscovery AI">
       <s-section heading="How it works">
-        <s-heading>How it works</s-heading>
         <s-unordered-list>
           <s-list-item>We sync your product catalog automatically</s-list-item>
           <s-list-item>Our AI uses it to answer customer search queries</s-list-item>
@@ -49,7 +48,6 @@ export default function OnboardingPage() {
       </s-section>
 
       <s-section heading="What's synced">
-        <s-heading>What&apos;s synced</s-heading>
         <s-unordered-list>
           <s-list-item>Product titles, descriptions, tags</s-list-item>
           <s-list-item>Variants and pricing</s-list-item>
@@ -58,7 +56,6 @@ export default function OnboardingPage() {
       </s-section>
 
       <s-section heading="What's next">
-        <s-heading>What&apos;s next</s-heading>
         <s-unordered-list>
           <s-list-item>After sync: use the Search tab to test queries</s-list-item>
           <s-list-item>Billing will be introduced in a future update</s-list-item>

@@ -34,14 +34,14 @@ describe('OnboardingPage', () => {
   });
 
   it('renders the "How it works" section', () => {
-    render(<OnboardingPage />);
-    expect(screen.getByText('How it works')).toBeInTheDocument();
+    const { container } = render(<OnboardingPage />);
+    expect(container.querySelector('s-section[heading="How it works"]')).not.toBeNull();
     expect(screen.getByText(/sync your product catalog/i)).toBeInTheDocument();
   });
 
   it('renders the "What\'s synced" section', () => {
-    render(<OnboardingPage />);
-    expect(screen.getByText("What's synced")).toBeInTheDocument();
+    const { container } = render(<OnboardingPage />);
+    expect(container.querySelector('s-section[heading="What\'s synced"]')).not.toBeNull();
     expect(screen.getByText(/product titles/i)).toBeInTheDocument();
   });
 
