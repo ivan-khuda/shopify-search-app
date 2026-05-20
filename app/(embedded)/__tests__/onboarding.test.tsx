@@ -1,55 +1,98 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { AppProvider } from '@shopify/polaris';
-import enTranslations from '@shopify/polaris/locales/en.json';
 import OnboardingPage from '../onboarding/page';
 
-vi.mock('@shopify/polaris', async () => {
-  const actual = await vi.importActual<typeof import('@shopify/polaris')>('@shopify/polaris');
-  return actual;
+type ShopifyMock = {
+  idToken: ReturnType<typeof vi.fn>;
+  toast: { show: ReturnType<typeof vi.fn> };
+};
+
+declare global {
+  // eslint-disable-next-line no-var
+  var shopify: ShopifyMock;
+}
+
+let fetchMock: ReturnType<typeof vi.fn>;
+
+beforeEach(() => {
+  globalThis.shopify = {
+    idToken: vi.fn().mockResolvedValue('test.jwt.token'),
+    toast: { show: vi.fn() },
+  };
+  fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 200 });
+  vi.stubGlobal('fetch', fetchMock);
 });
 
-global.fetch = vi.fn().mockResolvedValue({ ok: true });
+afterEach(() => {
+  vi.unstubAllGlobals();
+  vi.restoreAllMocks();
+});
 
 describe('OnboardingPage', () => {
-  it('renders welcome heading', () => {
-    render(
-      <AppProvider i18n={enTranslations}>
-        <OnboardingPage />
-      </AppProvider>
-    );
-    expect(screen.getByText('Welcome to SmartDiscovery AI')).toBeInTheDocument();
+  it('renders the welcome heading on the s-page', () => {
+    const { container } = render(<OnboardingPage />);
+    const page = container.querySelector('s-page');
+    expect(page).not.toBeNull();
+    expect(page?.getAttribute('heading')).toBe('Welcome to SmartDiscovery AI');
   });
 
-  it('renders "How it works" card', () => {
-    render(
-      <AppProvider i18n={enTranslations}>
-        <OnboardingPage />
-      </AppProvider>
-    );
+  it('renders the "How it works" section', () => {
+    render(<OnboardingPage />);
     expect(screen.getByText('How it works')).toBeInTheDocument();
     expect(screen.getByText(/sync your product catalog/i)).toBeInTheDocument();
   });
 
-  it('renders "What\'s synced" card', () => {
-    render(
-      <AppProvider i18n={enTranslations}>
-        <OnboardingPage />
-      </AppProvider>
-    );
+  it('renders the "What\'s synced" section', () => {
+    render(<OnboardingPage />);
     expect(screen.getByText("What's synced")).toBeInTheDocument();
     expect(screen.getByText(/product titles/i)).toBeInTheDocument();
   });
 
-  it('calls POST /api/shopify/sync when "Start sync" is clicked', async () => {
-    render(
-      <AppProvider i18n={enTranslations}>
-        <OnboardingPage />
-      </AppProvider>
-    );
-    fireEvent.click(screen.getByRole('button', { name: /start sync/i }));
+  it('POSTs to /api/shopify/sync with a Bearer session token when Start sync is clicked', async () => {
+    render(<OnboardingPage />);
+    fireEvent.click(screen.getByTestId('start-sync'));
+
     await waitFor(() => {
-      expect(fetch).toHaveBeenCalledWith('/api/shopify/sync', { method: 'POST' });
+      expect(globalThis.shopify.idToken).toHaveBeenCalled();
+      expect(fetchMock).toHaveBeenCalledWith('/api/shopify/sync', {
+        method: 'POST',
+        headers: { Authorization: 'Bearer test.jwt.token' },
+      });
+    });
+  });
+
+  it('shows a success toast on 2xx', async () => {
+    render(<OnboardingPage />);
+    fireEvent.click(screen.getByTestId('start-sync'));
+
+    await waitFor(() => {
+      expect(globalThis.shopify.toast.show).toHaveBeenCalledWith('Sync started');
+    });
+  });
+
+  it('shows a session-expired error toast on 401', async () => {
+    fetchMock.mockResolvedValueOnce({ ok: false, status: 401 });
+    render(<OnboardingPage />);
+    fireEvent.click(screen.getByTestId('start-sync'));
+
+    await waitFor(() => {
+      expect(globalThis.shopify.toast.show).toHaveBeenCalledWith(
+        'Session expired. Reload the app.',
+        { isError: true }
+      );
+    });
+  });
+
+  it('shows a generic error toast on other failures', async () => {
+    fetchMock.mockResolvedValueOnce({ ok: false, status: 500 });
+    render(<OnboardingPage />);
+    fireEvent.click(screen.getByTestId('start-sync'));
+
+    await waitFor(() => {
+      expect(globalThis.shopify.toast.show).toHaveBeenCalledWith(
+        'Sync failed. Try again.',
+        { isError: true }
+      );
     });
   });
 });
