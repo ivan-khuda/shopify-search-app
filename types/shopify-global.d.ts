@@ -21,6 +21,8 @@ declare global {
         's-button': PolarisIntrinsicProps;
         's-unordered-list': PolarisIntrinsicProps;
         's-list-item': PolarisIntrinsicProps;
+        's-app-nav': PolarisIntrinsicProps;
+        's-link': PolarisIntrinsicProps;
       }
     }
   }

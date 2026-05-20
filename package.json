@@ -14,7 +14,6 @@
     "@ai-sdk/react": "^3.0.75",
     "@prisma/adapter-pg": "^7.3.0",
     "@prisma/client": "^7.3.0",
-    "@shopify/app-bridge-react": "^4.2.10",
     "@shopify/shopify-api": "^12.3.0",
     "@shopify/shopify-app-session-storage-prisma": "8.0.1",
     "ai": "^6.0.77",

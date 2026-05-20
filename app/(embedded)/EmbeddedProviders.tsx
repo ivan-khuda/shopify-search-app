@@ -1,15 +1,10 @@
-'use client';
-
-import { NavMenu } from '@shopify/app-bridge-react';
-import Link from 'next/link';
-
 export default function EmbeddedProviders({ children }: { children: React.ReactNode }) {
   return (
     <>
-      <NavMenu>
-        <Link href="/chat" rel="home">Search</Link>
-        <Link href="/onboarding">Onboarding</Link>
-      </NavMenu>
+      <s-app-nav>
+        <s-link href="/chat" rel="home">Search</s-link>
+        <s-link href="/onboarding">Onboarding</s-link>
+      </s-app-nav>
       {children}
     </>
   );

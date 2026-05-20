@@ -8,7 +8,6 @@
         "@ai-sdk/react": "^3.0.75",
         "@prisma/adapter-pg": "^7.3.0",
         "@prisma/client": "^7.3.0",
-        "@shopify/app-bridge-react": "^4.2.10",
         "@shopify/shopify-api": "^12.3.0",
         "@shopify/shopify-app-session-storage-prisma": "8.0.1",
         "ai": "^6.0.77",
@@ -514,8 +513,6 @@
     "@rtsao/scc": ["@rtsao/scc@1.1.0", "", {}, "sha512-zt6OdqaDoOnJ1ZYsCYGt9YmWzDXl4vQdKTyJev62gFhRGKdx7mcT54V9KIjg+d2wi9EXsPvAPKe7i7WjfVWB8g=="],
 
     "@shopify/admin-api-client": ["@shopify/admin-api-client@1.1.1", "", { "dependencies": { "@shopify/graphql-client": "^1.4.1" } }, "sha512-J/cdodM7jmk9yKxHnkrnVHP2Gm70w2dFA4O3ehPvIBsXvK0PwXmiRjQOCCPfyLo442awON5soQ/XuWVSUmZL/g=="],
-
-    "@shopify/app-bridge-react": ["@shopify/app-bridge-react@4.2.10", "", { "dependencies": { "@shopify/app-bridge-types": "0.7.0" }, "peerDependencies": { "react": "*", "react-dom": "*" } }, "sha512-/VhfsxIvWcK7w5rBY97WdSTApLEg+Z2dT9Zc+idAUiAi48R64nYalXDUG8ar5xRoINHFC/w+9WxYViAazpgfew=="],
 
     "@shopify/app-bridge-types": ["@shopify/app-bridge-types@0.7.0", "", { "dependencies": { "@standard-schema/spec": "^1.0.0" } }, "sha512-A/DiGIjCBdd45ijMDKLgXrrGG68so3d25Yaeo0lv8ruWeljHGn3sA+UU1o/5BptSPkikDkgPPl8EQDxe4/KShw=="],
 
