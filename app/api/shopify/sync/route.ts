@@ -1,29 +1,36 @@
-import { shopifyClient } from "@/lib/shopify/client";
-import { sessionStorage } from "@/lib/shopify/session-storage";
 import { NextResponse } from 'next/server';
-
+import { shopifyClient } from '@/lib/shopify/client';
+import { sessionStorage } from '@/lib/shopify/session-storage';
 
 export async function POST(req: Request) {
+  const authHeader = req.headers.get('Authorization');
+  if (!authHeader?.startsWith('Bearer ')) {
+    return NextResponse.json({ error: 'missing_token' }, { status: 401 });
+  }
 
-    const sessionId = await shopifyClient.session.getOfflineId("segal-jewellery.myshopify.com");
+  const token = authHeader.slice('Bearer '.length);
 
-    const session = await sessionStorage.loadSession(sessionId);
+  let payload: { dest?: string };
+  try {
+    payload = await shopifyClient.session.decodeSessionToken(token);
+  } catch {
+    return NextResponse.json({ error: 'invalid_token' }, { status: 401 });
+  }
 
-    if (!session) {
-        return NextResponse.json({ success: false });
-    }
+  if (!payload.dest) {
+    return NextResponse.json({ error: 'invalid_token' }, { status: 401 });
+  }
 
-    const client = new shopifyClient.clients.Rest({
-        session
-    });
-    const response = await client.get<unknown>({
-        path: 'products/7539258589318',
-    });
-    console.log("client", client);
-    console.log("session", session);
-    console.log("response", response);
+  const shop = new URL(payload.dest).hostname;
+  const sessionId = shopifyClient.session.getOfflineId(shop);
+  const session = await sessionStorage.loadSession(sessionId);
 
+  if (!session) {
+    return NextResponse.json({ error: 'no_offline_session' }, { status: 401 });
+  }
 
-    // await syncProducts();
-    return Response.json({ sessionId, response, success: true });
+  // Stub sync work: real syncProducts() is tracked separately.
+  void session;
+
+  return NextResponse.json({ success: true });
 }
