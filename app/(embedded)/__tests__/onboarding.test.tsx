@@ -4,21 +4,18 @@ import OnboardingPage from '../onboarding/page';
 
 type ShopifyMock = {
   idToken: ReturnType<typeof vi.fn>;
-  toast: { show: ReturnType<typeof vi.fn> };
+  toast: { show: ReturnType<typeof vi.fn>; hide: ReturnType<typeof vi.fn> };
 };
 
-declare global {
-  // eslint-disable-next-line no-var
-  var shopify: ShopifyMock;
-}
-
 let fetchMock: ReturnType<typeof vi.fn>;
+let shopifyMock: ShopifyMock;
 
 beforeEach(() => {
-  globalThis.shopify = {
+  shopifyMock = {
     idToken: vi.fn().mockResolvedValue('test.jwt.token'),
-    toast: { show: vi.fn() },
+    toast: { show: vi.fn(), hide: vi.fn() },
   };
+  vi.stubGlobal('shopify', shopifyMock);
   fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 200 });
   vi.stubGlobal('fetch', fetchMock);
 });
@@ -53,7 +50,7 @@ describe('OnboardingPage', () => {
     fireEvent.click(screen.getByTestId('start-sync'));
 
     await waitFor(() => {
-      expect(globalThis.shopify.idToken).toHaveBeenCalled();
+      expect(shopifyMock.idToken).toHaveBeenCalled();
       expect(fetchMock).toHaveBeenCalledWith('/api/shopify/sync', {
         method: 'POST',
         headers: { Authorization: 'Bearer test.jwt.token' },
@@ -66,7 +63,7 @@ describe('OnboardingPage', () => {
     fireEvent.click(screen.getByTestId('start-sync'));
 
     await waitFor(() => {
-      expect(globalThis.shopify.toast.show).toHaveBeenCalledWith('Sync started');
+      expect(shopifyMock.toast.show).toHaveBeenCalledWith('Sync started');
     });
   });
 
@@ -76,7 +73,7 @@ describe('OnboardingPage', () => {
     fireEvent.click(screen.getByTestId('start-sync'));
 
     await waitFor(() => {
-      expect(globalThis.shopify.toast.show).toHaveBeenCalledWith(
+      expect(shopifyMock.toast.show).toHaveBeenCalledWith(
         'Session expired. Reload the app.',
         { isError: true }
       );
@@ -89,7 +86,7 @@ describe('OnboardingPage', () => {
     fireEvent.click(screen.getByTestId('start-sync'));
 
     await waitFor(() => {
-      expect(globalThis.shopify.toast.show).toHaveBeenCalledWith(
+      expect(shopifyMock.toast.show).toHaveBeenCalledWith(
         'Sync failed. Try again.',
         { isError: true }
       );
