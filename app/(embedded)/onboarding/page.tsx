@@ -1,71 +1,69 @@
 'use client';
 
-import {
-  Page,
-  Layout,
-  Card,
-  Button,
-  Text,
-  BlockStack,
-  List,
-} from '@shopify/polaris';
 import { useState } from 'react';
 
 export default function OnboardingPage() {
   const [syncing, setSyncing] = useState(false);
 
   async function handleStartSync() {
+    if (syncing) return;
     setSyncing(true);
     try {
-      await fetch('/api/shopify/sync', { method: 'POST' });
+      const token = await shopify.idToken();
+      const res = await fetch('/api/shopify/sync', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (res.ok) {
+        shopify.toast.show('Sync started');
+      } else if (res.status === 401) {
+        shopify.toast.show('Session expired. Reload the app.', { isError: true });
+      } else {
+        shopify.toast.show('Sync failed. Try again.', { isError: true });
+      }
+    } catch {
+      shopify.toast.show('Sync failed. Try again.', { isError: true });
     } finally {
       setSyncing(false);
     }
   }
 
   return (
-    <Page title="Welcome to SmartDiscovery AI">
-      <Layout>
-        <Layout.Section variant="oneHalf">
-          <Card>
-            <BlockStack gap="400">
-              <Text variant="headingMd" as="h2">How it works</Text>
-              <List>
-                <List.Item>We sync your product catalog automatically</List.Item>
-                <List.Item>Our AI uses it to answer customer search queries</List.Item>
-                <List.Item>You'll receive an email when the first sync completes</List.Item>
-              </List>
-              <Button variant="primary" onClick={handleStartSync} loading={syncing}>
-                Start sync
-              </Button>
-            </BlockStack>
-          </Card>
-        </Layout.Section>
+    <s-page heading="Welcome to SmartDiscovery AI">
+      <s-section heading="How it works">
+        <s-heading>How it works</s-heading>
+        <s-unordered-list>
+          <s-list-item>We sync your product catalog automatically</s-list-item>
+          <s-list-item>Our AI uses it to answer customer search queries</s-list-item>
+          <s-list-item>You&apos;ll receive an email when the first sync completes</s-list-item>
+        </s-unordered-list>
+        <s-button
+          data-testid="start-sync"
+          variant="primary"
+          onClick={handleStartSync}
+          {...(syncing ? { loading: '' } : {})}
+        >
+          Start sync
+        </s-button>
+      </s-section>
 
-        <Layout.Section variant="oneHalf">
-          <BlockStack gap="400">
-            <Card>
-              <BlockStack gap="300">
-                <Text variant="headingMd" as="h2">What&apos;s synced</Text>
-                <List>
-                  <List.Item>Product titles, descriptions, tags</List.Item>
-                  <List.Item>Variants and pricing</List.Item>
-                  <List.Item>Images</List.Item>
-                </List>
-              </BlockStack>
-            </Card>
-            <Card>
-              <BlockStack gap="300">
-                <Text variant="headingMd" as="h2">What&apos;s next</Text>
-                <List>
-                  <List.Item>After sync: use the Search tab to test queries</List.Item>
-                  <List.Item>Billing will be introduced in a future update</List.Item>
-                </List>
-              </BlockStack>
-            </Card>
-          </BlockStack>
-        </Layout.Section>
-      </Layout>
-    </Page>
+      <s-section heading="What's synced">
+        <s-heading>What&apos;s synced</s-heading>
+        <s-unordered-list>
+          <s-list-item>Product titles, descriptions, tags</s-list-item>
+          <s-list-item>Variants and pricing</s-list-item>
+          <s-list-item>Images</s-list-item>
+        </s-unordered-list>
+      </s-section>
+
+      <s-section heading="What's next">
+        <s-heading>What&apos;s next</s-heading>
+        <s-unordered-list>
+          <s-list-item>After sync: use the Search tab to test queries</s-list-item>
+          <s-list-item>Billing will be introduced in a future update</s-list-item>
+        </s-unordered-list>
+      </s-section>
+    </s-page>
   );
 }
