@@ -132,70 +132,68 @@ Explicitly excluded. Documented to prevent scope creep.
 
 ## Traceability
 
-Empty — populated by roadmapper during phase creation.
-
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| FND-01 | TBD | Pending |
-| FND-02 | TBD | Pending |
-| FND-03 | TBD | Pending |
-| FND-04 | TBD | Pending |
-| FND-05 | TBD | Pending |
-| SYN-01 | TBD | Pending |
-| SYN-02 | TBD | Pending |
-| SYN-03 | TBD | Pending |
-| SYN-04 | TBD | Pending |
-| SYN-05 | TBD | Pending |
-| SYN-06 | TBD | Pending |
-| SYN-07 | TBD | Pending |
-| SYN-08 | TBD | Pending |
-| SYN-09 | TBD | Pending |
-| SYN-10 | TBD | Pending |
-| SYN-11 | TBD | Pending |
-| EMB-01 | TBD | Pending |
-| EMB-02 | TBD | Pending |
-| EMB-03 | TBD | Pending |
-| EMB-04 | TBD | Pending |
-| EMB-05 | TBD | Pending |
-| EMB-06 | TBD | Pending |
-| EMB-07 | TBD | Pending |
-| ADM-01 | TBD | Pending |
-| ADM-02 | TBD | Pending |
-| ADM-03 | TBD | Pending |
-| ADM-04 | TBD | Pending |
-| ADM-05 | TBD | Pending |
-| ADM-06 | TBD | Pending |
-| SHR-01 | TBD | Pending |
-| SHR-02 | TBD | Pending |
-| SHR-03 | TBD | Pending |
-| SHR-04 | TBD | Pending |
-| STR-01 | TBD | Pending |
-| STR-02 | TBD | Pending |
-| STR-03 | TBD | Pending |
-| STR-04 | TBD | Pending |
-| STR-05 | TBD | Pending |
-| STR-06 | TBD | Pending |
-| STR-07 | TBD | Pending |
-| STR-08 | TBD | Pending |
-| IDN-01 | TBD | Pending |
-| IDN-02 | TBD | Pending |
-| IDN-03 | TBD | Pending |
-| IDN-04 | TBD | Pending |
-| IDN-05 | TBD | Pending |
-| IDN-06 | TBD | Pending |
-| NOT-01 | TBD | Pending |
-| NOT-02 | TBD | Pending |
-| NOT-03 | TBD | Pending |
-| NOT-04 | TBD | Pending |
-| CAP-01 | TBD | Pending |
-| CAP-02 | TBD | Pending |
-| CAP-03 | TBD | Pending |
+| FND-01 | Phase 1 | Pending |
+| FND-02 | Phase 1 | Pending |
+| FND-03 | Phase 1 | Pending |
+| FND-04 | Phase 1 | Pending |
+| FND-05 | Phase 1 | Pending |
+| SYN-01 | Phase 2 | Pending |
+| SYN-02 | Phase 2 | Pending |
+| SYN-03 | Phase 2 | Pending |
+| SYN-04 | Phase 2 | Pending |
+| SYN-05 | Phase 2 | Pending |
+| SYN-06 | Phase 2 | Pending |
+| SYN-07 | Phase 2 | Pending |
+| SYN-08 | Phase 2 | Pending |
+| SYN-09 | Phase 2 | Pending |
+| SYN-10 | Phase 2 | Pending |
+| SYN-11 | Phase 2 | Pending |
+| EMB-01 | Phase 3 | Pending |
+| EMB-02 | Phase 3 | Pending |
+| EMB-03 | Phase 3 | Pending |
+| EMB-04 | Phase 3 | Pending |
+| EMB-05 | Phase 4 | Pending |
+| EMB-06 | Phase 3 | Pending |
+| EMB-07 | Phase 4 | Pending |
+| ADM-01 | Phase 2 | Pending |
+| ADM-02 | Phase 2 | Pending |
+| ADM-03 | Phase 7 | Pending |
+| ADM-04 | Phase 7 | Pending |
+| ADM-05 | Phase 4 | Pending |
+| ADM-06 | Phase 4 | Pending |
+| SHR-01 | Phase 5 | Pending |
+| SHR-02 | Phase 5 | Pending |
+| SHR-03 | Phase 5 | Pending |
+| SHR-04 | Phase 5 | Pending |
+| STR-01 | Phase 6 | Pending |
+| STR-02 | Phase 6 | Pending |
+| STR-03 | Phase 6 | Pending |
+| STR-04 | Phase 6 | Pending |
+| STR-05 | Phase 6 | Pending |
+| STR-06 | Phase 6 | Pending |
+| STR-07 | Phase 6 | Pending |
+| STR-08 | Phase 6 | Pending |
+| IDN-01 | Phase 6 | Pending |
+| IDN-02 | Phase 6 | Pending |
+| IDN-03 | Phase 6 | Pending |
+| IDN-04 | Phase 6 | Pending |
+| IDN-05 | Phase 6 | Pending |
+| IDN-06 | Phase 6 | Pending |
+| NOT-01 | Phase 8 | Pending |
+| NOT-02 | Phase 8 | Pending |
+| NOT-03 | Phase 8 | Pending |
+| NOT-04 | Phase 8 | Pending |
+| CAP-01 | Phase 8 | Pending |
+| CAP-02 | Phase 8 | Pending |
+| CAP-03 | Phase 8 | Pending |
 
 **Coverage:**
-- v1 requirements: 53 total
-- Mapped to phases: 0 ⚠️ (roadmapper will fill)
-- Unmapped: 53 ⚠️
+- v1 requirements: 54 total (note: traceability table count is 54; original header said 53 — all IDs enumerated in requirements body are mapped)
+- Mapped to phases: 54 ✓
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-05-22*
-*Last updated: 2026-05-22 after initialization*
+*Last updated: 2026-05-22 — traceability populated by roadmapper*
