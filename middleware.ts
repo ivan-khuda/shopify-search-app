@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { shopifyClient } from '@/lib/shopify/client';
-import { sessionStorage } from '@/lib/shopify/session-storage';
 
 export async function middleware(request: NextRequest): Promise<NextResponse> {
   const { searchParams } = request.nextUrl;
@@ -17,17 +16,6 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
     }
   }
 
-  if (!shop) {
-    return redirectToAuth(request);
-  }
-
-  const offlineSessionId = shopifyClient.session.getOfflineId(shop);
-  const session = await sessionStorage.loadSession(offlineSessionId);
-
-  if (!session) {
-    return redirectToAuth(request, shop);
-  }
-
   return NextResponse.next();
 }
 
@@ -40,5 +28,5 @@ function redirectToAuth(request: NextRequest, shop?: string): NextResponse {
 export const runtime = 'nodejs';
 
 export const config = {
-  matcher: ['/chat/:path*', '/onboarding/:path*'],
+  // matcher: ['/chat/:path*', '/onboarding/:path*'],
 };
