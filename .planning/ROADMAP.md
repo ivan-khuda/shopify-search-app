@@ -31,7 +31,16 @@ SmartDiscovery AI goes from a scaffolded-but-stubbed Shopify embedded app to a f
   3. Middleware auth check is active with the correct matcher; unauthenticated requests to `/onboarding` and `/chat` are redirected to auth
   4. `ProductRepository` exposes type-safe `upsertProduct`, `deleteProduct`, `listByShop`, and `findByShopAndId` backed by Prisma transactions
   5. `verifyShopSessionToken(request)` is a shared helper used by all embedded admin API routes (not duplicated inline)
-**Plans**: TBD
+**Plans**: 9 plans
+- [ ] 01-01-PLAN.md — Wave 0 RED test scaffolds (auth.test.ts, ProductRepository.test.ts, middleware.test.ts cleanup)
+- [ ] 01-02-PLAN.md — lib/shopify/auth.ts (verifyShopSessionToken + withShopifySession + ShopifyAuthError)
+- [ ] 01-03-PLAN.md — prisma/schema.prisma rewrite + destructive migration SQL (shop column + composite FK)
+- [ ] 01-04-PLAN.md — Delete console.log statements from middleware/auth routes/onboarding (FND-02)
+- [ ] 01-05-PLAN.md — [BLOCKING] Apply Prisma migration; regenerate client; verify pgvector + ShopifySession survive
+- [ ] 01-06-PLAN.md — ProductRepository real CRUD (upsertProduct/findByShopAndId/listByShop/deleteProduct)
+- [ ] 01-07-PLAN.md — proxy.ts (Next.js 16) replacing middleware.ts; re-enabled session check; matcher set
+- [ ] 01-08-PLAN.md — Sync route rewrite via withShopifySession; update tests for D-06 code split
+- [ ] 01-09-PLAN.md — Phase 1 verification gate (automated + manual smoke + ROADMAP/STATE update)
 **UI hint**: no
 
 ### Phase 2: Sync Pipeline
