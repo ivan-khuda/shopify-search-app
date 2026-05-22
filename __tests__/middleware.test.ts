@@ -4,7 +4,6 @@ import { NextRequest } from 'next/server';
 vi.mock('@/lib/shopify/client', () => ({
   shopifyClient: {
     session: {
-      decodeSessionToken: vi.fn(),
       getOfflineId: vi.fn(),
     },
   },
@@ -18,6 +17,7 @@ vi.mock('@/lib/shopify/session-storage', () => ({
 
 import { shopifyClient } from '@/lib/shopify/client';
 import { sessionStorage } from '@/lib/shopify/session-storage';
+// TODO(Plan 07): update to import { proxy } from '../proxy' after Next.js 16 migration (D-08).
 import { middleware } from '../middleware';
 
 const makeRequest = (path: string, headers: Record<string, string> = {}) =>
@@ -47,36 +47,22 @@ describe('middleware', () => {
     expect(response.headers.get('Location')).toContain('/api/auth');
   });
 
-  it('extracts shop from valid App Bridge Bearer token', async () => {
-    vi.mocked(shopifyClient.session.decodeSessionToken).mockResolvedValue({
-      dest: 'https://test.myshopify.com',
-    } as never);
-    vi.mocked(shopifyClient.session.getOfflineId).mockReturnValue('offline_test.myshopify.com');
-    vi.mocked(sessionStorage.loadSession).mockResolvedValue({ shop: 'test.myshopify.com' } as never);
-
-    const request = makeRequest('/chat', { Authorization: 'Bearer valid.jwt.token' });
-    const response = await middleware(request);
-
-    expect(response.status).toBe(200);
-    expect(shopifyClient.session.decodeSessionToken).toHaveBeenCalledWith('valid.jwt.token');
-  });
-
-  it('redirects when Bearer token is invalid', async () => {
-    vi.mocked(shopifyClient.session.decodeSessionToken).mockImplementation(() => {
-      throw new Error('invalid token');
-    });
-
-    const request = makeRequest('/chat', { Authorization: 'Bearer bad.token' });
-    const response = await middleware(request);
-
-    expect(response.status).toBe(307);
-    expect(response.headers.get('Location')).toContain('/api/auth');
-  });
-
   it('redirects when no shop can be determined', async () => {
     const request = makeRequest('/chat');
     const response = await middleware(request);
 
     expect(response.status).toBe(307);
+  });
+
+  it('redirects to /api/auth without shop param when shop query is missing', async () => {
+    // D-09: middleware only reads shop from ?shop= query param
+    // When ?shop= is absent, redirect to /api/auth with no shop= param
+    const request = makeRequest('/chat');
+    const response = await middleware(request);
+
+    expect(response.status).toBe(307);
+    const location = response.headers.get('Location') ?? '';
+    expect(location).toContain('/api/auth');
+    expect(location).not.toContain('shop=');
   });
 });
