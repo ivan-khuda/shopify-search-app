@@ -1,0 +1,201 @@
+# Requirements: SmartDiscovery AI
+
+**Defined:** 2026-05-22
+**Core Value:** A storefront visitor can describe what they want in natural language and immediately see relevant products from the merchant's catalog — synced reliably, embedded into their theme, with no dev work from the merchant.
+
+## v1 Requirements
+
+Requirements for initial release. Each maps to roadmap phases.
+
+### Foundation (Security, Multi-tenancy, Repository Layer)
+
+- [ ] **FND-01**: Every Prisma model that holds merchant data carries a `shop` (string) column with index; queries always filter by shop
+- [ ] **FND-02**: All `console.log` statements that emit session tokens, auth headers, or Bearer tokens are removed from `middleware.ts`, `app/api/auth/`, and `app/(embedded)/onboarding/`
+- [ ] **FND-03**: Middleware auth check in `middleware.ts` is re-enabled with correct `config.matcher` protecting `/onboarding` and `/chat`
+- [ ] **FND-04**: `ProductRepository` exposes type-safe `upsertProduct`, `deleteProduct`, `listByShop`, `findByShopAndId` methods backed by Prisma transactions
+- [ ] **FND-05**: Service-layer helper `verifyShopSessionToken(request)` extracted from `app/api/shopify/sync/route.ts` and shared across embedded admin routes
+
+### Sync Pipeline (Background Job + Progress + Webhooks)
+
+- [ ] **SYN-01**: `ShopifyProductService.fetchAllProducts` calls Shopify GraphQL with cursor pagination and returns title, description, tags, vendor, productType, status, images, and variant prices
+- [ ] **SYN-02**: `ShopifyProductService.mapToLocalProduct` deterministically maps Shopify schema to local `Product` + `ProductVariant` + `ProductImage` + `ProductOption`
+- [ ] **SYN-03**: `lib/sync/productSync.ts` orchestrates idempotent batched upsert; one failed product does not abort the run
+- [ ] **SYN-04**: New `SyncRun` Prisma model captures `id`, `shop`, `state` (queued/running/succeeded/failed/partial), `processedCount`, `totalCount`, `errors[]`, `cursor`, `startedAt`, `finishedAt`
+- [ ] **SYN-05**: POST `/api/shopify/sync` creates a `SyncRun`, enqueues the Inngest sync workflow, and returns `{ syncRunId }`; never runs longer than serverless-function timeout
+- [ ] **SYN-06**: Inngest step-function processes products in batches, persisting cursor after each batch so runs survive timeouts
+- [ ] **SYN-07**: GET `/api/shopify/sync/status?syncRunId=X` returns current `SyncRun` row for the requesting shop
+- [ ] **SYN-08**: Duplicate sync requests within an active run are de-duplicated (idempotency key `sha256(shop + 5-min-bucket)`)
+- [ ] **SYN-09**: Onboarding page polls `/status` every 2s and renders a progress bar (`processedCount / totalCount`) with state labels
+- [ ] **SYN-10**: `/api/shopify/webhook` verifies HMAC signature and processes `products/create`, `products/update`, `products/delete` events idempotently keyed by `X-Shopify-Event-Id`
+- [ ] **SYN-11**: Webhook upserts use Shopify-provided `product.updatedAt` for conflict resolution against concurrent manual sync runs
+
+### Embeddings + Hybrid Search
+
+- [ ] **EMB-01**: `EmbeddingService.embed(text)` calls Vercel AI Gateway `openai/text-embedding-3-small` and returns a 1536-dim vector
+- [ ] **EMB-02**: Embeddings are generated in batches during sync; one failed embedding does not abort the run
+- [ ] **EMB-03**: `ProductEmbedding` carries a non-null `modelVersion` column (pinned model ID, never an alias) from day one
+- [ ] **EMB-04**: Raw-SQL Prisma migration creates HNSW cosine index on `ProductEmbedding.embedding` and a generated `tsvector` column with GIN index on Product searchable text; index SQL lives in an idempotent script invulnerable to `prisma migrate dev` drift
+- [ ] **EMB-05**: `SearchService.hybridSearch(shop, query, limit)` runs pgvector cosine top-K and tsvector `websearch_to_tsquery` in parallel, fuses results with Reciprocal Rank Fusion, returns ranked `Product[]` scoped to the shop
+- [ ] **EMB-06**: All shop-scoped vector queries enable `hnsw.iterative_scan = 'relaxed_order'` for the session so HNSW is not silently bypassed
+- [ ] **EMB-07**: `MOCK_PRODUCTS` is fully removed from runtime paths; both `/api/chat` (admin) and `/api/proxy/chat` (storefront) call `SearchService.hybridSearch`
+
+### Embedded Admin: Onboarding + Settings + Playground
+
+- [ ] **ADM-01**: Onboarding "Start sync" button posts to `/api/shopify/sync` and transitions UI to progress view on response
+- [ ] **ADM-02**: Onboarding shows real-time progress bar driven by `/status` polling; renders product counts and final summary
+- [ ] **ADM-03**: Settings screen at `/settings` lists Vercel AI Gateway chat models (name, provider, context window, $/M input/output tokens, "best for") and persists per-shop selection in a new `ShopSettings` model
+- [ ] **ADM-04**: Default chat model is pre-selected on first install (Gemini 2.5 Flash or equivalent balanced default)
+- [ ] **ADM-05**: Admin chat playground (`/chat`) labels itself "Preview mode — using your real catalog", displays the active model name, and uses the same shared chat components as storefront
+- [ ] **ADM-06**: Admin chat retrieves grounded results via `SearchService.hybridSearch` and renders product cards inline; never returns mock data
+
+### Shared Chat-UI Package
+
+- [ ] **SHR-01**: Chat components extracted to `lib/chat-ui/` runtime-neutral barrel with no `window.shopify` / App Bridge imports
+- [ ] **SHR-02**: `ChatIdentityAdapter` interface allows embedded and storefront callers to provide token/identity differently
+- [ ] **SHR-03**: Embedded admin uses `EmbeddedAdapter` (session-token Bearer); storefront drawer uses `StorefrontAdapter` (visitor_id from localStorage)
+- [ ] **SHR-04**: Both surfaces import the same `ChatPane`, `ChatMessage`, `ProductCard`, `HistoryPanel`, `SavedProductsPanel` components
+
+### Storefront Surface (Theme App Extension + App Proxy + Drawer)
+
+- [ ] **STR-01**: Shopify CLI Theme App Extension package at `extensions/chat-drawer/` with App Embed block (`target: body`) bundled JS that mounts the drawer
+- [ ] **STR-02**: App Embed block JSON schema exposes merchant-configurable settings: enabled toggle, accent color, FAB position (bottom-right default)
+- [ ] **STR-03**: `shopify.app.toml` declares `[app_proxy]` block routing `/apps/smartdiscovery/*` to backend
+- [ ] **STR-04**: Storefront-facing routes live under `app/api/proxy/` and verify App Proxy HMAC via `shopifyClient.utils.validateHmac(query, { signator: 'appProxy' })` at top of each handler
+- [ ] **STR-05**: FAB renders bottom-right (56px circle, merchant-themable color); clicking opens a side drawer (380–420px on desktop, full-height bottom-sheet on mobile) with tabs Chat / History / Saved
+- [ ] **STR-06**: Drawer empty state shows greeting + 3–4 suggested prompt chips; no-results state surfaces nearest semantic neighbors with explanatory copy
+- [ ] **STR-07**: Drawer styling is z-index-safe (no theme collisions) and respects Theme Editor `Shopify.designMode` for preview behavior
+- [ ] **STR-08**: Drawer talks to backend exclusively through Shopify App Proxy paths — no cross-origin calls
+
+### Storefront Identity + Persistence
+
+- [ ] **IDN-01**: Drawer init generates a UUID `visitor_id` stored in `localStorage` (NOT a cookie, because App Proxy strips `Set-Cookie`)
+- [ ] **IDN-02**: If `window.Shopify.customer` is present, drawer links `visitor_id` → `customer_id` in backend; subsequent loads on other devices fetch by `customer_id`
+- [ ] **IDN-03**: `Conversation` Prisma model stores `id`, `shop`, `visitorId`, `customerId?`, `createdAt`, `lastMessageAt`, `messages` (jsonb or related table)
+- [ ] **IDN-04**: History tab lists past conversations for visitor (or merged set when customer is logged in), opens to resume
+- [ ] **IDN-05**: `SavedProduct` Prisma model stores `id`, `shop`, `visitorId`, `customerId?`, `productId`, `savedAt`; Saved tab renders bookmark list
+- [ ] **IDN-06**: Customer-id link merges anonymous visitor history/saved into customer-keyed records (no data loss)
+
+### Notifications (Resend)
+
+- [ ] **NOT-01**: Successful sync sends a Resend email to the shop's `contactEmail` (resolved via Shopify GraphQL `shop { contactEmail }`) with product count and link to admin
+- [ ] **NOT-02**: Failed sync sends a Resend email with failure reason and a retry link
+- [ ] **NOT-03**: Email templates are React Email components stored under `lib/email/templates/`
+- [ ] **NOT-04**: Resend send respects environment-scoped sending domain; no per-shop domain verification required in V1
+
+### Hard Cap (Pre-Billing Safety)
+
+- [ ] **CAP-01**: New `RequestCounter` Prisma model tracks `shop`, `period` (year-month), `requestCount`; updated atomically per chat request
+- [ ] **CAP-02**: Configurable env-driven monthly cap (e.g., `HARD_CAP_REQUESTS_PER_MONTH=2000`) checked before each chat completion
+- [ ] **CAP-03**: When cap reached, both `/api/chat` and `/api/proxy/chat` return a graceful "monthly limit reached" response with HTTP 200 (not an error) so the chat UI shows a friendly message
+
+## v2 Requirements
+
+Deferred to future release. Tracked but not in current roadmap.
+
+### Analytics
+
+- **ANL-01**: `SearchEvent` table logs query, top-K product IDs, click product ID, conversation ID, timestamp, shop
+- **ANL-02**: Admin analytics dashboard shows zero-results queries, top 10 search terms, conversation volume/day, click-through rate on product cards
+
+### Billing (Dedicated Milestone Post-V1)
+
+- **BIL-01**: Shopify recurring subscription plans (Starter / Pro) via Shopify Billing API
+- **BIL-02**: Credit ledger model tracking purchases, consumption, refunds
+- **BIL-03**: In-app upgrade prompts when cap nears, plan switcher in admin settings
+
+### Add-to-Cart in Chat
+
+- **CRT-01**: Product cards in storefront drawer include "Add to Cart" CTA calling Storefront `cart/add.js` (V1 fallback: deep-link to PDP)
+
+### A/B Testing
+
+- **AB-01**: Framework for A/B testing system prompts and model selection per shop
+
+## Out of Scope
+
+Explicitly excluded. Documented to prevent scope creep.
+
+| Feature | Reason |
+|---------|--------|
+| Voice / audio input | Adds Web Speech API + accessibility surface area; text input is sufficient for V1 |
+| Image-based visual search (CLIP) | Multimodal embeddings 3–4× complexity and cost; text-only covers SMB use case |
+| Personalization / recommendations engine | Distinct product from intent-based search; separate engineering milestone |
+| Multi-language UI / translated drawer | English-first for SMB launch market; l10n adds translation overhead |
+| Shopify wishlist integration / Saved as metafields | Collides with installed wishlist apps; our Saved is our own bookmark list |
+| Self-hosted / BYO LLM key option | Complicates billing/support; AI Gateway provides multi-model access |
+| Behavioral exit-intent popup engagement | Intrusive overlays risk Shopify App Review flags |
+| Live agent handoff | Different product vertical; recommend Gorgias/Tidio for support |
+| Bulk Operations API for initial sync | Over-engineered for 5k SKU target; revisit at 50k+ catalogs |
+| Shopify Plus exclusive features (checkout extensibility, B2B) | V1 is broad-market SMB |
+| Multimodal embeddings (CLIP) | Text-only is enough for V1 across general verticals |
+| PostgreSQL RLS for multi-tenancy | Prisma Accelerate connection pooling incompatible with session-level RLS |
+
+## Traceability
+
+Empty — populated by roadmapper during phase creation.
+
+| Requirement | Phase | Status |
+|-------------|-------|--------|
+| FND-01 | TBD | Pending |
+| FND-02 | TBD | Pending |
+| FND-03 | TBD | Pending |
+| FND-04 | TBD | Pending |
+| FND-05 | TBD | Pending |
+| SYN-01 | TBD | Pending |
+| SYN-02 | TBD | Pending |
+| SYN-03 | TBD | Pending |
+| SYN-04 | TBD | Pending |
+| SYN-05 | TBD | Pending |
+| SYN-06 | TBD | Pending |
+| SYN-07 | TBD | Pending |
+| SYN-08 | TBD | Pending |
+| SYN-09 | TBD | Pending |
+| SYN-10 | TBD | Pending |
+| SYN-11 | TBD | Pending |
+| EMB-01 | TBD | Pending |
+| EMB-02 | TBD | Pending |
+| EMB-03 | TBD | Pending |
+| EMB-04 | TBD | Pending |
+| EMB-05 | TBD | Pending |
+| EMB-06 | TBD | Pending |
+| EMB-07 | TBD | Pending |
+| ADM-01 | TBD | Pending |
+| ADM-02 | TBD | Pending |
+| ADM-03 | TBD | Pending |
+| ADM-04 | TBD | Pending |
+| ADM-05 | TBD | Pending |
+| ADM-06 | TBD | Pending |
+| SHR-01 | TBD | Pending |
+| SHR-02 | TBD | Pending |
+| SHR-03 | TBD | Pending |
+| SHR-04 | TBD | Pending |
+| STR-01 | TBD | Pending |
+| STR-02 | TBD | Pending |
+| STR-03 | TBD | Pending |
+| STR-04 | TBD | Pending |
+| STR-05 | TBD | Pending |
+| STR-06 | TBD | Pending |
+| STR-07 | TBD | Pending |
+| STR-08 | TBD | Pending |
+| IDN-01 | TBD | Pending |
+| IDN-02 | TBD | Pending |
+| IDN-03 | TBD | Pending |
+| IDN-04 | TBD | Pending |
+| IDN-05 | TBD | Pending |
+| IDN-06 | TBD | Pending |
+| NOT-01 | TBD | Pending |
+| NOT-02 | TBD | Pending |
+| NOT-03 | TBD | Pending |
+| NOT-04 | TBD | Pending |
+| CAP-01 | TBD | Pending |
+| CAP-02 | TBD | Pending |
+| CAP-03 | TBD | Pending |
+
+**Coverage:**
+- v1 requirements: 53 total
+- Mapped to phases: 0 ⚠️ (roadmapper will fill)
+- Unmapped: 53 ⚠️
+
+---
+*Requirements defined: 2026-05-22*
+*Last updated: 2026-05-22 after initialization*
