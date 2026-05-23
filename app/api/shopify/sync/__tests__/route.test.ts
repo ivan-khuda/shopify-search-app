@@ -1,5 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
+const { syncRunFindFirst, syncRunCreate, inngestSend } = vi.hoisted(() => ({
+  syncRunFindFirst: vi.fn(),
+  syncRunCreate: vi.fn(),
+  inngestSend: vi.fn().mockResolvedValue({ ids: ['evt-1'] }),
+}));
+
 vi.mock('@/lib/shopify/client', () => {
   return {
     shopifyClient: {
@@ -23,6 +29,19 @@ vi.mock('@/lib/shopify/session-storage', () => {
     },
   };
 });
+
+vi.mock('@/lib/db/client', () => ({
+  prisma: {
+    syncRun: {
+      findFirst: syncRunFindFirst,
+      create: syncRunCreate,
+    },
+  },
+}));
+
+vi.mock('@/lib/inngest/client', () => ({
+  inngest: { send: inngestSend },
+}));
 
 import { POST } from '../route';
 import { shopifyClient } from '@/lib/shopify/client';
@@ -92,7 +111,7 @@ describe('POST /api/shopify/sync', () => {
     expect(body.error).toBe('no_offline_session');
   });
 
-  it('returns 200 with success when token is valid and session exists', async () => {
+  it('returns 200 with syncRunId when token is valid and session exists (Phase 2)', async () => {
     (shopifyClient.session.decodeSessionToken as ReturnType<typeof vi.fn>).mockResolvedValue({
       dest: 'https://example-shop.myshopify.com',
     });
@@ -101,11 +120,13 @@ describe('POST /api/shopify/sync', () => {
       shop: 'example-shop.myshopify.com',
       accessToken: 'shpat_xxx',
     });
+    syncRunFindFirst.mockResolvedValueOnce(null);
+    syncRunCreate.mockResolvedValueOnce({ id: 'sr_new', shop: 'example-shop.myshopify.com' });
 
     const res = await POST(makeRequest({ Authorization: 'Bearer good' }));
     expect(res.status).toBe(200);
     const body = await res.json();
-    expect(body.success).toBe(true);
+    expect(body.syncRunId).toBe('sr_new');
     expect(shopifyClient.session.getOfflineId).toHaveBeenCalledWith('example-shop.myshopify.com');
   });
 });
@@ -115,24 +136,60 @@ describe('POST /api/shopify/sync', () => {
 // describe.skip until Plan 02-07 lands. Plan 02-07 removes .skip and adds the
 // `prisma.syncRun.findFirst/create` + `inngest.send` mocks to make these GREEN.
 // =========================================================================
-describe.skip('POST /api/shopify/sync — Phase 2 behavior (Plan 02-07)', () => {
-  it(
-    'returns existing syncRunId when SyncRun with same idempotencyKey exists in queued/running state (D-05, 5-min window)',
-    async () => {
-      // Plan 02-07: mock prisma.syncRun.findFirst → existing row with state='running'; route returns its id, no inngest.send.
-      expect(true).toBe(true);
-    }
-  );
+describe('POST /api/shopify/sync — Phase 2 behavior (Plan 02-07)', () => {
+  beforeEach(() => {
+    (shopifyClient.session.decodeSessionToken as ReturnType<typeof vi.fn>).mockResolvedValue({
+      dest: 'https://example-shop.myshopify.com',
+    });
+    (sessionStorage.loadSession as ReturnType<typeof vi.fn>).mockResolvedValue({
+      id: 'offline_example-shop.myshopify.com',
+      shop: 'example-shop.myshopify.com',
+      accessToken: 'shpat_xxx',
+    });
+  });
 
-  it(
-    'creates a new SyncRun row and calls inngest.send({name:"shopify/product.sync", data:{syncRunId, shop}}) when no existing run matches',
-    async () => {
-      // Plan 02-07: mock prisma.syncRun.findFirst → null; create → returns new row; expect inngest.send to be called.
-      expect(true).toBe(true);
-    }
-  );
+  it('returns existing syncRunId when SyncRun with same idempotencyKey exists (D-05)', async () => {
+    syncRunFindFirst.mockResolvedValueOnce({ id: 'sr_existing', state: 'running' });
 
-  it('responds with { syncRunId: <cuid-shape string> } within 2 seconds (SYN-05 latency contract)', async () => {
-    expect(true).toBe(true);
+    const res = await POST(makeRequest({ Authorization: 'Bearer good' }));
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ syncRunId: 'sr_existing' });
+    expect(syncRunCreate).not.toHaveBeenCalled();
+    expect(inngestSend).not.toHaveBeenCalled();
+  });
+
+  it('creates a new SyncRun and calls inngest.send with {syncRunId, shop} when no existing run', async () => {
+    syncRunFindFirst.mockResolvedValueOnce(null);
+    syncRunCreate.mockResolvedValueOnce({ id: 'sr_new', shop: 'example-shop.myshopify.com' });
+
+    const res = await POST(makeRequest({ Authorization: 'Bearer good' }));
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ syncRunId: 'sr_new' });
+
+    expect(syncRunCreate).toHaveBeenCalledTimes(1);
+    expect(syncRunCreate.mock.calls[0][0].data).toMatchObject({
+      shop: 'example-shop.myshopify.com',
+      state: 'queued',
+      processedCount: 0,
+    });
+    expect(syncRunCreate.mock.calls[0][0].data.idempotencyKey).toMatch(/^[a-f0-9]{64}$/);
+
+    expect(inngestSend).toHaveBeenCalledTimes(1);
+    expect(inngestSend).toHaveBeenCalledWith({
+      name: 'shopify/product.sync',
+      data: { syncRunId: 'sr_new', shop: 'example-shop.myshopify.com' },
+    });
+  });
+
+  it('event payload contains only {syncRunId, shop} — no access token leak (T-2-leak)', async () => {
+    syncRunFindFirst.mockResolvedValueOnce(null);
+    syncRunCreate.mockResolvedValueOnce({ id: 'sr_2', shop: 'example-shop.myshopify.com' });
+
+    await POST(makeRequest({ Authorization: 'Bearer good' }));
+
+    const eventArg = inngestSend.mock.calls[0][0];
+    expect(Object.keys(eventArg.data).sort()).toEqual(['shop', 'syncRunId']);
+    expect(eventArg.data).not.toHaveProperty('accessToken');
+    expect(eventArg.data).not.toHaveProperty('session');
   });
 });
