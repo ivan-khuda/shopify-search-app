@@ -17,13 +17,12 @@ vi.mock('@/lib/shopify/session-storage', () => ({
 
 import { shopifyClient } from '@/lib/shopify/client';
 import { sessionStorage } from '@/lib/shopify/session-storage';
-// TODO(Plan 07): update to import { proxy } from '../proxy' after Next.js 16 migration (D-08).
-import { middleware } from '../middleware';
+import { proxy } from '../proxy';
 
 const makeRequest = (path: string, headers: Record<string, string> = {}) =>
   new NextRequest(`http://localhost${path}`, { headers });
 
-describe('middleware', () => {
+describe('proxy', () => {
   beforeEach(() => vi.clearAllMocks());
 
   it('allows request when shop has offline session', async () => {
@@ -31,7 +30,7 @@ describe('middleware', () => {
     vi.mocked(sessionStorage.loadSession).mockResolvedValue({ shop: 'test.myshopify.com' } as never);
 
     const request = makeRequest('/chat?shop=test.myshopify.com');
-    const response = await middleware(request);
+    const response = await proxy(request);
 
     expect(response.status).toBe(200);
   });
@@ -41,7 +40,7 @@ describe('middleware', () => {
     vi.mocked(sessionStorage.loadSession).mockResolvedValue(undefined);
 
     const request = makeRequest('/chat?shop=test.myshopify.com');
-    const response = await middleware(request);
+    const response = await proxy(request);
 
     expect(response.status).toBe(307);
     expect(response.headers.get('Location')).toContain('/api/auth');
@@ -49,7 +48,7 @@ describe('middleware', () => {
 
   it('redirects when no shop can be determined', async () => {
     const request = makeRequest('/chat');
-    const response = await middleware(request);
+    const response = await proxy(request);
 
     expect(response.status).toBe(307);
   });
@@ -58,7 +57,7 @@ describe('middleware', () => {
     // D-09: middleware only reads shop from ?shop= query param
     // When ?shop= is absent, redirect to /api/auth with no shop= param
     const request = makeRequest('/chat');
-    const response = await middleware(request);
+    const response = await proxy(request);
 
     expect(response.status).toBe(307);
     const location = response.headers.get('Location') ?? '';
