@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/db/client';
-import type { Product } from '@/app/generated/prisma';
+import type { Product } from '@/app/generated/prisma/client';
 
 export interface ProductVariantInput {
   shopifyId?: bigint | null;
