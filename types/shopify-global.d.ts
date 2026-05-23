@@ -23,6 +23,10 @@ declare global {
         's-list-item': PolarisIntrinsicProps;
         's-app-nav': PolarisIntrinsicProps;
         's-link': PolarisIntrinsicProps;
+        's-progress-bar': PolarisIntrinsicProps;
+        's-text': PolarisIntrinsicProps;
+        's-badge': PolarisIntrinsicProps;
+        's-banner': PolarisIntrinsicProps;
       }
     }
   }

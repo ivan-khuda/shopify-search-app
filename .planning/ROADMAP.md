@@ -11,7 +11,7 @@ SmartDiscovery AI goes from a scaffolded-but-stubbed Shopify embedded app to a f
 - Decimal phases (e.g., 2.1): Urgent insertions via `/gsd:phase insert`
 
 - [x] **Phase 1: Foundation** - Security hardening, multi-tenancy schema, repository layer
-- [ ] **Phase 2: Sync Pipeline** - Inngest background sync, SyncRun model, webhooks, onboarding progress UI
+- [x] **Phase 2: Sync Pipeline** - Inngest background sync, SyncRun model, webhooks, onboarding progress UI
 - [ ] **Phase 3: Embeddings + Search Indexes** - EmbeddingService, HNSW + GIN indexes, modelVersion column
 - [ ] **Phase 4: SearchService + Wire Chat** - RRF hybrid search, MOCK_PRODUCTS removed, admin playground on real data
 - [ ] **Phase 5: Shared Chat-UI Extraction** - lib/chat-ui barrel, adapter pattern, persistence models
