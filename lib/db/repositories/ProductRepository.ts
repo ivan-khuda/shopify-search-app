@@ -49,6 +49,7 @@ export interface ProductUpsertInput {
   status?: string;
   tags?: string[];
   publishedAt?: Date | null;
+  updatedAtShopify?: Date | null; // Phase 2 D-17: SYN-11 conflict resolution
   priceMin?: number | string | null;
   priceMax?: number | string | null;
   compareAtPriceMin?: number | string | null;
@@ -79,6 +80,7 @@ export class ProductRepository {
         status: input.status ?? 'ACTIVE',
         tags: input.tags ?? [],
         publishedAt: input.publishedAt ?? null,
+        updatedAtShopify: input.updatedAtShopify ?? null,
         priceMin: input.priceMin ?? null,
         priceMax: input.priceMax ?? null,
         compareAtPriceMin: input.compareAtPriceMin ?? null,
@@ -164,6 +166,10 @@ export class ProductRepository {
 
   async findByShopAndId(shop: string, id: number): Promise<Product | null> {
     return prisma.product.findFirst({ where: { shop, id } });
+  }
+
+  async findByShopAndHandle(shop: string, handle: string): Promise<Product | null> {
+    return prisma.product.findFirst({ where: { shop, handle } });
   }
 
   async listByShop(shop: string, opts: ListOpts = {}): Promise<Product[]> {
