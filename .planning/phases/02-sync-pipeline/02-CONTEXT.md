@@ -42,7 +42,7 @@ Make `/api/shopify/sync` actually sync products. The POST endpoint creates a `Sy
 ### Auth Helper Reuse
 
 - **D-09:** Both `POST /api/shopify/sync` and `GET /api/shopify/sync/status` use the **full `withShopifySession` wrapper** from Phase 1 — every status poll reloads the offline session from DB. Consistency over micro-optimization for V1; if profiling shows the polling QPS dominates, the deferred fast-path `verifyToken` (carried over from Phase 1 deferred ideas) lands then. No adaptive client-side throttling in V1.
-- **D-10:** `/api/shopify/webhook` does NOT use `withShopifySession` — Shopify webhooks send no session token. The route verifies HMAC against `SHOPIFY_API_SECRET` using `shopifyClient.utils.validateHmac` (already in `@shopify/shopify-api` v12). The `shop` derives from the `X-Shopify-Shop-Domain` header (also HMAC-signed).
+- **D-10:** `/api/shopify/webhook` does NOT use `withShopifySession` — Shopify webhooks send no session token. The route verifies HMAC via **`shopifyClient.webhooks.validate({ rawBody, rawRequest: req })`** (NOT `utils.validateHmac` — that's for OAuth/App Proxy per RESEARCH.md correction). The validator returns a `WebhookValidation` object with `valid`, `domain` (the shop hostname), `topic`, and `webhookId` (the X-Shopify-Webhook-Id) — derive `shop`, `topic`, and `eventId` from the validator's return value rather than parsing headers manually. The validator internally reads `X-Shopify-Hmac-Sha256` from the request and validates against `SHOPIFY_API_SECRET`. Read the raw body via `await req.text()` BEFORE `JSON.parse` — `validate` needs the unparsed bytes.
 
 ### Inngest Configuration
 
@@ -60,7 +60,19 @@ Make `/api/shopify/sync` actually sync products. The POST endpoint creates a `Sy
 
 ### Webhook Registration
 
-- **D-16:** Webhook subscription registration is **out of scope for Phase 2 implementation work** — Shopify CLI's `shopify.app.toml` already declares the topics in `[webhooks.subscriptions]`. The CLI registers them on `bunx shopify app deploy`. Phase 2 code (the `/api/shopify/webhook` route) only needs to handle inbound deliveries. Add a `**Manual step (Phase 2):**` section to `01-09-SUMMARY.md` listing the topics to add to `shopify.app.toml` and the `bunx shopify app deploy` invocation.
+- **D-16:** Webhook subscription registration is **out of scope for Phase 2 implementation work** — Shopify CLI's `shopify.app.toml` already declares the topics in `[webhooks.subscriptions]`. The CLI registers them on `bunx shopify app deploy`. Phase 2 code (the `/api/shopify/webhook` route) only needs to handle inbound deliveries. Add a `**Manual step (Phase 2):**` section to `02-09-SUMMARY.md` listing the topics to add to `shopify.app.toml` and the `bunx shopify app deploy` invocation.
+
+### Shopify `updatedAt` Conflict Column (added post-research)
+
+- **D-17:** SYN-11 (webhook upserts use Shopify-provided `product.updatedAt` for conflict resolution) requires a database column to compare against — Phase 1's `Product` model has no Shopify-timestamp field. Phase 2's additive Prisma migration must add `updatedAtShopify DateTime?` to the `Product` model (nullable to absorb existing rows from any pre-Phase-2 dev data; new rows always populated by sync/webhook). `ProductUpsertInput` grows a corresponding `updatedAtShopify` field. The conditional guard in webhook handler:
+  ```ts
+  const existing = await productRepository.findByShopAndHandle(shop, payload.handle);
+  if (existing?.updatedAtShopify && payload.updated_at && new Date(payload.updated_at) < existing.updatedAtShopify) {
+    return 200; // stale event, skip
+  }
+  await productRepository.upsertProduct(shop, mapped);
+  ```
+  Note: `findByShopAndHandle` is a small repository addition Phase 2 makes (Phase 1 only shipped `findByShopAndId`). Alternatively, since `(shop, handle)` is `@@unique` in the schema, use `prisma.product.findFirst({ where: { shop, handle }})` from the route — either works. Implementer's call.
 
 ### Claude's Discretion
 
