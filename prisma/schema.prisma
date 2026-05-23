@@ -32,6 +32,7 @@ model Product {
   compareAtPriceMax Decimal?  @db.Decimal(10, 2)
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
+  updatedAtShopify  DateTime? // Phase 2 D-17: SYN-11 conflict resolution
 
   variants   ProductVariant[]
   images     ProductImage[]
@@ -164,4 +165,40 @@ model ShopifySession {
   @@index([shop])
   @@index([state])
   @@map("shopify_sessions")
+}
+
+// Phase 2 additions — D-03, D-07, D-17.
+
+enum SyncState {
+  queued
+  running
+  succeeded
+  failed
+  partial
+}
+
+model SyncRun {
+  id              String    @id @default(cuid())
+  shop            String
+  state           SyncState @default(queued)
+  processedCount  Int       @default(0)
+  totalCount      Int?
+  errors          String[]  @default([])
+  cursor          String?
+  idempotencyKey  String    @unique
+  startedAt       DateTime  @default(now())
+  finishedAt      DateTime?
+
+  @@index([shop])
+  @@map("sync_runs")
+}
+
+model WebhookEvent {
+  eventId    String   @id
+  shop       String
+  topic      String
+  receivedAt DateTime @default(now())
+
+  @@index([shop])
+  @@map("webhook_events")
 }
