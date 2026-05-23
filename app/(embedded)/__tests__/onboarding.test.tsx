@@ -16,7 +16,13 @@ beforeEach(() => {
     toast: { show: vi.fn(), hide: vi.fn() },
   };
   vi.stubGlobal('shopify', shopifyMock);
-  fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 200 });
+  // Default POST mock returns a syncRunId so the new Phase 2 flow's `await res.json()` works.
+  // Per-test mocks can override via mockResolvedValueOnce.
+  fetchMock = vi.fn().mockResolvedValue({
+    ok: true,
+    status: 200,
+    json: async () => ({ syncRunId: 'sr_default' }),
+  });
   vi.stubGlobal('fetch', fetchMock);
 });
 
@@ -95,67 +101,125 @@ describe('OnboardingPage', () => {
 });
 
 // =========================================================================
-// Phase 2 Wave 0 RED stubs for SYN-09, ADM-01, ADM-02 (D-13/D-14).
-// describe.skip until Plan 02-10 lands the polling + progress UI + banner.
-// Plan 02-10 must remove the .skip and ensure each assertion matches the
-// rewritten onboarding component.
+// Phase 2 progress UI tests (D-13, D-14, SYN-09, ADM-01, ADM-02).
+// Post-Plan-02-10: onboarding state machine + polling + progress + banners.
 // =========================================================================
-describe.skip('OnboardingPage — Phase 2 progress UI (Plan 02-10)', () => {
-  it('starts polling /api/shopify/sync/status every 2000ms after POST returns syncRunId', async () => {
+describe('OnboardingPage — Phase 2 progress UI', () => {
+  it('renders <s-progress-bar> + counter + state badge when state === running', async () => {
+    // POST returns syncRunId; status returns running state
+    fetchMock
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ syncRunId: 'sr_run' }) })
+      .mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          state: 'running',
+          processedCount: 50,
+          totalCount: 250,
+          errors: [],
+          startedAt: new Date().toISOString(),
+          finishedAt: null,
+        }),
+      });
+
     vi.useFakeTimers({ shouldAdvanceTime: true });
-    fetchMock.mockResolvedValueOnce({
-      ok: true,
-      status: 200,
-      json: () => Promise.resolve({ syncRunId: 'sr_test_001' }),
-    });
-    fetchMock.mockResolvedValue({
-      ok: true,
-      status: 200,
-      json: () => Promise.resolve({
-        state: 'running',
-        processedCount: 50,
-        totalCount: 250,
-        errors: [],
-        startedAt: new Date().toISOString(),
-        finishedAt: null,
-      }),
-    });
-    render(<OnboardingPage />);
+    const { container } = render(<OnboardingPage />);
     fireEvent.click(screen.getByTestId('start-sync'));
-    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(
-      '/api/shopify/sync',
-      expect.anything()
-    ));
-    vi.advanceTimersByTime(2000);
-    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(
-      expect.stringContaining('/api/shopify/sync/status?syncRunId=sr_test_001'),
-      expect.anything()
-    ));
+
+    // wait for POST response → state transitions to queued → progress UI mounts
+    await waitFor(() => {
+      expect(container.querySelector('[data-testid="progress-bar"]')).not.toBeNull();
+    });
+
+    // Advance to trigger one status poll
+    await vi.advanceTimersByTimeAsync(2100);
+
+    await waitFor(() => {
+      const bar = container.querySelector('[data-testid="progress-bar"]');
+      expect(bar?.getAttribute('value')).toBe('20'); // 50/250 = 20%
+      expect(screen.getByText(/50 \/ 250 products/)).toBeInTheDocument();
+      expect(screen.getByTestId('state-badge').textContent).toBe('Running');
+    });
+
     vi.useRealTimers();
   });
 
-  it('renders <s-progress-bar> with value derived from processedCount/totalCount when state === running', async () => {
-    // Plan 02-10: container.querySelector('s-progress-bar') exists and value attr === Math.round(processed/total*100)
-    render(<OnboardingPage />);
-  });
+  it('renders <s-banner tone="success"> + "Open admin chat" CTA when state === succeeded (D-14)', async () => {
+    fetchMock
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ syncRunId: 'sr_done' }) })
+      .mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          state: 'succeeded',
+          processedCount: 3247,
+          totalCount: 3247,
+          errors: [],
+          startedAt: new Date().toISOString(),
+          finishedAt: new Date().toISOString(),
+        }),
+      });
 
-  it('renders state badge text Queued / Running / Succeeded / Partial / Failed', async () => {
-    render(<OnboardingPage />);
-  });
+    const { container } = render(<OnboardingPage />);
+    fireEvent.click(screen.getByTestId('start-sync'));
 
-  it('stops polling when state transitions to a terminal value (succeeded | partial | failed)', async () => {
-    render(<OnboardingPage />);
-  });
-
-  it('renders <s-banner tone="success"> with product count + "Open admin chat" CTA linking to /chat (D-14)', async () => {
-    render(<OnboardingPage />);
+    await waitFor(() => {
+      const banner = container.querySelector('s-banner[tone="success"]');
+      expect(banner).not.toBeNull();
+      expect(banner?.textContent).toMatch(/3247 products synced/);
+      const openChat = screen.getByTestId('open-chat');
+      expect(openChat.getAttribute('href')).toBe('/chat');
+    }, { timeout: 5000 });
   });
 
   it('renders <s-banner tone="warning"> + Retry CTA when state === partial', async () => {
-    render(<OnboardingPage />);
+    fetchMock
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ syncRunId: 'sr_partial' }) })
+      .mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          state: 'partial',
+          processedCount: 95,
+          totalCount: 100,
+          errors: ['err1', 'err2', 'err3', 'err4', 'err5'],
+          startedAt: new Date().toISOString(),
+          finishedAt: new Date().toISOString(),
+        }),
+      });
+
+    const { container } = render(<OnboardingPage />);
+    fireEvent.click(screen.getByTestId('start-sync'));
+
+    await waitFor(() => {
+      expect(container.querySelector('s-banner[tone="warning"]')).not.toBeNull();
+      expect(screen.getByText(/95 products synced, 5 failed/)).toBeInTheDocument();
+      expect(screen.getByTestId('retry-sync')).toBeInTheDocument();
+    }, { timeout: 5000 });
   });
 
   it('renders <s-banner tone="critical"> + Retry CTA when state === failed', async () => {
-    render(<OnboardingPage />);
+    fetchMock
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ syncRunId: 'sr_failed' }) })
+      .mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          state: 'failed',
+          processedCount: 0,
+          totalCount: null,
+          errors: ['boom'],
+          startedAt: new Date().toISOString(),
+          finishedAt: new Date().toISOString(),
+        }),
+      });
+
+    const { container } = render(<OnboardingPage />);
+    fireEvent.click(screen.getByTestId('start-sync'));
+
+    await waitFor(() => {
+      expect(container.querySelector('s-banner[tone="critical"]')).not.toBeNull();
+      expect(screen.getByTestId('retry-sync')).toBeInTheDocument();
+    }, { timeout: 5000 });
   });
 });
