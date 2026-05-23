@@ -93,3 +93,69 @@ describe('OnboardingPage', () => {
     });
   });
 });
+
+// =========================================================================
+// Phase 2 Wave 0 RED stubs for SYN-09, ADM-01, ADM-02 (D-13/D-14).
+// describe.skip until Plan 02-10 lands the polling + progress UI + banner.
+// Plan 02-10 must remove the .skip and ensure each assertion matches the
+// rewritten onboarding component.
+// =========================================================================
+describe.skip('OnboardingPage — Phase 2 progress UI (Plan 02-10)', () => {
+  it('starts polling /api/shopify/sync/status every 2000ms after POST returns syncRunId', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve({ syncRunId: 'sr_test_001' }),
+    });
+    fetchMock.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve({
+        state: 'running',
+        processedCount: 50,
+        totalCount: 250,
+        errors: [],
+        startedAt: new Date().toISOString(),
+        finishedAt: null,
+      }),
+    });
+    render(<OnboardingPage />);
+    fireEvent.click(screen.getByTestId('start-sync'));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(
+      '/api/shopify/sync',
+      expect.anything()
+    ));
+    vi.advanceTimersByTime(2000);
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining('/api/shopify/sync/status?syncRunId=sr_test_001'),
+      expect.anything()
+    ));
+    vi.useRealTimers();
+  });
+
+  it('renders <s-progress-bar> with value derived from processedCount/totalCount when state === running', async () => {
+    // Plan 02-10: container.querySelector('s-progress-bar') exists and value attr === Math.round(processed/total*100)
+    render(<OnboardingPage />);
+  });
+
+  it('renders state badge text Queued / Running / Succeeded / Partial / Failed', async () => {
+    render(<OnboardingPage />);
+  });
+
+  it('stops polling when state transitions to a terminal value (succeeded | partial | failed)', async () => {
+    render(<OnboardingPage />);
+  });
+
+  it('renders <s-banner tone="success"> with product count + "Open admin chat" CTA linking to /chat (D-14)', async () => {
+    render(<OnboardingPage />);
+  });
+
+  it('renders <s-banner tone="warning"> + Retry CTA when state === partial', async () => {
+    render(<OnboardingPage />);
+  });
+
+  it('renders <s-banner tone="critical"> + Retry CTA when state === failed', async () => {
+    render(<OnboardingPage />);
+  });
+});

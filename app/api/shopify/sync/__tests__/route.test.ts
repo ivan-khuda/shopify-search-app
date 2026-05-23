@@ -109,3 +109,30 @@ describe('POST /api/shopify/sync', () => {
     expect(shopifyClient.session.getOfflineId).toHaveBeenCalledWith('example-shop.myshopify.com');
   });
 });
+
+// =========================================================================
+// Phase 2 Wave 0 RED stubs for SYN-05, SYN-08 (D-05 idempotency + syncRunId).
+// describe.skip until Plan 02-07 lands. Plan 02-07 removes .skip and adds the
+// `prisma.syncRun.findFirst/create` + `inngest.send` mocks to make these GREEN.
+// =========================================================================
+describe.skip('POST /api/shopify/sync — Phase 2 behavior (Plan 02-07)', () => {
+  it(
+    'returns existing syncRunId when SyncRun with same idempotencyKey exists in queued/running state (D-05, 5-min window)',
+    async () => {
+      // Plan 02-07: mock prisma.syncRun.findFirst → existing row with state='running'; route returns its id, no inngest.send.
+      expect(true).toBe(true);
+    }
+  );
+
+  it(
+    'creates a new SyncRun row and calls inngest.send({name:"shopify/product.sync", data:{syncRunId, shop}}) when no existing run matches',
+    async () => {
+      // Plan 02-07: mock prisma.syncRun.findFirst → null; create → returns new row; expect inngest.send to be called.
+      expect(true).toBe(true);
+    }
+  );
+
+  it('responds with { syncRunId: <cuid-shape string> } within 2 seconds (SYN-05 latency contract)', async () => {
+    expect(true).toBe(true);
+  });
+});
