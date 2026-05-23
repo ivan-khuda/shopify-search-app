@@ -1511,21 +1511,19 @@ export async function POST(req: Request) {
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Does `variant.price` return a String or MoneyV2 object in the GraphQL Admin API 2026-01?**
    - What we know: Shopify REST API returns price as a string. GraphQL docs show `price` as `Money!` type in some versions.
    - What's unclear: `Money` could be a scalar (string) or the `MoneyV2` object type `{amount, currencyCode}` depending on the API version.
-   - Recommendation: In `ShopifyProductService.fetchProductBatch`, log `typeof product.variants.nodes[0].price` on first response and handle both. Write `mapToUpsertInput` to accept `string | { amount: string; currencyCode: string }` for safety.
+   - **RESOLVED:** Plan 05's `mapToUpsertInput` MUST handle both shapes defensively. Implementation contract: `const toDecimal = (v: unknown): number => typeof v === 'string' ? parseFloat(v) : typeof v === 'object' && v && 'amount' in v ? parseFloat((v as { amount: string }).amount) : NaN;` — apply to `variant.price`, `variant.compareAtPrice`, `product.priceRange.minVariantPrice`, etc. Unit test in Plan 01's `ShopifyProductService.test.ts` MUST cover BOTH input shapes for every price field.
 
 2. **Does the Web API adapter in `@shopify/shopify-api` 12.3.0 support `rawRequest: Request` for `webhooks.validate`?**
    - What we know: The type signature is `validateFactory({ rawBody, ...adapterArgs })` where adapterArgs extends `AdapterArgs`. The Web API adapter is imported via `import '@shopify/shopify-api/adapters/web-api'` (already in client.ts).
-   - What's unclear: Whether `adapterArgs` in the Web API context is `{ rawRequest: Request }` or something else.
-   - Recommendation: Test with a unit test using a real `Request` object before shipping. If it fails, fall back to the lower-level `validateHmacString` approach with manual header extraction.
+   - **RESOLVED:** Verified via installed package source (`node_modules/@shopify/shopify-api/dist/ts/lib/webhooks/validate.d.ts`). The Web API adapter accepts `{ rawBody: string, rawRequest: Request }` and returns the `WebhookValidation` discriminated union (`{ valid: true, domain, topic, webhookId, ... }` or `{ valid: false, reason }`). Plan 09 uses this signature directly; no fallback to lower-level `validateHmacString` needed for V1.
 
 3. **Should `shopify.app.toml` be committed to git with a production URL or the current ngrok URL?**
-   - What we know: The file is currently untracked. The ngrok URL changes per dev session.
-   - Recommendation: Commit with the Vercel production URL as `application_url`. Each developer overrides locally. Document the pattern in SUMMARY.md.
+   - **RESOLVED:** Out of Phase 2 implementation scope (informational only). The `shopify.app.toml` git-commit strategy is documented separately in Plan 11's SUMMARY recommendations as a follow-up. Phase 2 code does not depend on the file being tracked — webhook subscriptions are registered via `bunx shopify app deploy` outside of git CI.
 
 ---
 

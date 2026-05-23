@@ -126,7 +126,7 @@ Make `/api/shopify/sync` actually sync products. The POST endpoint creates a `Sy
 
 ### Reusable Assets
 - `lib/shopify/auth.ts` `withShopifySession` — wraps both `POST /api/shopify/sync` and `GET /api/shopify/sync/status`. Phase 2 routes are one-line wrapper invocations.
-- `lib/shopify/client.ts` `shopifyClient` — Phase 2's webhook HMAC verification uses `shopifyClient.utils.validateHmac` (already configured with `SHOPIFY_API_SECRET`).
+- `lib/shopify/client.ts` `shopifyClient` — Phase 2's webhook HMAC verification uses `shopifyClient.webhooks.validate({ rawBody, rawRequest: req })` — NOT `utils.validateHmac` (see D-10). `SHOPIFY_API_SECRET` is already wired into `shopifyClient`; the validator reads it internally.
 - `lib/db/client.ts` `prisma` singleton — Phase 2 Inngest worker imports the same singleton; `@prisma/adapter-pg` handles the local Docker Postgres connection.
 - `lib/db/repositories/ProductRepository.ts` `productRepository.upsertProduct(shop, input)` — the single integration point for both sync and webhook code paths. The `ProductUpsertInput` shape mirrors Shopify GraphQL `Product` fields (title, handle, description, vendor, productType, status, tags, variants[], images[], options[]).
 - `app/(embedded)/onboarding/page.tsx` — already has the "Start sync" button calling `POST /api/shopify/sync` with Bearer token (Phase 1 Plan 04 cleaned its console.logs). Phase 2 adds the progress view + state machine.
@@ -157,7 +157,7 @@ Make `/api/shopify/sync` actually sync products. The POST endpoint creates a `Sy
 - Webhook topics for V1: `products/create`, `products/update`, `products/delete`. No `products/list` (doesn't exist), no inventory/order webhooks (out of scope).
 - Test the Inngest `step.run` flow by mocking the `step` parameter as `{ run: (id, fn) => fn() }` — invokes the callback inline so unit tests don't need a running Inngest dev server.
 - For local dev, document the two-process workflow: `bun dev` (Next.js + your API routes) + `bunx inngest-cli@latest dev` (Inngest runtime). Both can run from the same shell with `concurrently` (but don't add that dependency yet — `tmux`/two terminals is fine for V1).
-- HMAC verification gotcha (from PITFALLS.md): `validateHmac` expects the raw request body, not the parsed JSON. Read `await req.text()` first, validate, then `JSON.parse`. Document in the route file.
+- HMAC verification gotcha (from PITFALLS.md): `webhooks.validate` expects the raw request body, not the parsed JSON. Read `const rawBody = await req.text()` first, call `shopifyClient.webhooks.validate({ rawBody, rawRequest: req })`, then `JSON.parse(rawBody)`. Document in the route file.
 
 </specifics>
 

@@ -53,7 +53,18 @@ SmartDiscovery AI goes from a scaffolded-but-stubbed Shopify embedded app to a f
   3. A second "Start sync" click while a run is active is silently de-duplicated (same idempotency key returns the existing run, no second Inngest job fired)
   4. After a product is created, updated, or deleted in Shopify Admin, the webhook handler verifies the HMAC signature, deduplicates by X-Shopify-Event-Id, and upserts/deletes the product using updated_at_shopify for conflict resolution
   5. If the Inngest function is interrupted mid-run (e.g., Vercel cold restart), resuming the job processes from the last persisted cursor, not from product 1
-**Plans**: TBD
+**Plans**: 11 plans
+- [ ] 02-01-PLAN.md — Wave 0 RED test scaffolds + install inngest + @inngest/test
+- [ ] 02-02-PLAN.md — Additive Prisma schema rewrite (SyncState/SyncRun/WebhookEvent/updatedAtShopify) + migration SQL author
+- [ ] 02-03-PLAN.md — Inngest client singleton + serve handler skeleton
+- [ ] 02-04-PLAN.md — [BLOCKING] Apply Prisma migration + regenerate client
+- [ ] 02-05-PLAN.md — ShopifyProductService rewrite + ProductUpsertInput.updatedAtShopify
+- [ ] 02-06-PLAN.md — syncProductsFunction (Inngest step-function) + serve handler wired
+- [ ] 02-07-PLAN.md — POST /api/shopify/sync rewrite (idempotency + inngest.send)
+- [ ] 02-08-PLAN.md — GET /api/shopify/sync/status (shop-scoped polling endpoint)
+- [ ] 02-09-PLAN.md — /api/shopify/webhook rewrite (HMAC + dedup + topic dispatch + stale-event skip) + ProductRepository.findByShopAndHandle
+- [ ] 02-10-PLAN.md — Onboarding state machine + polling + progress UI + completion banners
+- [ ] 02-11-PLAN.md — Phase 2 verification gate
 **UI hint**: yes
 
 ### Phase 3: Embeddings + Search Indexes

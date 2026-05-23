@@ -2,7 +2,7 @@
 phase: 2
 slug: sync-pipeline
 status: draft
-nyquist_compliant: false
+nyquist_compliant: true
 wave_0_complete: false
 created: 2026-05-23
 ---
@@ -77,11 +77,11 @@ created: 2026-05-23
 
 ## Validation Sign-Off
 
-- [ ] All tasks have `<automated>` verify or Wave 0 dependencies
-- [ ] Sampling continuity: no 3 consecutive tasks without automated verify
-- [ ] Wave 0 covers all MISSING references (4 new test files + 1 install)
-- [ ] No watch-mode flags (all `vitest run`, not `vitest`)
-- [ ] Feedback latency < 25s for full suite
-- [ ] `nyquist_compliant: true` set in frontmatter after planner aligns task IDs
+- [x] All tasks have `<automated>` verify or Wave 0 dependencies
+- [x] Sampling continuity: no 3 consecutive tasks without automated verify
+- [x] Wave 0 covers all MISSING references (4 new test files + 1 install)
+- [x] No watch-mode flags (all `vitest run`, not `vitest`)
+- [x] Feedback latency < 25s for full suite
+- [x] `nyquist_compliant: true` set in frontmatter (post plan-checker alignment)
 
-**Approval:** pending
+**Approval:** approved 2026-05-23
