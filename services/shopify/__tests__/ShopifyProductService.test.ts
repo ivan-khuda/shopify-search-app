@@ -142,7 +142,7 @@ describe('mapToUpsertInput (SYN-02)', () => {
     const result = mapToUpsertInput(baseNode);
     expect(result.title).toBe('Test Product');
     expect(result.handle).toBe('test-product');
-    expect(result.shopifyId).toBe(123n);
+    expect(result.shopifyId).toBe(BigInt(123));
     expect(result.tags).toEqual(['new', 'featured']);
     expect(result.updatedAtShopify).toBeInstanceOf(Date);
     expect((result.updatedAtShopify as Date).toISOString()).toBe('2026-05-23T10:00:00.000Z');
@@ -191,9 +191,9 @@ describe('mapToUpsertInput (SYN-02)', () => {
 
   it('preserves Shopify GID → BigInt mapping for product, variants, images, options', () => {
     const result = mapToUpsertInput(baseNode);
-    expect(result.shopifyId).toBe(123n);
-    expect(result.variants?.[0].shopifyId).toBe(456n);
-    expect(result.images?.[0].shopifyId).toBe(789n);
-    expect(result.options?.[0].shopifyId).toBe(999n);
+    expect(result.shopifyId).toBe(BigInt(123));
+    expect(result.variants?.[0].shopifyId).toBe(BigInt(456));
+    expect(result.images?.[0].shopifyId).toBe(BigInt(789));
+    expect(result.options?.[0].shopifyId).toBe(BigInt(999));
   });
 });
