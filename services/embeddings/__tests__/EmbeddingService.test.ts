@@ -172,7 +172,7 @@ describe('EmbeddingService', () => {
 
       const call = executeRawMock.mock.calls[0];
       const sqlSkeleton = (call[0] as readonly string[]).join('?');
-      expect(sqlSkeleton).toMatch(/ON CONFLICT.*shop.*productShop.*productId.*DO UPDATE/s);
+      expect(sqlSkeleton).toMatch(/ON CONFLICT[\s\S]*shop[\s\S]*productShop[\s\S]*productId[\s\S]*DO UPDATE/);
       expect(sqlSkeleton).toContain('EXCLUDED."modelVersion"');
       // Vector cast must be ::vector, never <#> (inner-product distance operator).
       expect(sqlSkeleton).toContain('::vector');
