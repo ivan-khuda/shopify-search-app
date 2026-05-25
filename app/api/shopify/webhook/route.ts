@@ -14,6 +14,8 @@ import { shopifyClient } from '@/lib/shopify/client';
 import { prisma } from '@/lib/db/client';
 import { productRepository } from '@/lib/db/repositories/ProductRepository';
 import type { ProductUpsertInput } from '@/lib/db/repositories/ProductRepository';
+import { embedAndStore } from '@/services/embeddings/EmbeddingService';
+import { buildSearchableText } from '@/services/search/searchableText';
 
 interface WebhookProductPayload {
   id: number | string;
@@ -140,7 +142,14 @@ export async function POST(req: Request): Promise<Response> {
         return NextResponse.json({ ok: true, skipped: 'stale' }, { status: 200 });
       }
     }
-    await productRepository.upsertProduct(shop, mapWebhookPayloadToUpsertInput(payload));
+    const mapped = mapWebhookPayloadToUpsertInput(payload);
+    const upserted = await productRepository.upsertProduct(shop, mapped);
+    // Phase 3 / D-02 / EMB-01: synchronous re-embedding; log+200 on failure (Pitfall 3)
+    try {
+      await embedAndStore(shop, upserted.id, buildSearchableText(mapped));
+    } catch (err) {
+      console.error('[webhook] embed failed for', upserted.id, err);
+    }
   } else if (topic === 'products/delete') {
     // Delete payload has only `id` — look up by shopifyId.
     const product = await prisma.product.findFirst({
