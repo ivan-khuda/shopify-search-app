@@ -1,7 +1,9 @@
 ---
 phase: 03-embeddings-search-indexes
 gate_date: 2026-05-25
-gate_status: awaiting-human-verify
+gate_status: passed
+gate_signoff_date: 2026-05-25
+gate_signoff_mode: option-a-smoke-evidence
 plans_verified: ["03-01", "03-02", "03-03", "03-04", "03-05", "03-06", "03-07"]
 requirements_proven: ["EMB-01", "EMB-02", "EMB-03", "EMB-04", "EMB-06"]
 ---
@@ -317,3 +319,12 @@ The four Phase 3 success criteria from `ROADMAP.md`, each cross-referenced to it
 All automated and DB-side evidence required by `03-08-PLAN.md` Tasks 1–3 is present and green. Phase 3's four success criteria are PROVEN against the live dev DB. The remaining gate is the human-verify checkpoint (Task 4): operator inspection of a live `ProductEmbedding` row with pinned `modelVersion`, plus operator sign-off on the evidence above.
 
 `gate_status` will flip from `awaiting-human-verify` to `passed` upon operator approval; if rejected, this report's frontmatter will be updated with the rejection reason and a gap-closure plan will be queued.
+
+---
+
+## Operator Sign-Off
+
+**Date:** 2026-05-25
+**Mode:** Option A — accepted smoke evidence as sufficient
+**Reply:** `approved`
+**Rationale:** Operator accepted the smoke + automated evidence (125/125 tests, 4/4 DB smokes including HNSW `Index Scan` at 1500 rows and GUC = `'relaxed_order'`) as sufficient proof of the four success criteria. No real sync was triggered against a dev shop at the gate; the live non-smoke embedding row will be exercised naturally during Phase 4 SearchService development. `gate_status` flipped from `awaiting-human-verify` → `passed`.
