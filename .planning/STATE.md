@@ -4,8 +4,8 @@ milestone: v1.0
 milestone_name: milestone
 status: executing
 stopped_at: Phase 3 context gathered
-last_updated: "2026-05-25T08:51:29.384Z"
-last_activity: 2026-05-25 -- Phase 03 planning complete
+last_updated: "2026-05-25T09:21:28.495Z"
+last_activity: 2026-05-25 -- Phase 03 execution started
 progress:
   total_phases: 8
   completed_phases: 2
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-22)
 
 **Core value:** A storefront visitor can describe what they want in natural language and immediately see relevant products from the merchant's catalog — synced reliably, embedded into their theme, with no dev work from the merchant.
-**Current focus:** Phase 2 — sync-pipeline
+**Current focus:** Phase 03 — embeddings-search-indexes
 
 ## Current Position
 
-Phase: 2 (sync-pipeline) — EXECUTING
-Plan: 1 of 11
-Status: Ready to execute
-Last activity: 2026-05-25 -- Phase 03 planning complete
+Phase: 03 (embeddings-search-indexes) — EXECUTING
+Plan: 1 of 8
+Status: Executing Phase 03
+Last activity: 2026-05-25 -- Phase 03 execution started
 
 Progress: [░░░░░░░░░░] 0%
 

@@ -94,7 +94,7 @@ SmartDiscovery AI goes from a scaffolded-but-stubbed Shopify embedded app to a f
 Plans:
 **Wave 1**
 
-- [ ] 03-01-PLAN.md — Wave 0 RED test scaffolds + AI_GATEWAY_API_KEY checkpoint
+- [x] 03-01-PLAN.md — Wave 0 RED test scaffolds + AI_GATEWAY_API_KEY checkpoint
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -203,7 +203,7 @@ Phases 7 and 8 are parallel-eligible with Phase 6 (no blocking dependencies — 
 |-------|----------------|--------|-----------|
 | 1. Foundation | 0/TBD | Not started | - |
 | 2. Sync Pipeline | 0/TBD | Not started | - |
-| 3. Embeddings + Search Indexes | 0/TBD | Not started | - |
+| 3. Embeddings + Search Indexes | 1/8 | In Progress|  |
 | 4. SearchService + Wire Chat | 0/TBD | Not started | - |
 | 5. Shared Chat-UI Extraction | 0/TBD | Not started | - |
 | 6. Storefront Surface | 0/TBD | Not started | - |
