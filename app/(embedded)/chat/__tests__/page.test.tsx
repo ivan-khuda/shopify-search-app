@@ -17,7 +17,7 @@ import { describe, expect, it, vi } from 'vitest';
  */
 
 vi.mock('@/services/chat/getActiveChatModel', () => ({
-  getActiveChatModel: vi.fn(async (_shop: string) => ({
+  getActiveChatModel: vi.fn(async () => ({
     id: 'google/gemini-2.5-flash',
     displayName: 'Gemini 2.5 Flash',
   })),
