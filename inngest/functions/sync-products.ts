@@ -9,6 +9,8 @@ import {
 } from '@/services/shopify/ShopifyProductService';
 import { shopifyClient } from '@/lib/shopify/client';
 import { sessionStorage } from '@/lib/shopify/session-storage';
+import { embedBatch, EMBEDDING_MODEL } from '@/services/embeddings/EmbeddingService';
+import { buildSearchableText } from '@/services/search/searchableText';
 
 interface SyncEventData {
   syncRunId: string;
@@ -98,6 +100,66 @@ export const syncProductsFunction = inngest.createFunction(
         }
       );
 
+      // Phase 3 / D-01 / EMB-01..03: embed every successfully-upserted product; partial failures recorded but do not abort run.
+      const { errors: embedErrors }: { errors: UpsertError[] } = await step.run(
+        `embed-batch-${cursorKey}`,
+        async () => {
+          const batchErrors: UpsertError[] = [];
+          // Only embed the products that actually upserted successfully.
+          const failedShopifyIds = new Set(upsertErrors.map((e) => e.shopifyId));
+          const productsToEmbed = batch.products.filter((n) => !failedShopifyIds.has(n.id));
+
+          if (productsToEmbed.length === 0) return { errors: [] };
+
+          const mapped = productsToEmbed.map((n) => mapToUpsertInput(n));
+          const texts = mapped.map(buildSearchableText);
+
+          const result = await embedBatch(texts);
+
+          // Persist successes
+          for (const { index, vector } of result.ok) {
+            const m = mapped[index];
+            try {
+              const product = await prisma.product.findUnique({
+                where: { shop_handle: { shop, handle: m.handle } },
+                select: { id: true },
+              });
+              if (!product) {
+                batchErrors.push({
+                  shopifyId: productsToEmbed[index].id,
+                  message: 'Product not found after upsert',
+                });
+                continue;
+              }
+              const vectorLiteral = `[${vector.join(',')}]`;
+              await prisma.$executeRaw`INSERT INTO product_embeddings (shop, "productShop", "productId", content, embedding, "modelVersion", "searchableText", "createdAt") VALUES (${shop}, ${shop}, ${product.id}, ${texts[index]}, ${vectorLiteral}::vector, ${EMBEDDING_MODEL}, ${texts[index]}, NOW()) ON CONFLICT (shop, "productShop", "productId") DO UPDATE SET embedding = EXCLUDED.embedding, content = EXCLUDED.content, "modelVersion" = EXCLUDED."modelVersion", "searchableText" = EXCLUDED."searchableText"`;
+            } catch (err) {
+              batchErrors.push({
+                shopifyId: productsToEmbed[index].id,
+                message: err instanceof Error ? err.message : String(err),
+              });
+            }
+          }
+
+          // Record AI Gateway failures
+          for (const { index, message } of result.failed) {
+            batchErrors.push({ shopifyId: productsToEmbed[index].id, message });
+          }
+
+          // EMB-02: partial failure must NOT abort the run. Throw ONLY if every item failed.
+          if (
+            productsToEmbed.length > 0 &&
+            batchErrors.length === productsToEmbed.length
+          ) {
+            throw new Error(
+              `Full embed batch failed: ${batchErrors.map((e) => e.message).join(', ')}`
+            );
+          }
+
+          return { errors: batchErrors };
+        }
+      );
+
       await step.run(`persist-cursor-${cursorKey}`, async () => {
         await prisma.syncRun.update({
           where: { id: syncRunId },
@@ -106,7 +168,12 @@ export const syncProductsFunction = inngest.createFunction(
             processedCount: {
               increment: batch.products.length - upsertErrors.length,
             },
-            errors: { push: upsertErrors.map((e) => JSON.stringify(e)) },
+            errors: {
+              push: [
+                ...upsertErrors.map((e) => JSON.stringify(e)),
+                ...embedErrors.map((e) => JSON.stringify({ ...e, stage: 'embed' })),
+              ],
+            },
           },
         });
         return { cursor: batch.endCursor };
