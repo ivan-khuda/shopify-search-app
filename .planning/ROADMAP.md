@@ -76,7 +76,16 @@ SmartDiscovery AI goes from a scaffolded-but-stubbed Shopify embedded app to a f
   2. A single failed embedding during batch processing does not abort the run; the sync continues and logs the failure
   3. Running `EXPLAIN ANALYZE` on a shop-scoped vector query confirms an HNSW index scan (not a sequential scan) with `hnsw.iterative_scan = 'relaxed_order'` enabled
   4. Re-running `db/manual-indexes.sql` after a `prisma migrate dev` cycle is idempotent — indexes are not dropped and recreated, no errors thrown
-**Plans**: TBD
+**Plans**: 8 plans
+Plans:
+- [ ] 03-01-PLAN.md — Wave 0 RED test scaffolds + AI_GATEWAY_API_KEY checkpoint
+- [ ] 03-02-PLAN.md — buildSearchableText helper (D-03 single source of truth)
+- [ ] 03-03-PLAN.md — withHnswIterativeScan helper for EMB-06 GUC enforcement
+- [ ] 03-04-PLAN.md — EmbeddingService (embed/embedBatch/embedAndStore) + EMBEDDING_MODEL pinning
+- [ ] 03-05-PLAN.md — Schema additions + raw-SQL migration + manual-indexes.sql + db:indexes + [BLOCKING] apply
+- [ ] 03-06-PLAN.md — Inject embed-batch step into sync-products.ts (4-step batch loop)
+- [ ] 03-07-PLAN.md — Webhook re-embedding inline + CLAUDE.md workflow docs
+- [ ] 03-08-PLAN.md — Phase 3 verification gate (full suite + EXPLAIN ANALYZE + idempotency + roll-forward)
 **UI hint**: no
 
 ### Phase 4: SearchService + Wire Chat
