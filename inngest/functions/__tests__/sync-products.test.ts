@@ -85,6 +85,15 @@ beforeEach(() => {
   loadSessionMock.mockResolvedValue({ id: 'offline_test.myshopify.com', shop: 'test.myshopify.com', accessToken: 'shpat_xx' });
   syncRunUpdate.mockResolvedValue({});
   mapToUpsertMock.mockImplementation((node: { id: string }) => ({ shopifyId: BigInt(123), title: 'T', handle: node.id }));
+  // Phase 3 defaults: keep the embed-batch step a no-op for Phase 2 tests
+  // unless an individual test overrides these mocks.
+  embedBatchMock.mockImplementation(async (texts: string[]) => ({
+    ok: texts.map((_, index) => ({ index, vector: new Array(1536).fill(0) })),
+    failed: [],
+  }));
+  buildSearchableTextMock.mockImplementation((p: { handle: string }) => `text-${p.handle}`);
+  productFindUniqueMock.mockResolvedValue({ id: 1 });
+  executeRawMock.mockResolvedValue(1);
 });
 
 describe('syncProductsFunction (SYN-03, SYN-06)', () => {
@@ -208,28 +217,208 @@ describe('syncProductsFunction (SYN-03, SYN-06)', () => {
 });
 
 /**
- * RED scaffold for Phase 3 (plan 03-01) — embed-batch step inside the
- * Inngest sync function. Each it.todo documents the EMB-02 contract that
- * plan 03-05 will satisfy. Mocks (embedBatchMock, buildSearchableTextMock,
- * productFindUniqueMock, executeRawMock) are wired in the hoisted block
- * above so vitest does not throw on file load.
+ * GREEN tests for Phase 3 (plan 03-06) — embed-batch step inside the
+ * Inngest sync function. Replaces the it.todo entries from plan 03-01.
+ * Validates EMB-01 (embed every upserted product), EMB-02 (partial
+ * failures don't abort the run, full-batch failures throw), and EMB-03
+ * (modelVersion pinned to EMBEDDING_MODEL constant).
  */
 describe('embed-batch step (Phase 3)', () => {
-  it.todo(
-    'sync run executes step embed-batch-${cursorKey} between upsert-batch and persist-cursor',
-  );
+  it('calls EmbeddingService.embedBatch with searchableText for each upserted product (EMB-01)', async () => {
+    fetchTotalCountMock.mockResolvedValueOnce(2);
+    fetchBatchMock.mockResolvedValueOnce({
+      products: [
+        { id: 'gid://shopify/Product/1' },
+        { id: 'gid://shopify/Product/2' },
+      ],
+      endCursor: null,
+      hasNextPage: false,
+    });
+    upsertMock.mockResolvedValue({ id: 1 });
+    // mapToUpsertMock returns { handle: node.id, ... } per beforeEach setup.
+    // buildSearchableTextMock receives the mapped UpsertInput and returns a distinct text.
+    buildSearchableTextMock.mockImplementation((p: { handle: string }) => `Title: ${p.handle}`);
+    embedBatchMock.mockResolvedValueOnce({
+      ok: [
+        { index: 0, vector: new Array(1536).fill(0) },
+        { index: 1, vector: new Array(1536).fill(0) },
+      ],
+      failed: [],
+    });
+    productFindUniqueMock.mockResolvedValue({ id: 42 });
+    executeRawMock.mockResolvedValue(1);
+    syncRunFindUnique.mockResolvedValueOnce({ id: 'sr_emb_001', processedCount: 2, errors: [] });
 
-  it.todo(
-    'embed-batch step calls EmbeddingService.embedBatch with searchableText for each upserted product',
-  );
+    const engine = new InngestTestEngine({ function: syncProductsFunction });
+    await engine.execute({
+      events: [{ name: 'shopify/product.sync', data: { syncRunId: 'sr_emb_001', shop: 'test.myshopify.com' } }],
+    });
 
-  it.todo(
-    'embed-batch step does NOT embed products whose upsert failed in the previous step',
-  );
+    expect(embedBatchMock).toHaveBeenCalledTimes(1);
+    expect(embedBatchMock).toHaveBeenCalledWith([
+      'Title: gid://shopify/Product/1',
+      'Title: gid://shopify/Product/2',
+    ]);
+  });
 
-  it.todo(
-    "partial embed failure (some products fail) is pushed into SyncRun.errors[] tagged stage:'embed' and run continues (state != 'failed')",
-  );
+  it('does NOT embed products whose upsert failed in the previous step', async () => {
+    fetchTotalCountMock.mockResolvedValueOnce(3);
+    fetchBatchMock.mockResolvedValueOnce({
+      products: [
+        { id: 'gid://shopify/Product/1' },
+        { id: 'gid://shopify/Product/2' },
+        { id: 'gid://shopify/Product/3' },
+      ],
+      endCursor: null,
+      hasNextPage: false,
+    });
+    // Second product's upsert fails — only #1 and #3 should be embedded.
+    upsertMock
+      .mockResolvedValueOnce({ id: 1 })
+      .mockRejectedValueOnce(new Error('upsert blew up'))
+      .mockResolvedValueOnce({ id: 3 });
+    buildSearchableTextMock.mockImplementation((p: { handle: string }) => `Title: ${p.handle}`);
+    embedBatchMock.mockResolvedValueOnce({
+      ok: [
+        { index: 0, vector: new Array(1536).fill(0) },
+        { index: 1, vector: new Array(1536).fill(0) },
+      ],
+      failed: [],
+    });
+    productFindUniqueMock.mockResolvedValue({ id: 1 });
+    executeRawMock.mockResolvedValue(1);
+    syncRunFindUnique.mockResolvedValueOnce({
+      id: 'sr_emb_002',
+      processedCount: 2,
+      errors: ['{"shopifyId":"gid://shopify/Product/2","message":"upsert blew up"}'],
+    });
 
-  it.todo('full-batch embed failure (all products fail) throws so Inngest retries');
+    const engine = new InngestTestEngine({ function: syncProductsFunction });
+    await engine.execute({
+      events: [{ name: 'shopify/product.sync', data: { syncRunId: 'sr_emb_002', shop: 'test.myshopify.com' } }],
+    });
+
+    expect(embedBatchMock).toHaveBeenCalledTimes(1);
+    const embedCallTexts = embedBatchMock.mock.calls[0][0] as string[];
+    // Product #2 (failed upsert) is excluded; only products #1 and #3 are embedded.
+    expect(embedCallTexts).toEqual([
+      'Title: gid://shopify/Product/1',
+      'Title: gid://shopify/Product/3',
+    ]);
+    expect(embedCallTexts).not.toContain('Title: gid://shopify/Product/2');
+  });
+
+  it("partial embed failure pushes errors[] tagged stage:'embed' and run does not become 'failed' (EMB-02)", async () => {
+    fetchTotalCountMock.mockResolvedValueOnce(2);
+    fetchBatchMock.mockResolvedValueOnce({
+      products: [
+        { id: 'gid://shopify/Product/1' },
+        { id: 'gid://shopify/Product/2' },
+      ],
+      endCursor: null,
+      hasNextPage: false,
+    });
+    upsertMock.mockResolvedValue({ id: 1 });
+    buildSearchableTextMock.mockImplementation((p: { handle: string }) => `Title: ${p.handle}`);
+    embedBatchMock.mockResolvedValueOnce({
+      ok: [{ index: 0, vector: new Array(1536).fill(0) }],
+      failed: [{ index: 1, message: 'rate limit' }],
+    });
+    productFindUniqueMock.mockResolvedValue({ id: 42 });
+    executeRawMock.mockResolvedValue(1);
+    syncRunFindUnique.mockResolvedValueOnce({
+      id: 'sr_emb_003',
+      processedCount: 2,
+      errors: ['{"shopifyId":"gid://shopify/Product/2","message":"rate limit","stage":"embed"}'],
+    });
+
+    const engine = new InngestTestEngine({ function: syncProductsFunction });
+    const { result } = await engine.execute({
+      events: [{ name: 'shopify/product.sync', data: { syncRunId: 'sr_emb_003', shop: 'test.myshopify.com' } }],
+    });
+
+    // Inspect the persist-cursor update's errors.push payload for the stage:'embed' tag.
+    const persistUpdates = syncRunUpdate.mock.calls
+      .map((c) => c[0])
+      .filter((u) => u.data?.errors?.push);
+    const allErrorPushes = persistUpdates.flatMap((u) => u.data.errors.push as string[]);
+    const embedStageErrors = allErrorPushes.filter((s) => {
+      try { return JSON.parse(s).stage === 'embed'; } catch { return false; }
+    });
+    expect(embedStageErrors.length).toBeGreaterThanOrEqual(1);
+    const parsed = JSON.parse(embedStageErrors[0]);
+    expect(parsed).toMatchObject({ shopifyId: 'gid://shopify/Product/2', message: 'rate limit', stage: 'embed' });
+
+    // Run continues — final state is 'partial', NOT 'failed'.
+    expect((result as { state: string }).state).not.toBe('failed');
+    expect(['succeeded', 'partial']).toContain((result as { state: string }).state);
+  });
+
+  it('full-batch embed failure throws so Inngest retries (EMB-02)', async () => {
+    fetchTotalCountMock.mockResolvedValueOnce(2);
+    fetchBatchMock.mockResolvedValueOnce({
+      products: [
+        { id: 'gid://shopify/Product/1' },
+        { id: 'gid://shopify/Product/2' },
+      ],
+      endCursor: null,
+      hasNextPage: false,
+    });
+    upsertMock.mockResolvedValue({ id: 1 });
+    buildSearchableTextMock.mockImplementation((p: { handle: string }) => `Title: ${p.handle}`);
+    // Every embed attempt fails — embed-batch step must throw, which triggers Inngest retry.
+    embedBatchMock.mockResolvedValue({
+      ok: [],
+      failed: [
+        { index: 0, message: 'gateway down' },
+        { index: 1, message: 'gateway down' },
+      ],
+    });
+    productFindUniqueMock.mockResolvedValue({ id: 42 });
+    executeRawMock.mockResolvedValue(1);
+
+    const engine = new InngestTestEngine({ function: syncProductsFunction });
+    const { error } = await engine.execute({
+      events: [{ name: 'shopify/product.sync', data: { syncRunId: 'sr_emb_004', shop: 'test.myshopify.com' } }],
+    });
+
+    expect(error).toBeDefined();
+    expect(String((error as Error)?.message ?? error)).toMatch(/Full embed batch failed/);
+  });
+
+  it('writes EMBEDDING_MODEL constant value into each raw SQL upsert (EMB-03)', async () => {
+    fetchTotalCountMock.mockResolvedValueOnce(2);
+    fetchBatchMock.mockResolvedValueOnce({
+      products: [
+        { id: 'gid://shopify/Product/1' },
+        { id: 'gid://shopify/Product/2' },
+      ],
+      endCursor: null,
+      hasNextPage: false,
+    });
+    upsertMock.mockResolvedValue({ id: 1 });
+    buildSearchableTextMock.mockImplementation((p: { handle: string }) => `Title: ${p.handle}`);
+    embedBatchMock.mockResolvedValueOnce({
+      ok: [
+        { index: 0, vector: new Array(1536).fill(0) },
+        { index: 1, vector: new Array(1536).fill(0) },
+      ],
+      failed: [],
+    });
+    productFindUniqueMock.mockResolvedValue({ id: 42 });
+    executeRawMock.mockResolvedValue(1);
+    syncRunFindUnique.mockResolvedValueOnce({ id: 'sr_emb_005', processedCount: 2, errors: [] });
+
+    const engine = new InngestTestEngine({ function: syncProductsFunction });
+    await engine.execute({
+      events: [{ name: 'shopify/product.sync', data: { syncRunId: 'sr_emb_005', shop: 'test.myshopify.com' } }],
+    });
+
+    // The raw SQL upsert is a tagged template: mock receives [stringsArray, ...values].
+    // Flatten all interpolated values across all $executeRaw calls and confirm the
+    // EMBEDDING_MODEL constant is present.
+    expect(executeRawMock).toHaveBeenCalled();
+    const allValues = executeRawMock.mock.calls.flatMap((call) => call.slice(1));
+    expect(allValues).toContain('openai/text-embedding-3-small');
+  });
 });
