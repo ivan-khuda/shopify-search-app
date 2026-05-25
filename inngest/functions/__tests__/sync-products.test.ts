@@ -5,7 +5,21 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { InngestTestEngine } from '@inngest/test';
 
-const { syncRunUpdate, syncRunFindUnique, upsertMock, fetchBatchMock, fetchTotalCountMock, mapToUpsertMock, loadSessionMock, getOfflineIdMock } = vi.hoisted(() => ({
+const {
+  syncRunUpdate,
+  syncRunFindUnique,
+  upsertMock,
+  fetchBatchMock,
+  fetchTotalCountMock,
+  mapToUpsertMock,
+  loadSessionMock,
+  getOfflineIdMock,
+  // Phase 3 additions (plan 03-01 RED scaffold)
+  embedBatchMock,
+  executeRawMock,
+  productFindUniqueMock,
+  buildSearchableTextMock,
+} = vi.hoisted(() => ({
   syncRunUpdate: vi.fn(),
   syncRunFindUnique: vi.fn(),
   upsertMock: vi.fn(),
@@ -14,6 +28,10 @@ const { syncRunUpdate, syncRunFindUnique, upsertMock, fetchBatchMock, fetchTotal
   mapToUpsertMock: vi.fn(),
   loadSessionMock: vi.fn(),
   getOfflineIdMock: vi.fn((shop: string) => `offline_${shop}`),
+  embedBatchMock: vi.fn(),
+  executeRawMock: vi.fn(),
+  productFindUniqueMock: vi.fn(),
+  buildSearchableTextMock: vi.fn(),
 }));
 
 vi.mock('@/lib/db/client', () => ({
@@ -21,6 +39,11 @@ vi.mock('@/lib/db/client', () => ({
     syncRun: {
       update: syncRunUpdate,
       findUnique: syncRunFindUnique,
+    },
+    // Phase 3 additions
+    $executeRaw: executeRawMock,
+    product: {
+      findUnique: productFindUniqueMock,
     },
   },
 }));
@@ -35,6 +58,16 @@ vi.mock('@/services/shopify/ShopifyProductService', () => ({
   fetchProductBatch: fetchBatchMock,
   fetchTotalCount: fetchTotalCountMock,
   mapToUpsertInput: mapToUpsertMock,
+}));
+
+// Phase 3 additions (plan 03-01) — EmbeddingService + buildSearchableText
+vi.mock('@/services/embeddings/EmbeddingService', () => ({
+  embedBatch: embedBatchMock,
+  EMBEDDING_MODEL: 'openai/text-embedding-3-small',
+}));
+
+vi.mock('@/services/search/searchableText', () => ({
+  buildSearchableText: buildSearchableTextMock,
 }));
 
 vi.mock('@/lib/shopify/client', () => ({
@@ -172,4 +205,31 @@ describe('syncProductsFunction (SYN-03, SYN-06)', () => {
     // finalize update with finishedAt
     expect(updates.some((u) => u.data?.finishedAt instanceof Date && (u.data?.state === 'succeeded' || u.data?.state === 'partial'))).toBe(true);
   });
+});
+
+/**
+ * RED scaffold for Phase 3 (plan 03-01) — embed-batch step inside the
+ * Inngest sync function. Each it.todo documents the EMB-02 contract that
+ * plan 03-05 will satisfy. Mocks (embedBatchMock, buildSearchableTextMock,
+ * productFindUniqueMock, executeRawMock) are wired in the hoisted block
+ * above so vitest does not throw on file load.
+ */
+describe('embed-batch step (Phase 3)', () => {
+  it.todo(
+    'sync run executes step embed-batch-${cursorKey} between upsert-batch and persist-cursor',
+  );
+
+  it.todo(
+    'embed-batch step calls EmbeddingService.embedBatch with searchableText for each upserted product',
+  );
+
+  it.todo(
+    'embed-batch step does NOT embed products whose upsert failed in the previous step',
+  );
+
+  it.todo(
+    "partial embed failure (some products fail) is pushed into SyncRun.errors[] tagged stage:'embed' and run continues (state != 'failed')",
+  );
+
+  it.todo('full-batch embed failure (all products fail) throws so Inngest retries');
 });
