@@ -137,7 +137,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 04-02-searchservice-active-model-PLAN.md — SearchService.ts + getActiveChatModel.ts (parallel-safe foundational services)
+- [x] 04-02-searchservice-active-model-PLAN.md — SearchService.ts + getActiveChatModel.ts (parallel-safe foundational services)
 
 **Wave 3** *(blocked on Wave 2 completion — runs 04-03 and 04-04 in parallel)*
 
@@ -226,7 +226,7 @@ Phases 7 and 8 are parallel-eligible with Phase 6 (no blocking dependencies — 
 | 1. Foundation | 0/TBD | Not started | - |
 | 2. Sync Pipeline | 0/TBD | Not started | - |
 | 3. Embeddings + Search Indexes | 8/8 | Complete | 2026-05-25 |
-| 4. SearchService + Wire Chat | 1/6 | In Progress|  |
+| 4. SearchService + Wire Chat | 2/6 | In Progress|  |
 | 5. Shared Chat-UI Extraction | 0/TBD | Not started | - |
 | 6. Storefront Surface | 0/TBD | Not started | - |
 | 7. Admin Settings + Model Picker | 0/TBD | Not started | - |
