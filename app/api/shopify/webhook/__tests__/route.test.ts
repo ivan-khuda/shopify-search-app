@@ -215,29 +215,153 @@ describe('POST /api/shopify/webhook (SYN-10, SYN-11)', () => {
 });
 
 /**
- * RED scaffold for Phase 3 (plan 03-01) — webhook re-embedding after upsert.
- * Each it.todo documents the D-02 contract that plan 03-06 will satisfy.
- * Mocks (embedAndStoreMock, buildSearchableTextMock) are wired in the hoisted
- * block above so vitest does not throw on file load.
+ * Phase 3 (plan 03-07) — webhook re-embedding after upsert.
+ * Implements the D-02 contract: synchronous embedAndStore inside the
+ * products/create|update branch, with try/catch + console.error + 200 on
+ * embed-only failure (Pitfall 3). Mocks are wired in the hoisted block.
  */
 describe('embedding integration (Phase 3)', () => {
-  it.todo(
-    'products/create webhook calls embedAndStore(shop, upserted.id, buildSearchableText(mapped)) after upsertProduct',
-  );
+  beforeEach(() => {
+    buildSearchableTextMock.mockReturnValue('mocked-text');
+  });
 
-  it.todo(
-    'products/update webhook calls embedAndStore once, with the local Product.id (not Shopify GID)',
-  );
+  it('products/create webhook calls embedAndStore(shop, upserted.id, buildSearchableText(mapped)) after upsertProduct', async () => {
+    validateMock.mockResolvedValue({
+      valid: true,
+      domain: 'test.myshopify.com',
+      topic: 'products/create',
+      webhookId: 'evt-emb-1',
+    });
+    webhookCreateMock.mockResolvedValueOnce({});
+    findByShopAndHandleMock.mockResolvedValueOnce(null);
+    upsertProductMock.mockResolvedValueOnce({ id: 42, shop: 'test.myshopify.com' });
 
-  it.todo(
-    'products/delete webhook does NOT call embedAndStore (FK cascade handles row deletion)',
-  );
+    const res = await POST(
+      makeRequest({
+        id: 1,
+        title: 'Shoe',
+        handle: 'shoe',
+        updated_at: '2026-05-22T10:00:00Z',
+      }),
+    );
 
-  it.todo(
-    'webhook returns 200 even when embedAndStore throws (Shopify must not retry on embed failure)',
-  );
+    expect(res.status).toBe(200);
+    expect(upsertProductMock).toHaveBeenCalledTimes(1);
+    expect(buildSearchableTextMock).toHaveBeenCalledTimes(1);
+    expect(embedAndStoreMock).toHaveBeenCalledTimes(1);
+    expect(embedAndStoreMock).toHaveBeenCalledWith(
+      'test.myshopify.com',
+      42,
+      'mocked-text',
+    );
+  });
 
-  it.todo(
-    'embedAndStore failure path logs via console.error but does not include AI_GATEWAY_API_KEY or full error object',
-  );
+  it('products/update webhook calls embedAndStore once, with the local Product.id (not Shopify GID)', async () => {
+    validateMock.mockResolvedValue({
+      valid: true,
+      domain: 'test.myshopify.com',
+      topic: 'products/update',
+      webhookId: 'evt-emb-2',
+    });
+    webhookCreateMock.mockResolvedValueOnce({});
+    findByShopAndHandleMock.mockResolvedValueOnce(null);
+    upsertProductMock.mockResolvedValueOnce({ id: 42, shop: 'test.myshopify.com' });
+
+    const res = await POST(
+      makeRequest({
+        id: 999999, // Shopify product GID source — must NOT appear in embedAndStore call
+        title: 'Shoe',
+        handle: 'shoe',
+        updated_at: '2026-05-22T10:00:00Z',
+      }),
+    );
+
+    expect(res.status).toBe(200);
+    expect(embedAndStoreMock).toHaveBeenCalledTimes(1);
+    const secondArg = embedAndStoreMock.mock.calls[0][1];
+    expect(typeof secondArg).toBe('number');
+    expect(secondArg).toBe(42);
+    // Defensive: must NOT be a GID string and must NOT be the payload.id
+    expect(secondArg).not.toBe(999999);
+    expect(String(secondArg)).not.toContain('gid://');
+  });
+
+  it('products/delete webhook does NOT call embedAndStore (FK cascade handles row deletion)', async () => {
+    validateMock.mockResolvedValue({
+      valid: true,
+      domain: 'test.myshopify.com',
+      topic: 'products/delete',
+      webhookId: 'evt-emb-3',
+    });
+    webhookCreateMock.mockResolvedValueOnce({});
+    productFindFirstMock.mockResolvedValueOnce({ id: 7, shop: 'test.myshopify.com' });
+    deleteProductMock.mockResolvedValueOnce(undefined);
+
+    const res = await POST(makeRequest({ id: 999888 }));
+
+    expect(res.status).toBe(200);
+    expect(deleteProductMock).toHaveBeenCalledTimes(1);
+    expect(embedAndStoreMock).not.toHaveBeenCalled();
+  });
+
+  it('webhook returns 200 even when embedAndStore throws (Shopify must not retry on embed failure)', async () => {
+    validateMock.mockResolvedValue({
+      valid: true,
+      domain: 'test.myshopify.com',
+      topic: 'products/update',
+      webhookId: 'evt-emb-4',
+    });
+    webhookCreateMock.mockResolvedValueOnce({});
+    findByShopAndHandleMock.mockResolvedValueOnce(null);
+    upsertProductMock.mockResolvedValueOnce({ id: 42, shop: 'test.myshopify.com' });
+    embedAndStoreMock.mockRejectedValueOnce(new Error('rate limit'));
+
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const res = await POST(
+      makeRequest({
+        id: 1,
+        title: 'Shoe',
+        handle: 'shoe',
+        updated_at: '2026-05-22T10:00:00Z',
+      }),
+    );
+
+    expect(res.status).toBe(200);
+    // Product was still upserted — embed failure must not roll back the persisted row
+    expect(upsertProductMock).toHaveBeenCalledTimes(1);
+    expect(embedAndStoreMock).toHaveBeenCalledTimes(1);
+    expect(consoleErrorSpy).toHaveBeenCalled();
+
+    consoleErrorSpy.mockRestore();
+  });
+
+  it('stale event (older updated_at than existing) returns 200 without calling embedAndStore (no wasted AI Gateway cost)', async () => {
+    validateMock.mockResolvedValue({
+      valid: true,
+      domain: 'test.myshopify.com',
+      topic: 'products/update',
+      webhookId: 'evt-emb-5',
+    });
+    webhookCreateMock.mockResolvedValueOnce({});
+    findByShopAndHandleMock.mockResolvedValueOnce({
+      id: 1,
+      shop: 'test.myshopify.com',
+      handle: 'shoe',
+      updatedAtShopify: new Date('2099-01-01T00:00:00Z'),
+    });
+
+    const res = await POST(
+      makeRequest({
+        id: 1,
+        handle: 'shoe',
+        updated_at: '2020-01-01T00:00:00Z',
+      }),
+    );
+
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: true, skipped: 'stale' });
+    expect(upsertProductMock).not.toHaveBeenCalled();
+    expect(embedAndStoreMock).not.toHaveBeenCalled();
+  });
 });
