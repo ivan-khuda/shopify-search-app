@@ -80,7 +80,7 @@ export default function ChatPage() {
                         </TabsTrigger>
                         <Button
                             className='flex items-center gap-2 ml-2 text-black'
-                            variant='outline'
+                            variant={null}
                             // size='icon'
                             onClick={handleNewChat}
                         >
