@@ -717,22 +717,22 @@ await client.end();
 | A6 | `prisma.$transaction(async (tx) => ...)` callback form opens a real BEGIN/COMMIT envelope on a SINGLE connection through Prisma Accelerate's transaction-mode pooler | EMB-06 | [VERIFIED via Prisma docs + Accelerate connection-pooling docs]. SET LOCAL applies for the duration of the transaction and is gone after COMMIT — exactly what we want. |
 | A7 | The pgvector version on the project's target Postgres (currently local dev + a planned Neon/Vercel Postgres production) is >= 0.8.0 | Pitfall 7 | [VERIFIED via vendor docs for Neon, Supabase, AWS RDS, Vercel Postgres — all at 0.8.0+]. Add a pre-flight assertion in the `db:indexes` Node script. |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Q1: Which `db:indexes` implementation does the planner pick — psql or Node script?**
    - What we know: psql is not installed locally; Accelerate URLs don't work with psql in production; Node script needs `pg` package (already transitive via `@prisma/adapter-pg`).
    - What's unclear: Whether `pg` is directly importable without adding it to top-level `package.json` deps.
-   - Recommendation: Add `pg` to top-level deps + ship the Node script (Option B). It's more portable, runnable in CI without extra setup, and matches the project's TypeScript-everywhere ethos.
+   - **RESOLVED:** Add `pg` to top-level deps + ship the Node script (Option B). Adopted in plan 03-05 Task 4 (`scripts/apply-manual-indexes.ts`). More portable, runnable in CI without extra setup, matches the project's TypeScript-everywhere ethos.
 
 2. **Q2: Does the planner need a "wipe `product_embeddings` rows on migrate" task or can the additive migration assume zero rows?**
    - What we know: Production has never run an embedding write (sync function does no embedding pre-Phase 3). Dev rows may exist from earlier scaffolding.
    - What's unclear: Whether any developer has manually inserted embedding rows.
-   - Recommendation: Include `DELETE FROM product_embeddings;` at the top of the migration. Cheaper than the nullable-then-NOT-NULL two-migration dance.
+   - **RESOLVED:** Include `DELETE FROM product_embeddings;` at the top of the migration. Adopted in plan 03-05 Task 2. Cheaper than the nullable-then-NOT-NULL two-migration dance.
 
 3. **Q3: What's the smoke-test for `withHnswIterativeScan`?**
    - What we know: We can't EXPLAIN ANALYZE without real data; we can't confirm the `SET LOCAL` value persists into the same transaction without observable effect.
    - What's unclear: How to verify the helper "works" without Phase 4's SearchService.
-   - Recommendation: Smoke test does `SELECT current_setting('hnsw.iterative_scan', true)` INSIDE the helper's callback and asserts the value equals `'relaxed_order'`. This proves SET LOCAL ran in the same connection as the subsequent statement, which is the only guarantee Phase 3 needs to provide.
+   - **RESOLVED:** Smoke test does `SELECT current_setting('hnsw.iterative_scan', true)` INSIDE the helper's callback and asserts the value equals `'relaxed_order'`. Adopted in plan 03-08 Smoke 3. Proves SET LOCAL ran in the same connection as the subsequent statement, which is the only guarantee Phase 3 needs to provide.
 
 ## Environment Availability
 
