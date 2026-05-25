@@ -1,10 +1,12 @@
 ---
 phase: 4
 slug: searchservice-wire-chat
-status: draft
+status: approved
 shadcn_initialized: true
 preset: "new-york (neutral baseColor, cssVariables, lucide icons)"
 created: 2026-05-25
+reviewed_at: 2026-05-25
+review_verdict: APPROVED (5 PASS, 1 FLAG — Dim 5 banner 28px justified non-blocking)
 ---
 
 # Phase 4 — UI Design Contract
