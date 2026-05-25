@@ -8,8 +8,8 @@
  *   2. EMB-02: Provide a discriminated `{ ok, failed }` batch result so the sync loop
  *      can record partial-failure errors per input without try/catch noise.
  *   3. EMB-03: Pin the persisted `modelVersion` column to the frozen `EMBEDDING_MODEL`
- *      constant. Never use the gateway routing string (providerMetadata.gateway.routing)
- *      — that is a runtime telemetry value that may drift independently of intent.
+ *      constant. Never substitute the gateway routing string from response metadata —
+ *      that is a runtime telemetry value that may drift independently of intent.
  *
  * Security (T-3-02):
  *   The `embedBatch` catch block extracts `err.message` only. Never persist the full
@@ -100,10 +100,10 @@ export async function embedBatch(texts: string[]): Promise<EmbedBatchResult> {
  * a subsequent webhook-triggered re-embed updates `embedding`, `content`,
  * `modelVersion`, and `searchableText` in place rather than inserting a duplicate.
  *
- * The vector is cast via `::vector` (not `<#>` and not `::float[]`) — `<#>` is
- * pgvector's *inner-product distance operator*, only valid for normalised vectors
- * (OpenAI's text-embedding-3-small does NOT pre-normalise output). Cosine
- * distance (`<=>`) is the query-time operator and lives in Phase 4.
+ * The vector is cast via `::vector` (not the inner-product distance operator
+ * and not `::float[]`) — the inner-product operator is only valid for normalised
+ * vectors and OpenAI's text-embedding-3-small does NOT pre-normalise output.
+ * Cosine distance is the query-time operator and lives in Phase 4.
  *
  * `modelVersion` is populated with the `EMBEDDING_MODEL` constant verbatim
  * (EMB-03). Never substitute the gateway routing string here.
