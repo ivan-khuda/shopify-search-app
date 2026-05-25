@@ -3,6 +3,7 @@ import { cva } from "class-variance-authority";
 import { forwardRef, ReactNode } from "react";
 import { ChatStatus, UIDataTypes, UIMessage, UITools } from "ai";
 import { MessageParts } from './message-parts';
+import type { ChatProduct } from '@/types/product';
 
 const messageVariants = cva("flex flex-col gap-2 p-4 rounded-lg", {
   variants: {
@@ -17,6 +18,8 @@ interface ChatMessageProps {
   message: UIMessage<unknown, UIDataTypes, UITools>;
   additionalComponents?: ReactNode;
   status?: ChatStatus;
+  savedProductIds: Set<string>;
+  onToggleSave: (product: ChatProduct) => void;
 }
 
 export const ChatMessage = forwardRef<HTMLDivElement, ChatMessageProps>(
@@ -25,6 +28,8 @@ export const ChatMessage = forwardRef<HTMLDivElement, ChatMessageProps>(
       message,
       additionalComponents,
       status,
+      savedProductIds,
+      onToggleSave,
     },
     ref
   ) => {
@@ -95,6 +100,8 @@ export const ChatMessage = forwardRef<HTMLDivElement, ChatMessageProps>(
                     status={status}
                     parts={partsToRender}
                     messageId={id}
+                    savedProductIds={savedProductIds}
+                    onToggleSave={onToggleSave}
                   />
                 )}
               </div>
