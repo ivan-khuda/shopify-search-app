@@ -1,7 +1,14 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import Chat from '@/components/chat/chat';
-import { MOCK_PRODUCTS } from '@/components/chat/mock-products';
+import type { ChatProduct } from '@/types/product';
+
+const TEST_PRODUCT: ChatProduct = {
+  id: 'p-1',
+  title: 'Test Sneakers',
+  price: '$89.00',
+  description: 'A test product.',
+};
 
 const { getMessages, sendMessage, setMessages } = vi.hoisted(() => {
   let messages = [
@@ -30,10 +37,9 @@ vi.mock('@ai-sdk/react', () => ({
 }));
 
 describe('Chat', () => {
-  it('attaches product cards to the newly generated assistant response', async () => {
+  it('renders product cards from tool-searchCatalog parts on the assistant response', async () => {
     const onHistoryAdd = vi.fn();
     const onToggleSave = vi.fn();
-    const savedProduct = MOCK_PRODUCTS[0];
 
     setMessages([
       {
@@ -46,7 +52,7 @@ describe('Chat', () => {
 
     const { rerender } = render(
       <Chat
-        savedProducts={[savedProduct]}
+        savedProducts={[TEST_PRODUCT]}
         onToggleSave={onToggleSave}
         onHistoryAdd={onHistoryAdd}
       />,
@@ -63,13 +69,13 @@ describe('Chat', () => {
         expect.objectContaining({
           id: expect.any(String),
           query: 'running shoes',
-          productCount: 1,
+          productCount: 0,
         }),
       );
     });
 
     expect(sendMessage).toHaveBeenCalledWith({ text: 'running shoes' });
-    expect(screen.queryByText(savedProduct.title)).not.toBeInTheDocument();
+    expect(screen.queryByText(TEST_PRODUCT.title)).not.toBeInTheDocument();
 
     setMessages([
       {
@@ -85,13 +91,18 @@ describe('Chat', () => {
       {
         id: 'assistant-2',
         role: 'assistant',
-        parts: [{ type: 'text', text: 'Fresh running options for you.' }],
+        parts: [
+          { type: 'text', text: 'Fresh running options for you.' },
+          // The tool-searchCatalog part shape must match what Vercel AI SDK v6 emits;
+          // cast as never because the test composes raw runtime objects rather than going through the SDK.
+          { type: 'tool-searchCatalog', state: 'output-available', output: [TEST_PRODUCT], input: {}, toolCallId: 't1' } as never,
+        ],
       },
     ]);
 
     rerender(
       <Chat
-        savedProducts={[savedProduct]}
+        savedProducts={[TEST_PRODUCT]}
         onToggleSave={onToggleSave}
         onHistoryAdd={onHistoryAdd}
       />,
@@ -99,9 +110,9 @@ describe('Chat', () => {
 
     expect(screen.getByText('Earlier suggestions are ready.')).toBeInTheDocument();
     expect(screen.getByText('Fresh running options for you.')).toBeInTheDocument();
-    expect(screen.getByText(savedProduct.title)).toBeInTheDocument();
+    expect(screen.getByText(TEST_PRODUCT.title)).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: /remove saved product/i }));
-    expect(onToggleSave).toHaveBeenCalledWith(savedProduct);
+    expect(onToggleSave).toHaveBeenCalledWith(TEST_PRODUCT);
   });
 });

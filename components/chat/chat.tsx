@@ -11,11 +11,9 @@ import {
     Attachments,
 } from "@/components/ai-elements/attachments";
 import { GlobeIcon } from "lucide-react";
-import { memo, useCallback, useMemo, useState } from "react";
+import { memo, useCallback, useMemo } from "react";
 import { ChatMessage } from '@/components/chat/chat-message';
 import type { ChatHistoryItem, ChatProduct } from '@/types/product';
-import { ProductCard } from '@/components/chat/product-card';
-import { MOCK_PRODUCTS } from '@/components/chat/mock-products';
 
 interface AttachmentItemProps {
     attachment: {
@@ -74,72 +72,12 @@ interface ChatProps {
     onHistoryAdd: (entry: ChatHistoryItem) => void;
 }
 
-interface ProductAttachmentState {
-    messageId: string;
-    products: ChatProduct[];
-}
-
-interface PendingProductAttachment {
-    anchorMessageId: string | null;
-    products: ChatProduct[];
-}
-
-const buildMockResults = (query: string) => {
-    const searchWords = query
-        .toLowerCase()
-        .split(/\s+/)
-        .filter((word) => word.length > 2);
-
-    return MOCK_PRODUCTS.filter((product) => {
-        const haystack = [
-            product.title,
-            product.description,
-            product.category ?? '',
-            ...(product.tags ?? []),
-        ].join(' ').toLowerCase();
-
-        return searchWords.some((word) => haystack.includes(word));
-    }).slice(0, 3);
-};
-
 export default function Chat({ savedProducts, onToggleSave, onHistoryAdd }: ChatProps) {
-    const [pendingProducts, setPendingProducts] = useState<PendingProductAttachment | null>(null);
     const { messages, sendMessage, status, } = useChat();
     const savedProductIds = useMemo(
         () => new Set(savedProducts.map((product) => product.id)),
         [savedProducts],
     );
-    const attachedProducts = useMemo<ProductAttachmentState | null>(() => {
-        if (!pendingProducts) {
-            return null;
-        }
-
-        if (pendingProducts.anchorMessageId) {
-            const anchorIndex = messages.findIndex(
-                (message) => message.id === pendingProducts.anchorMessageId,
-            );
-
-            if (anchorIndex === -1) {
-                return null;
-            }
-
-            const attachedMessage = messages
-                .slice(anchorIndex + 1)
-                .find((message) => message.role === 'assistant');
-
-            return attachedMessage ? {
-                messageId: attachedMessage.id,
-                products: pendingProducts.products,
-            } : null;
-        }
-
-        const firstAssistantMessage = messages.find((message) => message.role === 'assistant');
-
-        return firstAssistantMessage ? {
-            messageId: firstAssistantMessage.id,
-            products: pendingProducts.products,
-        } : null;
-    }, [messages, pendingProducts]);
 
     const handleSubmit = useCallback((message: PromptInputMessage) => {
         const query = message.text.trim();
@@ -150,23 +88,19 @@ export default function Chat({ savedProducts, onToggleSave, onHistoryAdd }: Chat
             return;
         }
 
-        const products = hasText ? buildMockResults(query) : [];
-        setPendingProducts({
-            anchorMessageId: messages.at(-1)?.id ?? null,
-            products,
-        });
-
         if (hasText) {
             onHistoryAdd({
                 id: `search-${Date.now()}`,
                 query,
                 timestamp: new Date().toLocaleTimeString(),
-                productCount: products.length,
+                // productCount is no longer client-derivable at submit time; cards arrive via tool-result parts.
+                // Phase 5/6 may relocate history derivation to a useEffect that watches messages.
+                productCount: 0,
             });
         }
 
         sendMessage({ text: query });
-    }, [messages, onHistoryAdd, sendMessage]);
+    }, [onHistoryAdd, sendMessage]);
 
     return (
         <div className="flex flex-col w-full max-w-3xl h-[calc(100vh-100px)] mx-auto stretch gap-6 pt-3">
@@ -175,34 +109,20 @@ export default function Chat({ savedProducts, onToggleSave, onHistoryAdd }: Chat
                 {messages.length === 0 && (
                     <div className="">
                         <p>
-                            Hello! I&apos;m your AI Shopping Assistant. Looking for something specific today, like
-                            &apos;warm winter clothes&apos; or &apos;minimalist accessories&apos;?
+                            Hello! I&apos;m your AI Shopping Assistant. Try a search like &quot;warm winter clothes&quot; or &quot;running shoes under $80&quot;.
                         </p>
                     </div>
                 )}
-                {messages.map((message) => {
-                    const productsForMessage = attachedProducts?.messageId === message.id
-                        ? attachedProducts.products
-                        : [];
-
-                    return (
-                        <div key={message.id} className="space-y-4">
-                            <ChatMessage message={message} status={status} />
-                            {productsForMessage.length > 0 ? (
-                                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                                    {productsForMessage.map((product) => (
-                                        <ProductCard
-                                            key={product.id}
-                                            product={product}
-                                            isSaved={savedProductIds.has(product.id)}
-                                            onSave={() => onToggleSave(product)}
-                                        />
-                                    ))}
-                                </div>
-                            ) : null}
-                        </div>
-                    );
-                })}
+                {messages.map((message) => (
+                    <div key={message.id} className="space-y-4">
+                        <ChatMessage
+                            message={message}
+                            status={status}
+                            savedProductIds={savedProductIds}
+                            onToggleSave={onToggleSave}
+                        />
+                    </div>
+                ))}
             </div>
 
             <div className="size-full1">
