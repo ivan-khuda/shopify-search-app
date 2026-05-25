@@ -23,6 +23,7 @@ Prisma:
 bunx prisma migrate dev      # Apply migrations
 bunx prisma generate         # Regenerate client after schema changes
 bunx prisma db seed          # Seed database (runs prisma/seed.ts via tsx)
+bun db:indexes               # Apply manual pgvector + GIN indexes (REQUIRED after every `prisma migrate reset` — these indexes live outside Prisma's migration history)
 ```
 
 ## Architecture
@@ -72,12 +73,15 @@ Required in `.env`:
 - `SHOPIFY_API_KEY`, `SHOPIFY_API_SECRET`, `HOST` — Shopify app credentials
 - `SHOPIFY_APP_HANDLE` — App handle slug from Shopify Partner Dashboard (used to construct the post-install redirect URL)
 - `NEXT_PUBLIC_SHOPIFY_API_KEY` — Same value as `SHOPIFY_API_KEY`; exposed to client components for App Bridge initialization
+- `AI_GATEWAY_API_KEY` — Vercel AI Gateway key for embedding calls (required for EmbeddingService.embed and embedMany; sync + webhook re-embedding both fail without it)
+- `DIRECT_URL` — Direct Postgres URL (postgresql://...). Required in production when DATABASE_URL is a Prisma Accelerate URL. Used by scripts/apply-manual-indexes.ts. In local dev where DATABASE_URL is already a direct postgres URL, DIRECT_URL is optional (the script falls back to DATABASE_URL).
 
 ## Key Design Decisions
 
 - Product results are currently driven by `MOCK_PRODUCTS` (keyword search in client); the Shopify sync and DB-backed search are stubs not yet wired into the chat flow.
 - `ProductEmbedding.embedding` uses Postgres `pgvector` (`Unsupported("vector")` in Prisma schema), requiring raw SQL for the migration.
 - The `prisma.config.ts` file at root (not `prisma/`) is the Prisma config entry point.
+- `ProductEmbedding.modelVersion` is a frozen pinned ID (`openai/text-embedding-3-small`). Future model upgrades require a code-level constant bump AND a backfill migration; never silently change the model.
 
 <!-- GSD:project-start source:PROJECT.md -->
 
