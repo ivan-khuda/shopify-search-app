@@ -4,8 +4,8 @@ milestone: v1.0
 milestone_name: milestone
 status: executing
 stopped_at: Phase 4 UI-SPEC approved
-last_updated: "2026-05-25T18:34:44.619Z"
-last_activity: 2026-05-25 -- Phase 04 planning complete
+last_updated: "2026-05-25T18:39:53.076Z"
+last_activity: 2026-05-25 -- Phase 04 execution started
 progress:
   total_phases: 8
   completed_phases: 3
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-22)
 
 **Core value:** A storefront visitor can describe what they want in natural language and immediately see relevant products from the merchant's catalog — synced reliably, embedded into their theme, with no dev work from the merchant.
-**Current focus:** Phase 4 — SearchService + Wire Chat (next)
+**Current focus:** Phase 04 — searchservice-wire-chat
 
 ## Current Position
 
-Phase: 4 (search-service-wire-chat) — READY FOR DISCUSSION
-Plan: 0 of TBD
-Status: Ready to execute
-Last activity: 2026-05-25 -- Phase 04 planning complete
+Phase: 04 (searchservice-wire-chat) — EXECUTING
+Plan: 1 of 6
+Status: Executing Phase 04
+Last activity: 2026-05-25 -- Phase 04 execution started
 
 Progress: [███░░░░░░░] 37%
 
