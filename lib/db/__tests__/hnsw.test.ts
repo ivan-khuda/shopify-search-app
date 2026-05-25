@@ -6,6 +6,7 @@
  * the mock factory.
  */
 import { describe, it, vi, beforeEach, expect } from 'vitest';
+import type { Prisma } from '@/app/generated/prisma/client';
 
 const { executeRawMock, transactionMock } = vi.hoisted(() => ({
   executeRawMock: vi.fn(),
@@ -69,13 +70,14 @@ describe('withHnswIterativeScan', () => {
   });
 
   it('passes the transaction client into the user callback', async () => {
-    const userCb = vi.fn(async () => 'ok');
+    const userCb = vi.fn<(tx: Prisma.TransactionClient) => Promise<string>>(
+      async () => 'ok',
+    );
     await withHnswIterativeScan(userCb);
 
-    // The callback should receive the same `tx` object that executed the SET LOCAL,
-    // proving the helper hands the user the transaction-scoped client (not the
-    // module-level prisma).
-    const txArg = userCb.mock.calls[0][0] as { $executeRaw: typeof executeRawMock };
+    const txArg = userCb.mock.calls[0][0] as unknown as {
+      $executeRaw: typeof executeRawMock;
+    };
     expect(txArg).toBeDefined();
     expect(txArg.$executeRaw).toBe(executeRawMock);
   });
