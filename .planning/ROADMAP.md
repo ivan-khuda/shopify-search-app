@@ -98,8 +98,8 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 03-02-PLAN.md — buildSearchableText helper (D-03 single source of truth)
-- [ ] 03-03-PLAN.md — withHnswIterativeScan helper for EMB-06 GUC enforcement
+- [x] 03-02-PLAN.md — buildSearchableText helper (D-03 single source of truth)
+- [x] 03-03-PLAN.md — withHnswIterativeScan helper for EMB-06 GUC enforcement
 - [ ] 03-04-PLAN.md — EmbeddingService (embed/embedBatch/embedAndStore) + EMBEDDING_MODEL pinning
 
 **Wave 3** *(blocked on Wave 2 completion)*
@@ -203,7 +203,7 @@ Phases 7 and 8 are parallel-eligible with Phase 6 (no blocking dependencies — 
 |-------|----------------|--------|-----------|
 | 1. Foundation | 0/TBD | Not started | - |
 | 2. Sync Pipeline | 0/TBD | Not started | - |
-| 3. Embeddings + Search Indexes | 1/8 | In Progress|  |
+| 3. Embeddings + Search Indexes | 3/8 | In Progress|  |
 | 4. SearchService + Wire Chat | 0/TBD | Not started | - |
 | 5. Shared Chat-UI Extraction | 0/TBD | Not started | - |
 | 6. Storefront Surface | 0/TBD | Not started | - |
