@@ -4,13 +4,25 @@
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-const { validateMock, webhookCreateMock, productFindFirstMock, upsertProductMock, deleteProductMock, findByShopAndHandleMock } = vi.hoisted(() => ({
+const {
+  validateMock,
+  webhookCreateMock,
+  productFindFirstMock,
+  upsertProductMock,
+  deleteProductMock,
+  findByShopAndHandleMock,
+  // Phase 3 additions (plan 03-01 RED scaffold)
+  embedAndStoreMock,
+  buildSearchableTextMock,
+} = vi.hoisted(() => ({
   validateMock: vi.fn(),
   webhookCreateMock: vi.fn(),
   productFindFirstMock: vi.fn(),
   upsertProductMock: vi.fn(),
   deleteProductMock: vi.fn(),
   findByShopAndHandleMock: vi.fn(),
+  embedAndStoreMock: vi.fn(),
+  buildSearchableTextMock: vi.fn((_p: unknown) => 'mocked-text'),
 }));
 
 vi.mock('@/lib/shopify/client', () => ({
@@ -30,6 +42,15 @@ vi.mock('@/lib/db/repositories/ProductRepository', () => ({
     deleteProduct: deleteProductMock,
     findByShopAndHandle: findByShopAndHandleMock,
   },
+}));
+
+// Phase 3 additions (plan 03-01) — EmbeddingService + buildSearchableText
+vi.mock('@/services/embeddings/EmbeddingService', () => ({
+  embedAndStore: embedAndStoreMock,
+}));
+
+vi.mock('@/services/search/searchableText', () => ({
+  buildSearchableText: buildSearchableTextMock,
 }));
 
 import { POST } from '../route';
@@ -191,4 +212,32 @@ describe('POST /api/shopify/webhook (SYN-10, SYN-11)', () => {
     expect(upsertProductMock).not.toHaveBeenCalled();
     expect(deleteProductMock).not.toHaveBeenCalled();
   });
+});
+
+/**
+ * RED scaffold for Phase 3 (plan 03-01) — webhook re-embedding after upsert.
+ * Each it.todo documents the D-02 contract that plan 03-06 will satisfy.
+ * Mocks (embedAndStoreMock, buildSearchableTextMock) are wired in the hoisted
+ * block above so vitest does not throw on file load.
+ */
+describe('embedding integration (Phase 3)', () => {
+  it.todo(
+    'products/create webhook calls embedAndStore(shop, upserted.id, buildSearchableText(mapped)) after upsertProduct',
+  );
+
+  it.todo(
+    'products/update webhook calls embedAndStore once, with the local Product.id (not Shopify GID)',
+  );
+
+  it.todo(
+    'products/delete webhook does NOT call embedAndStore (FK cascade handles row deletion)',
+  );
+
+  it.todo(
+    'webhook returns 200 even when embedAndStore throws (Shopify must not retry on embed failure)',
+  );
+
+  it.todo(
+    'embedAndStore failure path logs via console.error but does not include AI_GATEWAY_API_KEY or full error object',
+  );
 });
