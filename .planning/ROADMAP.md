@@ -13,7 +13,7 @@ SmartDiscovery AI goes from a scaffolded-but-stubbed Shopify embedded app to a f
 
 - [x] **Phase 1: Foundation** - Security hardening, multi-tenancy schema, repository layer
 - [x] **Phase 2: Sync Pipeline** - Inngest background sync, SyncRun model, webhooks, onboarding progress UI
-- [ ] **Phase 3: Embeddings + Search Indexes** - EmbeddingService, HNSW + GIN indexes, modelVersion column
+- [x] **Phase 3: Embeddings + Search Indexes** - EmbeddingService, HNSW + GIN indexes, modelVersion column
 - [ ] **Phase 4: SearchService + Wire Chat** - RRF hybrid search, MOCK_PRODUCTS removed, admin playground on real data
 - [ ] **Phase 5: Shared Chat-UI Extraction** - lib/chat-ui barrel, adapter pattern, persistence models
 - [ ] **Phase 6: Storefront Surface** - Theme App Extension, App Proxy, FAB + drawer, visitor identity + persistence
@@ -113,7 +113,7 @@ Plans:
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
-- [ ] 03-08-PLAN.md — Phase 3 verification gate (full suite + EXPLAIN ANALYZE + idempotency + roll-forward)
+- [x] 03-08-PLAN.md — Phase 3 verification gate (full suite + EXPLAIN ANALYZE + idempotency + roll-forward)
 
 **UI hint**: no
 
@@ -203,7 +203,7 @@ Phases 7 and 8 are parallel-eligible with Phase 6 (no blocking dependencies — 
 |-------|----------------|--------|-----------|
 | 1. Foundation | 0/TBD | Not started | - |
 | 2. Sync Pipeline | 0/TBD | Not started | - |
-| 3. Embeddings + Search Indexes | 7/8 | In Progress|  |
+| 3. Embeddings + Search Indexes | 8/8 | Complete | 2026-05-25 |
 | 4. SearchService + Wire Chat | 0/TBD | Not started | - |
 | 5. Shared Chat-UI Extraction | 0/TBD | Not started | - |
 | 6. Storefront Surface | 0/TBD | Not started | - |

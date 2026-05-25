@@ -31,12 +31,12 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Embeddings + Hybrid Search
 
-- [ ] **EMB-01**: `EmbeddingService.embed(text)` calls Vercel AI Gateway `openai/text-embedding-3-small` and returns a 1536-dim vector
-- [ ] **EMB-02**: Embeddings are generated in batches during sync; one failed embedding does not abort the run
-- [ ] **EMB-03**: `ProductEmbedding` carries a non-null `modelVersion` column (pinned model ID, never an alias) from day one
-- [ ] **EMB-04**: Raw-SQL Prisma migration creates HNSW cosine index on `ProductEmbedding.embedding` and a generated `tsvector` column with GIN index on Product searchable text; index SQL lives in an idempotent script invulnerable to `prisma migrate dev` drift
+- [x] **EMB-01**: `EmbeddingService.embed(text)` calls Vercel AI Gateway `openai/text-embedding-3-small` and returns a 1536-dim vector
+- [x] **EMB-02**: Embeddings are generated in batches during sync; one failed embedding does not abort the run
+- [x] **EMB-03**: `ProductEmbedding` carries a non-null `modelVersion` column (pinned model ID, never an alias) from day one
+- [x] **EMB-04**: Raw-SQL Prisma migration creates HNSW cosine index on `ProductEmbedding.embedding` and a generated `tsvector` column with GIN index on Product searchable text; index SQL lives in an idempotent script invulnerable to `prisma migrate dev` drift
 - [ ] **EMB-05**: `SearchService.hybridSearch(shop, query, limit)` runs pgvector cosine top-K and tsvector `websearch_to_tsquery` in parallel, fuses results with Reciprocal Rank Fusion, returns ranked `Product[]` scoped to the shop
-- [ ] **EMB-06**: All shop-scoped vector queries enable `hnsw.iterative_scan = 'relaxed_order'` for the session so HNSW is not silently bypassed
+- [x] **EMB-06**: All shop-scoped vector queries enable `hnsw.iterative_scan = 'relaxed_order'` for the session so HNSW is not silently bypassed
 - [ ] **EMB-07**: `MOCK_PRODUCTS` is fully removed from runtime paths; both `/api/chat` (admin) and `/api/proxy/chat` (storefront) call `SearchService.hybridSearch`
 
 ### Embedded Admin: Onboarding + Settings + Playground
@@ -150,12 +150,12 @@ Explicitly excluded. Documented to prevent scope creep.
 | SYN-09 | Phase 2 | Pending |
 | SYN-10 | Phase 2 | Pending |
 | SYN-11 | Phase 2 | Pending |
-| EMB-01 | Phase 3 | Pending |
-| EMB-02 | Phase 3 | Pending |
-| EMB-03 | Phase 3 | Pending |
-| EMB-04 | Phase 3 | Pending |
+| EMB-01 | Phase 3 | Complete (Phase 3) |
+| EMB-02 | Phase 3 | Complete (Phase 3) |
+| EMB-03 | Phase 3 | Complete (Phase 3) |
+| EMB-04 | Phase 3 | Complete (Phase 3) |
 | EMB-05 | Phase 4 | Pending |
-| EMB-06 | Phase 3 | Pending |
+| EMB-06 | Phase 3 | Complete (Phase 3) |
 | EMB-07 | Phase 4 | Pending |
 | ADM-01 | Phase 2 | Pending |
 | ADM-02 | Phase 2 | Pending |

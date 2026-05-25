@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 3 context gathered
-last_updated: "2026-05-25T09:21:28.495Z"
-last_activity: 2026-05-25 -- Phase 03 execution started
+stopped_at: Phase 3 complete; ready for Phase 4 discussion
+last_updated: "2026-05-25T14:45:00.000Z"
+last_activity: 2026-05-25 -- Phase 3 verification gate passed
 progress:
   total_phases: 8
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 28
-  completed_plans: 20
-  percent: 25
+  completed_plans: 28
+  percent: 37
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-22)
 
 **Core value:** A storefront visitor can describe what they want in natural language and immediately see relevant products from the merchant's catalog — synced reliably, embedded into their theme, with no dev work from the merchant.
-**Current focus:** Phase 03 — embeddings-search-indexes
+**Current focus:** Phase 4 — SearchService + Wire Chat (next)
 
 ## Current Position
 
-Phase: 03 (embeddings-search-indexes) — EXECUTING
-Plan: 1 of 8
-Status: Executing Phase 03
-Last activity: 2026-05-25 -- Phase 03 execution started
+Phase: 4 (search-service-wire-chat) — READY FOR DISCUSSION
+Plan: 0 of TBD
+Status: Phase 3 complete
+Last activity: 2026-05-25 -- Phase 3 verification gate passed
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [███░░░░░░░] 37%
 
 ## Performance Metrics
 
@@ -65,6 +65,7 @@ Recent decisions affecting current work:
 - Pre-roadmap: `lib/chat-ui/` in-tree barrel (not monorepo) with adapter pattern
 - Pre-roadmap: Hybrid pgvector HNSW + tsvector RRF search (not pure vector)
 - Pre-roadmap: `db/manual-indexes.sql` idempotent re-apply after every `prisma migrate deploy`
+- Phase 3 (verified 2026-05-25): EMBEDDING_MODEL = 'openai/text-embedding-3-small' pinned via frozen constant; modelVersion column NOT NULL; HNSW + GIN indexes live in db/manual-indexes.sql (outside Prisma); withHnswIterativeScan helper consumed by Phase 4 SearchService.
 
 ### Pending Todos
 
@@ -85,6 +86,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-05-25T07:45:24.764Z
-Stopped at: Phase 3 context gathered
-Resume file: .planning/phases/03-embeddings-search-indexes/03-CONTEXT.md
+Last session: 2026-05-25T14:45:00.000Z
+Stopped at: Phase 3 complete; ready for Phase 4 discussion
+Resume file: .planning/phases/03-embeddings-search-indexes/03-VERIFICATION.md
