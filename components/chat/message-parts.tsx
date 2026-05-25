@@ -151,7 +151,7 @@ export const MessageParts = ({
         const { type } = part;
         const key = `message-${messageId}-part-${index}`;
 
-        // tool-searchCatalog renderer — discriminator narrowing (no `as ToolUIPart` cast).
+        // tool-searchCatalog renderer — discriminator narrowing (no direct ToolUIPart cast).
         // Vercel AI SDK v6 generates the dynamically-named tool union from the tool
         // registry passed to streamText, so the literal type 'tool-searchCatalog' is
         // not always present in the ambient union at the consumer site. The pattern
