@@ -41,6 +41,12 @@ DELETE FROM product_embeddings;
 ALTER TABLE "product_embeddings" ADD COLUMN "searchableText" TEXT NOT NULL;
 ALTER TABLE "product_embeddings" ADD COLUMN "modelVersion" TEXT NOT NULL;
 
+-- Pin embedding column dimensions to 1536 (OpenAI text-embedding-3-small,
+-- EMBEDDING_DIMENSIONS in services/embeddings/EmbeddingService.ts). HNSW
+-- indexes require an explicit dimension; the original init migration left
+-- it unbounded. Safe to ALTER here — the DELETE above empties the table.
+ALTER TABLE "product_embeddings" ALTER COLUMN "embedding" TYPE vector(1536);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "product_embeddings_shop_productShop_productId_key" ON "product_embeddings"("shop", "productShop", "productId");
 
@@ -56,9 +62,22 @@ CREATE UNIQUE INDEX "product_embeddings_shop_productShop_productId_key" ON "prod
 --   A: title
 --   B: tags (space-joined) + vendor + productType
 --   C: description
+--
+-- Note: GENERATED ALWAYS expressions must reference IMMUTABLE functions
+-- only. `array_to_string(text[], text)` is STABLE in Postgres (depends on
+-- locale-tied collation rules), so we wrap it in an IMMUTABLE helper.
+-- The helper is safe because its behaviour is fully determined by the
+-- supplied array and delimiter — locale never affects the output.
+
+CREATE OR REPLACE FUNCTION "smartdiscovery_immutable_array_to_string"(arr text[], delim text)
+RETURNS text
+LANGUAGE sql
+IMMUTABLE
+PARALLEL SAFE
+AS $$ SELECT array_to_string(arr, delim) $$;
 
 ALTER TABLE "products" ADD COLUMN "searchVector" tsvector GENERATED ALWAYS AS (
-  setweight(to_tsvector('english', coalesce(title, '')), 'A') ||
-  setweight(to_tsvector('english', coalesce(array_to_string(tags, ' '), '') || ' ' || coalesce(vendor, '') || ' ' || coalesce("productType", '')), 'B') ||
-  setweight(to_tsvector('english', coalesce(description, '')), 'C')
+  setweight(to_tsvector('english'::regconfig, coalesce(title, '')), 'A') ||
+  setweight(to_tsvector('english'::regconfig, coalesce("smartdiscovery_immutable_array_to_string"(tags, ' '), '') || ' ' || coalesce(vendor, '') || ' ' || coalesce("productType", '')), 'B') ||
+  setweight(to_tsvector('english'::regconfig, coalesce(description, '')), 'C')
 ) STORED;

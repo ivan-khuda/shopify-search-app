@@ -68,4 +68,7 @@ async function main(): Promise<void> {
   }
 }
 
-await main();
+main().catch((err) => {
+  console.error(err instanceof Error ? err.message : String(err));
+  process.exit(1);
+});
