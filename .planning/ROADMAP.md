@@ -133,7 +133,7 @@ Plans:
 Plans:
 **Wave 1**
 
-- [ ] 04-01-wave0-test-scaffolds-PLAN.md — Wave 0 RED test scaffolds (5 test files, ~43 it() blocks)
+- [x] 04-01-wave0-test-scaffolds-PLAN.md — Wave 0 RED test scaffolds (5 test files, ~43 it() blocks)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -226,7 +226,7 @@ Phases 7 and 8 are parallel-eligible with Phase 6 (no blocking dependencies — 
 | 1. Foundation | 0/TBD | Not started | - |
 | 2. Sync Pipeline | 0/TBD | Not started | - |
 | 3. Embeddings + Search Indexes | 8/8 | Complete | 2026-05-25 |
-| 4. SearchService + Wire Chat | 0/6 | Not started | - |
+| 4. SearchService + Wire Chat | 1/6 | In Progress|  |
 | 5. Shared Chat-UI Extraction | 0/TBD | Not started | - |
 | 6. Storefront Surface | 0/TBD | Not started | - |
 | 7. Admin Settings + Model Picker | 0/TBD | Not started | - |
