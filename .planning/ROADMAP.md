@@ -141,8 +141,8 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion — runs 04-03 and 04-04 in parallel)*
 
-- [ ] 04-03-api-chat-rewrite-PLAN.md — /api/chat rewrite (withShopifySession + AI Gateway + searchCatalog tool)
-- [ ] 04-04-proxy-chat-stub-PLAN.md — /api/proxy/chat stub (EMB-07 success criterion #3)
+- [x] 04-03-api-chat-rewrite-PLAN.md — /api/chat rewrite (withShopifySession + AI Gateway + searchCatalog tool)
+- [x] 04-04-proxy-chat-stub-PLAN.md — /api/proxy/chat stub (EMB-07 success criterion #3)
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
@@ -226,7 +226,7 @@ Phases 7 and 8 are parallel-eligible with Phase 6 (no blocking dependencies — 
 | 1. Foundation | 0/TBD | Not started | - |
 | 2. Sync Pipeline | 0/TBD | Not started | - |
 | 3. Embeddings + Search Indexes | 8/8 | Complete | 2026-05-25 |
-| 4. SearchService + Wire Chat | 2/6 | In Progress|  |
+| 4. SearchService + Wire Chat | 4/6 | In Progress|  |
 | 5. Shared Chat-UI Extraction | 0/TBD | Not started | - |
 | 6. Storefront Surface | 0/TBD | Not started | - |
 | 7. Admin Settings + Model Picker | 0/TBD | Not started | - |
