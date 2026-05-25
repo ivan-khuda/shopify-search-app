@@ -130,16 +130,19 @@ model ProductOption {
 }
 
 model ProductEmbedding {
-  id          Int                    @id @default(autoincrement())
-  shop        String                 // redundant with parent — intentional (D-04)
-  productShop String                 // composite FK field 1
-  productId   Int                    // composite FK field 2
-  content     String                 @db.Text
-  embedding   Unsupported("vector")? // pgvector extension - will need raw SQL for migration
-  createdAt   DateTime               @default(now())
+  id             Int                    @id @default(autoincrement())
+  shop           String                 // redundant with parent — intentional (D-04)
+  productShop    String                 // composite FK field 1
+  productId      Int                    // composite FK field 2
+  content        String                 @db.Text
+  searchableText String     @db.Text // D-10: exact text that was embedded; diagnostics + future re-embed detection
+  modelVersion   String     // EMB-03 / D-10: pinned model ID (NEVER an alias). NOT NULL — migration wipes dev rows.
+  embedding      Unsupported("vector")? // pgvector extension - will need raw SQL for migration
+  createdAt      DateTime               @default(now())
 
   product Product @relation(fields: [productShop, productId], references: [shop, id], onDelete: Cascade)
 
+  @@unique([shop, productShop, productId]) // D-10: enables ON CONFLICT in EmbeddingService.embedAndStore upsert
   @@index([shop])
   @@index([productShop, productId])
   @@map("product_embeddings")
