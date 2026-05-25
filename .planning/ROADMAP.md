@@ -129,7 +129,29 @@ Plans:
   3. Both `/api/chat` (admin) and `/api/proxy/chat` (storefront, stubbed) call `SearchService.hybridSearch`; the `MOCK_PRODUCTS` file and `buildMockResults()` function are deleted
   4. A query containing a brand name or SKU-style term returns relevant results (verifying that BM25 full-text contributes to RRF fusion alongside vector results)
 
-**Plans**: TBD
+**Plans**: 6 plans
+Plans:
+**Wave 1**
+
+- [ ] 04-01-wave0-test-scaffolds-PLAN.md — Wave 0 RED test scaffolds (5 test files, ~43 it() blocks)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 04-02-searchservice-active-model-PLAN.md — SearchService.ts + getActiveChatModel.ts (parallel-safe foundational services)
+
+**Wave 3** *(blocked on Wave 2 completion — runs 04-03 and 04-04 in parallel)*
+
+- [ ] 04-03-api-chat-rewrite-PLAN.md — /api/chat rewrite (withShopifySession + AI Gateway + searchCatalog tool)
+- [ ] 04-04-proxy-chat-stub-PLAN.md — /api/proxy/chat stub (EMB-07 success criterion #3)
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [ ] 04-05-ui-refactor-PLAN.md — UI refactor (message-parts.tsx tool-state renderer, chat.tsx gutting, MOCK_PRODUCTS deletion)
+
+**Wave 5** *(blocked on Wave 4 completion)*
+
+- [ ] 04-06-page-banner-verify-PLAN.md — page.tsx server-component + banner + Phase 4 verification gate
+
 **UI hint**: yes
 
 ### Phase 5: Shared Chat-UI Extraction
@@ -204,7 +226,7 @@ Phases 7 and 8 are parallel-eligible with Phase 6 (no blocking dependencies — 
 | 1. Foundation | 0/TBD | Not started | - |
 | 2. Sync Pipeline | 0/TBD | Not started | - |
 | 3. Embeddings + Search Indexes | 8/8 | Complete | 2026-05-25 |
-| 4. SearchService + Wire Chat | 0/TBD | Not started | - |
+| 4. SearchService + Wire Chat | 0/6 | Not started | - |
 | 5. Shared Chat-UI Extraction | 0/TBD | Not started | - |
 | 6. Storefront Surface | 0/TBD | Not started | - |
 | 7. Admin Settings + Model Picker | 0/TBD | Not started | - |
