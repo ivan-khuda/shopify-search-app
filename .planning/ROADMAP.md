@@ -108,8 +108,8 @@ Plans:
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 03-06-PLAN.md — Inject embed-batch step into sync-products.ts (4-step batch loop)
-- [ ] 03-07-PLAN.md — Webhook re-embedding inline + CLAUDE.md workflow docs
+- [x] 03-06-PLAN.md — Inject embed-batch step into sync-products.ts (4-step batch loop)
+- [x] 03-07-PLAN.md — Webhook re-embedding inline + CLAUDE.md workflow docs
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
@@ -203,7 +203,7 @@ Phases 7 and 8 are parallel-eligible with Phase 6 (no blocking dependencies — 
 |-------|----------------|--------|-----------|
 | 1. Foundation | 0/TBD | Not started | - |
 | 2. Sync Pipeline | 0/TBD | Not started | - |
-| 3. Embeddings + Search Indexes | 5/8 | In Progress|  |
+| 3. Embeddings + Search Indexes | 7/8 | In Progress|  |
 | 4. SearchService + Wire Chat | 0/TBD | Not started | - |
 | 5. Shared Chat-UI Extraction | 0/TBD | Not started | - |
 | 6. Storefront Surface | 0/TBD | Not started | - |
