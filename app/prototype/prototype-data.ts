@@ -1,5 +1,3 @@
-// import { MOCK_PRODUCTS } from '@/components/chat/mock-products';
-
 export interface PrototypeProduct {
   id: string;
   title: string;
@@ -42,29 +40,6 @@ export interface HistoryEntry {
   timestamp: string;
   productCount: number;
 }
-
-const VENDOR_BY_CATEGORY: Record<string, string> = {
-  Footwear: 'Trail & Pace',
-  Apparel: 'Nordic Outfit Co.',
-  Accessories: 'Maker & Hide',
-};
-
-const parsePrice = (p: string): number => {
-  const n = Number(p.replace(/[^0-9.]/g, ''));
-  return Number.isFinite(n) ? n : 0;
-};
-
-// export const CATALOG: PrototypeProduct[] = MOCK_PRODUCTS.map((p) => ({
-//   id: p.id,
-//   title: p.title,
-//   price: parsePrice(p.price),
-//   currency: 'USD',
-//   vendor: VENDOR_BY_CATEGORY[p.category ?? ''] ?? 'House Brand',
-//   type: p.category ?? 'Goods',
-//   tags: p.tags ?? [],
-//   description: p.description,
-//   image: p.image ?? '',
-// }));
 
 export const CATALOG: PrototypeProduct[] = [
   {
