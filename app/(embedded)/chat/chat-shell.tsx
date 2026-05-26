@@ -1,38 +1,31 @@
 'use client';
 
+import { useMemo, useState } from 'react';
 import { Tabs, TabsContent, TabsContents, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import Chat from '@/components/chat/chat';
-import { HistoryPanel } from '@/components/chat/history-panel';
-import { SavedProductsPanel } from '@/components/chat/saved-products-panel';
-import { Bookmark, HistoryIcon, MessageSquare, PlusIcon, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useState } from 'react';
 import { cn } from '@/lib/utils';
-import type { ChatHistoryItem, ChatProduct } from '@/types/product';
+import { Bookmark, HistoryIcon, MessageSquare, PlusIcon, Sparkles } from 'lucide-react';
+import { ChatPane, HistoryPanel, SavedProductsPanel } from '@/lib/chat-ui';
+import { EmbeddedAdapter } from '@/lib/chat-ui/adapters/embedded';
+import { useHistoryStore, useSavedProductsStore } from '@/lib/chat-ui/stores/hooks';
 
-export function ChatShell() {
+export function ChatShell({ shop }: { shop: string }) {
     const [selectedTab, setSelectedTab] = useState<string>('chat');
-    const [history, setHistory] = useState<ChatHistoryItem[]>([]);
-    const [savedProducts, setSavedProducts] = useState<ChatProduct[]>([]);
+    const adapter = useMemo(() => new EmbeddedAdapter(), []);
+    const history = useHistoryStore(shop);
+    const saved = useSavedProductsStore(shop);
 
-    const handleToggleSave = (product: ChatProduct) => {
-        setSavedProducts((current) =>
-            current.some((item) => item.id === product.id)
-                ? current.filter((item) => item.id !== product.id)
-                : [...current, product],
-        );
-    };
-
-    const handleHistoryAdd = (entry: ChatHistoryItem) => {
-        setHistory((current) => [entry, ...current].slice(0, 10));
-    };
+    const savedProductIds = useMemo(
+        () => new Set(saved.items.map((p) => p.id)),
+        [saved.items],
+    );
 
     const handleNewChat = () => {
         setSelectedTab('chat');
-    }
+    };
 
     return (
-        <div className='mx-auto w-full'>
+        <div className='mx-auto w-full h-[calc(100vh-100px)]'>
             <Tabs value={selectedTab} onValueChange={setSelectedTab}>
 
                 {/* Header */}
@@ -88,18 +81,19 @@ export function ChatShell() {
                     </TabsList>
                 </header>
                 <TabsContents>
-                    <TabsContent value="chat">
-                        <Chat
-                            savedProducts={savedProducts}
-                            onToggleSave={handleToggleSave}
-                            onHistoryAdd={handleHistoryAdd}
+                    <TabsContent value="chat" className="h-[calc(100%-180px)]">
+                        <ChatPane
+                            adapter={adapter}
+                            savedProductIds={savedProductIds}
+                            onToggleSave={saved.toggle}
+                            onHistoryAdd={history.add}
                         />
                     </TabsContent>
                     <TabsContent value="history">
-                        <HistoryPanel items={history} onClear={() => setHistory([])} />
+                        <HistoryPanel items={history.items} onClear={history.clear} />
                     </TabsContent>
                     <TabsContent value="saved">
-                        <SavedProductsPanel products={savedProducts} onToggleSave={handleToggleSave} />
+                        <SavedProductsPanel products={saved.items} onToggleSave={saved.toggle} />
                     </TabsContent>
                 </TabsContents>
             </Tabs>

@@ -23,7 +23,7 @@ vi.mock('@/services/chat/getActiveChatModel', () => ({
   })),
 }));
 
-vi.mock('@/components/chat/chat-shell', () => ({
+vi.mock('../chat-shell', () => ({
   ChatShell: () => <div data-testid="chat-shell-stub">chat shell</div>,
 }));
 
