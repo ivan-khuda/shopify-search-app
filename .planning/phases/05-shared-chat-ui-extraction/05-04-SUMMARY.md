@@ -168,6 +168,9 @@ None. All wiring is real:
 | --------- | ------- | ------------------------------------------------------ |
 | `e5a8c8a` | feat    | rebuild embedded chat-shell on lib/chat-ui             |
 | `84c1bd0` | chore   | hard-cut legacy components/chat tree (D-11)            |
+| `3269ec4` | chore   | finish prototype-data dead-code cleanup (follow-up)    |
+
+> Note: The Task 2 staging only captured the line-1 comment removal at the moment of `git commit`; the orphan-helper edits made post-staging needed a follow-up commit (`3269ec4`) to land. Final on-disk state matches the SUMMARY claims.
 
 ## Self-Check: PASSED
 
