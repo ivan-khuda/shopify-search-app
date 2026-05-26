@@ -1,10 +1,11 @@
 ---
 phase: 05
 slug: shared-chat-ui-extraction
-status: draft
+status: approved
 shadcn_initialized: true
 preset: new-york / neutral / css-variables
 created: 2026-05-26
+reviewed_at: 2026-05-26
 ---
 
 # Phase 5 — UI Design Contract
@@ -38,7 +39,7 @@ Tailwind 4 default scale applies. Values actually used in the lifted components:
 
 | Token | px Value | Tailwind Class | Usage in Phase 5 Components |
 |-------|----------|---------------|------------------------------|
-| xs | 4px | `p-1` / `gap-1` | Icon padding (Sparkles icon background `p-1.5`) |
+| xs | 4px | `p-1` / `gap-1` | Standard icon padding baseline |
 | sm | 8px | `p-2` / `gap-2` | Button/icon padding, header gaps |
 | md | 16px | `p-4` / `gap-4` | Message bubble padding, history row padding |
 | lg | 24px | `p-6` / `gap-6` | Panel container padding (HistoryPanel, SavedProductsPanel) |
@@ -46,7 +47,15 @@ Tailwind 4 default scale applies. Values actually used in the lifted components:
 | 2xl | 48px | — | Not used in these components |
 | 3xl | 64px | — | Not used in these components |
 
-Exceptions:
+### Spacing Exceptions
+
+The following values deviate from the 4-point grid and are deliberate carried-forward values from the shipped source. Do NOT change them during the lift — altering them would silently re-style the component and violate the visual parity contract.
+
+| Value | Tailwind Class | Location | Justification |
+|-------|---------------|----------|---------------|
+| 6px | `p-1.5` | `components/chat/chat-shell.tsx:41` — Sparkles icon background badge | A 20px lucide icon (`w-5 h-5`) inside a `rounded-lg` badge. `p-1` (4px) is too tight and clips the icon visually; `p-2` (8px) makes the badge square and visually heavy. 6px is the shipped value that produces the correct proportioned badge, and it ships as-is. |
+
+Other spacing exceptions (fixed heights / aspect ratios):
 - ChatPane message list: `h-[calc(100%-180px)]` / `h-[calc(100vh-100px)]` — fixed computed heights for the embedded-admin viewport. These heights are surface-specific. The Phase 6 storefront drawer shell will use its own height constraints. The shared `ChatPane` component MUST NOT hardcode these values; they belong in the surface-specific shell wrapper.
 - Product image: `aspect-square` — preserves square crop regardless of source image.
 - Empty state container: `h-64` (256px) fixed height.
@@ -137,6 +146,14 @@ avoids introducing visible color drift during the refactor.
 | `fill-red-500 text-red-500` | #ef4444 | ProductCard heart icon when saved | Keep |
 | `text-gray-300` → `text-gray-600` | group-hover transition | HistoryPanel chevron | Keep |
 | `text-gray-200` | #e5e7eb | EmptyState icon color | Keep |
+
+---
+
+## Visuals
+
+Primary visual anchor: the Sparkles icon badge in the header (Shopify green `#008060` background, white `w-5 h-5` lucide Sparkles icon, `p-1.5 rounded-lg`). On any chat surface this is the brand-identification element and must remain visible above the message stream and tabs.
+
+Visual hierarchy flows: Sparkles badge + app name (header) → active message stream (center) → tab navigation (bottom). Product cards surface below the message stream; their "View" link in Shopify green ties back to the header accent, reinforcing brand coherence.
 
 ---
 
@@ -231,8 +248,8 @@ ChatShell stays surface-specific (embedded admin), but its interaction contract 
 
 ## Copywriting Contract
 
-| Element | Copy | Source |
-|---------|------|--------|
+| Element | Copy | Rationale / Source |
+|---------|------|-------------------|
 | Chat empty state (inline) | "Hello! I'm your AI Shopping Assistant. Try a search like \"warm winter clothes\" or \"running shoes under $80\"." | chat.tsx shipped |
 | Prompt placeholder | "Search for something (e.g. 'comfortable shoes for running')" | chat.tsx shipped |
 | Streaming indicator | "Thinking..." | chat.tsx / message-parts.tsx shipped |
@@ -251,6 +268,7 @@ ChatShell stays surface-specific (embedded admin), but its interaction contract 
 | "New Chat" button | "New Chat" | chat-shell.tsx shipped |
 | App name in header | "SmartDiscovery AI" | chat-shell.tsx shipped |
 | App subtitle in header | "Shopify Assistant" | chat-shell.tsx shipped |
+| ProductCard "View" CTA | "View" + `<ExternalLink size={12} />` icon | Verb-only label; the adjacent `ExternalLink` icon (lucide, 12px) supplies the noun affordance — "View [external link]" reads as a complete verb-noun pair. See `components/chat/product-card.tsx:54`. |
 
 No copy changes are permitted in Phase 5. All strings above are locked as-is.
 
