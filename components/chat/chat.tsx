@@ -105,7 +105,6 @@ export default function Chat({ savedProducts, onToggleSave, onHistoryAdd }: Chat
     return (
         <div className="flex flex-col w-full max-w-3xl h-[calc(100vh-100px)] mx-auto stretch gap-6 pt-3">
             <div className='h-[calc(100%-180px)] flex flex-col flex-1 gap-4 overflow-auto pr-4'>
-                {/* <TextShimmer duration={5}>Thinking...</TextShimmer> */}
                 {messages.length === 0 && (
                     <div className="">
                         <p>

@@ -21,14 +21,21 @@ findings:
 findings_resolved:
   critical: 1
   warning: 4
-  info: 0
+  info: 4
 status: issues_found
+deferred:
+  - IN-01: hex literals in chat-shell.tsx — Phase 5 lib/chat-ui/ lift
+  - IN-06: searchParams.shop session-shop verification — Phase 7 prerequisite
 resolved:
   - CR-01: 2026-05-26 — /api/proxy/chat 501 short-circuit
   - WR-01: 2026-05-26 — streaming-text shimmer scoped to "Thinking..." placeholder only
   - WR-02: 2026-05-26 — formatPriceRange guards parseFloat with Number.isFinite
   - WR-03: 2026-05-26 — Tailwind class typo size-full1 → size-full
   - WR-04: 2026-05-26 — tool output narrowed via type predicate filter (no cast)
+  - IN-02: 2026-05-26 — Button variant={null} dropped (use default variant)
+  - IN-03: 2026-05-26 — commented-out blocks removed from chat.tsx, chat-message.tsx, message-parts.tsx
+  - IN-04: 2026-05-26 — dead helpers and unused ai-sdk type imports deleted from message-parts.tsx
+  - IN-05: 2026-05-26 — stale eslint-disable directive removed from message-parts.tsx
 ---
 
 # Phase 4: Code Review Report
@@ -152,25 +159,41 @@ or accept the risk explicitly and document it as a SearchService output-contract
 **Issue:** Hex literals `#008060`, `#e1e3e5`, `#6d7175`, `#202223` appear inline in className strings rather than as Tailwind tokens. Already flagged in `04-VERIFICATION.md` "Deferred Items" as Phase 5 cleanup.
 **Fix:** Defer to Phase 5 `lib/chat-ui/` lift — not Phase 4 surface. No action required during this phase.
 
-### IN-02: `variant={null}` on Button is a non-standard variant value
+### IN-02: `variant={null}` on Button is a non-standard variant value — RESOLVED 2026-05-26
+
+**Resolution:** Prop dropped; Button now falls back to its default variant via the cva default-variant resolution path.
+
+
 
 **File:** `components/chat/chat-shell.tsx:83`
 **Issue:** The Button component accepts `variant?: VariantProps<typeof buttonVariants>['variant']` (a discriminated union string). Passing `null` is not part of that union — TypeScript may accept it under loose typing, but `class-variance-authority` treats `null` differently from `undefined` for default-variant resolution.
 **Fix:** Omit the prop or pass `undefined` to fall back to the default variant: `<Button className='…' onClick={handleNewChat}>`.
 
-### IN-03: Commented-out code in chat.tsx and chat-message.tsx
+### IN-03: Commented-out code in chat.tsx and chat-message.tsx — RESOLVED 2026-05-26
+
+**Resolution:** All three blocks deleted: the `<TextShimmer>` placeholder in `chat.tsx:108`, the `<Image>` avatar block in `chat-message.tsx:74-80`, and the entire `reasoning` part renderer in `message-parts.tsx:253-266` (removed as part of the IN-04 rewrite).
+
+
 
 **File:** `components/chat/chat.tsx:108`, `components/chat/chat-message.tsx:74-80`, `components/chat/message-parts.tsx:253-266`
 **Issue:** Multiple blocks of commented-out JSX/imports remain (`<TextShimmer>`, `<Image>` avatar, the entire `reasoning` part renderer). These create maintenance noise and signal incomplete work.
 **Fix:** Delete the commented blocks (the reasoning renderer is the largest — ~14 lines in `message-parts.tsx:253-266`). Use git history for retrieval if needed.
 
-### IN-04: Dead code — unused predicates and helpers in message-parts.tsx
+### IN-04: Dead code — unused predicates and helpers in message-parts.tsx — RESOLVED 2026-05-26
+
+**Resolution:** The entire helper chain (`isStepStartPart`, `isToolLikePart`, `isRenderableTextPart`, `isRenderableReasoningPart`, `isRenderableDataPart`, `hasRenderableContentAfter`, `shouldShowToolLoading`, `findNearestToolNeighbor`, `shouldShowStepStartLoading`) was rooted in two never-called functions (`shouldShowStepStartLoading`, `isStepStartPart`) and has been deleted. The unused `DynamicToolUIPart`, `StepStartUIPart`, `ToolUIPart` ambient-type imports, the `ToolLikeUIPart` alias, the `MessagePart` alias, the dead `isChatStreaming` branch, and the now-unused `status?: ChatStatus` prop (no consumer remained) are all gone. File dropped from 280 → 141 lines with no behavioral change.
+
+
 
 **File:** `components/chat/message-parts.tsx:22-127`
 **Issue:** `isStepStartPart`, `shouldShowStepStartLoading`, `findNearestToolNeighbor`, `shouldShowToolLoading`, `hasRenderableContentAfter`, `isRenderableTextPart`, `isRenderableReasoningPart`, `isRenderableDataPart`, `isToolLikePart` are all defined but never invoked from the `MessageParts` component (the only consumer in this file). The body of `MessageParts` uses direct `part.type === 'tool-searchCatalog'` matching plus the `status === "streaming"` shortcut, so the predicate helpers do not contribute to runtime behavior.
 **Fix:** Delete the unused helpers, or wire them into the rendering logic if they were intended to gate the streaming/loading UX. The unused `DynamicToolUIPart`, `StepStartUIPart`, `ToolUIPart` imports can be removed alongside.
 
-### IN-05: Broad eslint-disable at top of message-parts.tsx
+### IN-05: Broad eslint-disable at top of message-parts.tsx — RESOLVED 2026-05-26
+
+**Resolution:** The stale `/* eslint-disable @typescript-eslint/ban-ts-comment */` directive removed from the top of the file (no remaining `@ts-*` comments justified it).
+
+
 
 **File:** `components/chat/message-parts.tsx:1`
 **Issue:** `/* eslint-disable @typescript-eslint/ban-ts-comment */` disables the rule for the entire file, but no `@ts-ignore` / `@ts-expect-error` comments appear in the visible file body. The suppression is likely stale.

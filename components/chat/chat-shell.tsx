@@ -80,8 +80,6 @@ export function ChatShell() {
                         </TabsTrigger>
                         <Button
                             className='flex items-center gap-2 ml-2 text-black'
-                            variant={null}
-                            // size='icon'
                             onClick={handleNewChat}
                         >
                             <PlusIcon className='w-4 h-4' />

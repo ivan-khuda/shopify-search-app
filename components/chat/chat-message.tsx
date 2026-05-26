@@ -71,13 +71,6 @@ export const ChatMessage = forwardRef<HTMLDivElement, ChatMessageProps>(
           )}
         >
           {isAiMessage && (
-            // <Image
-            //   src="/images/logo-avatar.svg"
-            //   alt="logo-favicon"
-            //   width="40"
-            //   height="40"
-            //   className="self-start translate-y-[-50%]"
-            // />
             <div className="flex items-center justify-center rounded-full bg-blue-100 text-blue-400 w-8 h-8 min-w-8 min-h-8">
               S
             </div>
@@ -97,7 +90,6 @@ export const ChatMessage = forwardRef<HTMLDivElement, ChatMessageProps>(
               >
                 {!!partsToRender?.length && (
                   <MessageParts
-                    status={status}
                     parts={partsToRender}
                     messageId={id}
                     savedProductIds={savedProductIds}
