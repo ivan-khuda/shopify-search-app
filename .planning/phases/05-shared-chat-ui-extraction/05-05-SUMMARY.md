@@ -187,7 +187,7 @@ None — plan executed exactly as written.
 
 ## Commits
 
-- `<HEAD>` — `docs(05-05): close Phase 5 — verification gate + planning artifacts updated`
+- `733843f` — `docs(05-05): close Phase 5 — verification gate + planning artifacts updated`
 
 (Task 1 produced no source changes — verification only — so only one commit captures the metadata + SUMMARY for this plan.)
 
