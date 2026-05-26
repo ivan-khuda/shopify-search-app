@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: verifying
-stopped_at: Phase 5 context gathered
-last_updated: "2026-05-26T11:56:05.222Z"
-last_activity: 2026-05-26 -- Phase 04 verification gate closed (manual smoke deferred)
+status: executing
+stopped_at: Phase 5 UI-SPEC approved
+last_updated: "2026-05-26T13:23:38.643Z"
+last_activity: 2026-05-26 -- Phase 05 planning complete
 progress:
   total_phases: 8
   completed_phases: 4
-  total_plans: 34
+  total_plans: 39
   completed_plans: 34
   percent: 50
 ---
@@ -27,8 +27,8 @@ See: .planning/PROJECT.md (updated 2026-05-22)
 
 Phase: 05 (shared-chat-ui-extraction) — READY FOR DISCUSSION
 Plan: 0 of TBD
-Status: Phase 04 verified-with-deferred-smoke (manual smoke held behind shopify-install-flow OAuth blocker — out of scope)
-Last activity: 2026-05-26 -- Phase 04 verification gate closed (manual smoke deferred)
+Status: Ready to execute
+Last activity: 2026-05-26 -- Phase 05 planning complete
 
 Progress: [█████░░░░░] 50%
 
@@ -90,6 +90,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-05-26T11:56:05.215Z
-Stopped at: Phase 5 context gathered
-Resume file: .planning/phases/05-shared-chat-ui-extraction/05-CONTEXT.md
+Last session: 2026-05-26T12:10:04.338Z
+Stopped at: Phase 5 UI-SPEC approved
+Resume file: .planning/phases/05-shared-chat-ui-extraction/05-UI-SPEC.md

@@ -168,7 +168,14 @@ Plans:
   3. The embedded admin chat page imports exclusively from `lib/chat-ui/` — no direct imports from `components/chat/` remain in the embedded surface
   4. A TypeScript strict-mode build passes with no `any` casts in the shared barrel or either adapter
 
-**Plans**: TBD
+**Plans**: 5 plans
+
+- [ ] 05-01-PLAN.md — Wave 0 RED test scaffolds (barrel isolation + adapter unit + store unit)
+- [ ] 05-02-PLAN.md — ChatIdentityAdapter + EmbeddedAdapter + StorefrontAdapter + store interfaces + LocalStorage*Store + useSyncExternalStore hooks
+- [ ] 05-03-PLAN.md — Lift 7 components (chat-pane.tsx with DefaultChatTransport) + barrel index.ts + relocate 6 tests
+- [ ] 05-04-PLAN.md — Rebuild app/(embedded)/chat/chat-shell.tsx with EmbeddedAdapter + delete legacy components/chat/ tree
+- [ ] 05-05-PLAN.md — Phase 5 verification gate + planning artifact updates
+
 **UI hint**: yes
 
 ### Phase 6: Storefront Surface

@@ -721,19 +721,19 @@ grep -rn '@/components/chat' app/ lib/ components/ && exit 1 || exit 0
 
 **Items that need user confirmation:** A2 is the only deferred item; it's locked by Phase 6 scope, not Phase 5.
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **Should `MessageParts` and `EmptyState` be in the barrel `index.ts` exports?**
+1. **Should `MessageParts` and `EmptyState` be in the barrel `index.ts` exports?** — RESOLVED: `EmptyState` IS barrel-exported (per PATTERNS.md + Plan 03 Task 1 barrel export list); `MessageParts` is NOT (consumers import it via deep path `@/lib/chat-ui/components/message-parts` when needed — e.g. Plan 03 Task 2 message-parts.test.tsx).
    - **What we know:** UI-SPEC and CONTEXT.md list both as lifted components. `EmptyState` is consumed externally by `HistoryPanel` and `SavedProductsPanel`. `MessageParts` is consumed only by `ChatMessage` internally.
    - **What's unclear:** Whether external consumers will want to import either directly. Surface shells need `EmptyState` for any custom panels they build (e.g., a future "Compare" tab). `MessageParts` is more of an implementation detail.
    - **Recommendation:** Export `EmptyState` from the barrel (so future surface shells can reuse it). Do NOT export `MessageParts` from the barrel — keep it as an internal implementation of `ChatMessage`. The ROADMAP success criteria mention 5 named exports + `EmptyState` falls under the same category. (Plan can revisit.)
 
-2. **Should `useHistoryStore` / `useSavedProductsStore` accept a `store` instance instead of just a `scope` string, to enable Phase 8 DB-backed swap?**
+2. **Should `useHistoryStore` / `useSavedProductsStore` accept a `store` instance instead of just a `scope` string, to enable Phase 8 DB-backed swap?** — RESOLVED: scope-only constructor parameter for Phase 5 (no store-instance override hook). Phase 8 can add an optional `store?: HistoryStore` override or a new hook variant non-breakingly when the DB-backed implementation lands.
    - **What we know:** D-09 says the swap point is the store interface; Phase 8 will introduce `DbBackedHistoryStore`.
    - **What's unclear:** Whether the hook should pick the impl internally (env-driven? prop-driven?) or be replaced wholesale in Phase 8.
    - **Recommendation:** Phase 5 ships the hooks hard-coded to `LocalStorage*Store`. Phase 8 either (a) adds a `store?: HistoryStore` override param, or (b) introduces a new hook variant. Both are non-breaking. **Do not over-engineer Phase 5.**
 
-3. **Does the integration test `chat.integration-test.tsx` need to be relocated to `lib/chat-ui/__tests__/chat-pane.integration-test.tsx` or kept at the import site?**
+3. **Does the integration test `chat.integration-test.tsx` need to be relocated to `lib/chat-ui/__tests__/chat-pane.integration-test.tsx` or kept at the import site?** — RESOLVED: relocate to `lib/chat-ui/__tests__/chat-pane.integration-test.tsx` per D-11 (hard cut, tests live alongside the code they exercise). Plan 03 Task 2 performs the relocation with updated imports.
    - **What we know:** D-11 says tests relocate to `lib/chat-ui/__tests__/`. The integration test verifies prop-driven behavior of the inner conversation component.
    - **Recommendation:** Relocate per D-11. Rename to `chat-pane.integration-test.tsx` and update the mocked import to `@/lib/chat-ui` (or whatever path the new ChatPane lives at). The existing `vi.mock('@ai-sdk/react', ...)` pattern is preserved as-is.
 
