@@ -191,7 +191,23 @@ Plans:
   4. All storefront-to-backend requests travel through the Shopify App Proxy path (`/apps/smartdiscovery/*`); no cross-origin requests are made
   5. The drawer does not collide with any theme element's z-index on the Dawn, Sense, or Craft themes; in the Theme Editor (`Shopify.designMode`), the FAB is visible but the drawer does not open automatically
 
-**Plans**: TBD
+**Plans**: 14 plans
+
+- [ ] 06-01-PLAN.md — Wave 0 RED test scaffolds (20 vitest files driving Waves 2-3 to GREEN)
+- [ ] 06-02-PLAN.md — Prisma schema (Conversation, SavedProduct, VisitorCustomerLink) + partial unique indexes + [BLOCKING] migration push
+- [ ] 06-03-PLAN.md — shopify.app.toml [app_proxy] block (STR-03)
+- [ ] 06-04-PLAN.md — withAppProxyHmac wrapper + lib/rate-limit/memory.ts sliding-window limiter
+- [ ] 06-05-PLAN.md — esbuild install ([ASSUMED] gate) + scripts/build-storefront-bundle.ts + package.json prebuild
+- [ ] 06-06-PLAN.md — lib/identity/merge.ts (D-11 transactional merge helper)
+- [ ] 06-07-PLAN.md — REST conversations routes (GET list / POST create / GET id / PATCH append / DELETE bulk)
+- [ ] 06-08-PLAN.md — REST saved-products routes (GET / POST toggle / DELETE single) with ON CONFLICT DO NOTHING
+- [ ] 06-09-PLAN.md — /api/proxy/chat real implementation replacing 501 stub (D-21 + IDN-02 cross-check + D-19 onFinish)
+- [ ] 06-10-PLAN.md — Inngest retention-sweep cron + register + manual cleanup-conversations script
+- [ ] 06-11-PLAN.md — DbBackedHistoryStore + DbBackedSavedProductsStore + StorefrontAdapter customer_id edit + barrel re-export
+- [ ] 06-12-PLAN.md — Theme App Extension scaffold + App Embed liquid + loader.js + loader.css
+- [ ] 06-13-PLAN.md — Drawer React shell (StorefrontDrawer + PromptChips + entry.tsx) + bundle-url discovery route + bun run prebuild
+- [ ] 06-14-PLAN.md — Phase 6 verification gate (full suite + shopify app deploy + 5-SC manual smoke + planning artifact updates)
+
 **UI hint**: yes
 
 ### Phase 7: Admin Settings + Model Picker
@@ -237,6 +253,6 @@ Phases 7 and 8 are parallel-eligible with Phase 6 (no blocking dependencies — 
 | 3. Embeddings + Search Indexes | 8/8 | Complete | 2026-05-25 |
 | 4. SearchService + Wire Chat | 6/6 | Complete (verified-with-deferred-smoke) | 2026-05-26 |
 | 5. Shared Chat-UI Extraction | 5/5 | Complete | 2026-05-26 |
-| 6. Storefront Surface | 0/TBD | Not started | - |
+| 6. Storefront Surface | 0/14 | Not started | - |
 | 7. Admin Settings + Model Picker | 0/TBD | Not started | - |
 | 8. Email + Hard Cap | 0/TBD | Not started | - |
