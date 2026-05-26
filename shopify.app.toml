@@ -1,0 +1,21 @@
+# Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
+
+client_id = "eb629f7ef2177c6f74d0e0da6b7f2749"
+name = "SmartDiscovery AI"
+application_url = "https://4b71-2a02-8309-518b-6900-6d0c-28a0-cf31-8de2.ngrok-free.app"
+embedded = true
+
+[webhooks]
+api_version = "2026-04"
+
+[access_scopes]
+# Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
+scopes = "read_products,write_products"
+optional_scopes = [ ]
+use_legacy_install_flow = true
+
+[auth]
+redirect_urls = [
+  "https://4b71-2a02-8309-518b-6900-6d0c-28a0-cf31-8de2.ngrok-free.app/api/auth/callback",
+  "https://4b71-2a02-8309-518b-6900-6d0c-28a0-cf31-8de2.ngrok-free.app/api/auth/online/callback"
+]
