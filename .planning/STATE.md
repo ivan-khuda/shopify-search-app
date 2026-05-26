@@ -2,9 +2,9 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-stopped_at: Phase 4 verification gate verified-with-deferred-smoke
-last_updated: "2026-05-26T09:58:56Z"
+status: verifying
+stopped_at: Phase 5 context gathered
+last_updated: "2026-05-26T11:56:05.222Z"
 last_activity: 2026-05-26 -- Phase 04 verification gate closed (manual smoke deferred)
 progress:
   total_phases: 8
@@ -90,6 +90,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-05-26T09:58:56Z
-Stopped at: Phase 4 verification gate closed (verified-with-deferred-smoke)
-Resume file: .planning/phases/05-shared-chat-ui-extraction/ (directory not yet created — Phase 5 discuss-phase will scaffold)
+Last session: 2026-05-26T11:56:05.215Z
+Stopped at: Phase 5 context gathered
+Resume file: .planning/phases/05-shared-chat-ui-extraction/05-CONTEXT.md
