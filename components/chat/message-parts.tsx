@@ -173,7 +173,12 @@ export const MessageParts = ({
           }
 
           if (part.state === 'output-available') {
-            const products = Array.isArray(part.output) ? (part.output as ChatProduct[]) : [];
+            const products = Array.isArray(part.output)
+              ? part.output.filter(
+                  (p): p is ChatProduct =>
+                    !!p && typeof p === 'object' && typeof (p as ChatProduct).id === 'string',
+                )
+              : [];
 
             if (products.length === 0) {
               return (
@@ -238,7 +243,7 @@ export const MessageParts = ({
           return null;
         }
 
-        if (status === "streaming" || (type === "text" && part.text === "Thinking...")) {
+        if (type === "text" && part.text === "Thinking...") {
           return <TextShimmer duration={10} key={key}>Thinking...</TextShimmer>;
         }
 

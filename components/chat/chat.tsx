@@ -125,7 +125,7 @@ export default function Chat({ savedProducts, onToggleSave, onHistoryAdd }: Chat
                 ))}
             </div>
 
-            <div className="size-full1">
+            <div className="size-full">
                 <PromptInputProvider>
                     <PromptInput globalDrop multiple onSubmit={handleSubmit}>
                         <PromptInputAttachmentsDisplay />

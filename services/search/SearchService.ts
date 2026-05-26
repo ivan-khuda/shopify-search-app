@@ -265,6 +265,7 @@ function formatPriceRange(min: string | null, max: string | null): string {
   if (min === null && max === null) return '';
   const minNum = min !== null ? parseFloat(min) : parseFloat(max!);
   const maxNum = max !== null ? parseFloat(max) : parseFloat(min!);
+  if (!Number.isFinite(minNum) || !Number.isFinite(maxNum)) return '';
   if (minNum === maxNum) return `$${minNum.toFixed(2)}`;
   return `$${minNum.toFixed(2)} – $${maxNum.toFixed(2)}`;
 }

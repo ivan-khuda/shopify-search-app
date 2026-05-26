@@ -20,11 +20,15 @@ findings:
   total: 11
 findings_resolved:
   critical: 1
-  warning: 0
+  warning: 4
   info: 0
 status: issues_found
 resolved:
-  - CR-01: 2026-05-26 — 501 short-circuit landed (commit pending)
+  - CR-01: 2026-05-26 — /api/proxy/chat 501 short-circuit
+  - WR-01: 2026-05-26 — streaming-text shimmer scoped to "Thinking..." placeholder only
+  - WR-02: 2026-05-26 — formatPriceRange guards parseFloat with Number.isFinite
+  - WR-03: 2026-05-26 — Tailwind class typo size-full1 → size-full
+  - WR-04: 2026-05-26 — tool output narrowed via type predicate filter (no cast)
 ---
 
 # Phase 4: Code Review Report
@@ -72,7 +76,9 @@ This preserves the `hybridSearch` import (so EMB-07 #3's grep success criterion 
 
 ## Warnings
 
-### WR-01: Streaming assistant text is replaced with "Thinking…" shimmer for every text part during streaming
+### WR-01: Streaming assistant text is replaced with "Thinking…" shimmer for every text part during streaming — RESOLVED 2026-05-26
+
+**Resolution:** Predicate tightened to `type === "text" && part.text === "Thinking..."`. Streamed text parts now fall through to the `<Response>` renderer so incremental tokens are visible.
 
 **File:** `components/chat/message-parts.tsx:241-243`
 **Issue:** The condition `if (status === "streaming" || (type === "text" && part.text === "Thinking..."))` short-circuits ALL text parts (including legitimate streamed assistant text) while `status === "streaming"`. The boolean is an OR, not an AND — so for any text part received during streaming, the renderer returns a `<TextShimmer>` placeholder instead of the actual text content. This means Vercel AI SDK v6's incremental token streaming UX is invisible to the user; the user only ever sees "Thinking…" until streaming completes, at which point text snaps in. This contradicts the Phase 4 CONTEXT.md note ("`useChat` natively renders streaming text") and is a UX regression vs. typical AI-SDK chat behavior.
@@ -92,7 +98,9 @@ if (type === "text") {
 }
 ```
 
-### WR-02: parseFloat without NaN guard can render "$NaN" in product cards
+### WR-02: parseFloat without NaN guard can render "$NaN" in product cards — RESOLVED 2026-05-26
+
+**Resolution:** `formatPriceRange` now guards both parsed values with `Number.isFinite` and returns an empty string if either is non-finite. UI then falls through to its "price unavailable" handling rather than showing `$NaN`.
 
 **File:** `services/search/SearchService.ts:264-269`
 **Issue:** `formatPriceRange` calls `parseFloat(min)` / `parseFloat(max)` directly on the raw string values returned from Prisma. If a `Product.priceMin` / `priceMax` column ever contains a malformed string (NULL bytes, unicode, accidental write of a non-numeric value during sync), `parseFloat` returns `NaN` silently, producing `"$NaN"` or `"$NaN – $NaN"` in the UI. There is no validation that the parsed numbers are finite, and `Number.MAX_SAFE_INTEGER` is the no-filter sentinel — a row whose price somehow exceeds that bound would also misbehave.
@@ -109,7 +117,9 @@ function formatPriceRange(min: string | null, max: string | null): string {
 }
 ```
 
-### WR-03: Likely Tailwind class typo `size-full1` renders no CSS
+### WR-03: Likely Tailwind class typo `size-full1` renders no CSS — RESOLVED 2026-05-26
+
+**Resolution:** Class corrected to `size-full`.
 
 **File:** `components/chat/chat.tsx:128`
 **Issue:** `<div className="size-full1">` uses the class `size-full1`, which is not a Tailwind utility (no such class in Tailwind 4 — should be `size-full` for `height: 100%; width: 100%`). The class is silently dropped, so the surrounding container does not receive its intended sizing. Either the trailing `1` is a typo or this is a leftover from prior layout tuning.
@@ -119,7 +129,9 @@ function formatPriceRange(min: string | null, max: string | null): string {
 <div className="size-full">
 ```
 
-### WR-04: Unvalidated runtime cast of tool output to ChatProduct[]
+### WR-04: Unvalidated runtime cast of tool output to ChatProduct[] — RESOLVED 2026-05-26
+
+**Resolution:** The `as ChatProduct[]` cast is gone. `part.output` is now narrowed via a type-predicate filter that requires each element to be a non-null object with a string `id`. Anything that doesn't match is dropped before `ProductCard` ever sees it.
 
 **File:** `components/chat/message-parts.tsx:176`
 **Issue:** `const products = Array.isArray(part.output) ? (part.output as ChatProduct[]) : [];` performs a structural type assertion without any runtime shape validation. If `hybridSearch` ever returns objects whose shape diverges from `ChatProduct` (during refactor, after a Prisma schema change, or via a Phase 7 settings-driven projection), the `ProductCard` consumer will receive malformed props with no runtime defense. Since SearchService output is currently fully typed and produced from `toChatProduct`, this is not a current bug — but it removes the type system as a safety net at the v6 SDK boundary, and the dynamic tool-result `output` type is `unknown` for a reason.
