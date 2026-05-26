@@ -17,7 +17,7 @@ SmartDiscovery AI goes from a scaffolded-but-stubbed Shopify embedded app to a f
 - [x] **Phase 4: SearchService + Wire Chat** - RRF hybrid search, MOCK_PRODUCTS removed, admin playground on real data[^4-smoke-deferred]
 
 [^4-smoke-deferred]: Manual smoke deferred behind pre-existing shopify-install-flow OAuth callback cookie blocker (`docs/superpowers/plans/2026-05-02-shopify-install-flow.md`). All Phase 4 structural and automated evidence verified. See `.planning/phases/04-searchservice-wire-chat/04-VERIFICATION.md`.
-- [ ] **Phase 5: Shared Chat-UI Extraction** - lib/chat-ui barrel, adapter pattern, persistence models
+- [x] **Phase 5: Shared Chat-UI Extraction** - lib/chat-ui barrel, adapter pattern, persistence models
 - [ ] **Phase 6: Storefront Surface** - Theme App Extension, App Proxy, FAB + drawer, visitor identity + persistence
 - [ ] **Phase 7: Admin Settings + Model Picker** - ShopSettings model, model picker UI, per-shop active model
 - [ ] **Phase 8: Email + Hard Cap** - Resend completion emails, per-shop request counter, graceful cap response
@@ -170,11 +170,11 @@ Plans:
 
 **Plans**: 5 plans
 
-- [ ] 05-01-PLAN.md — Wave 0 RED test scaffolds (barrel isolation + adapter unit + store unit)
-- [ ] 05-02-PLAN.md — ChatIdentityAdapter + EmbeddedAdapter + StorefrontAdapter + store interfaces + LocalStorage*Store + useSyncExternalStore hooks
-- [ ] 05-03-PLAN.md — Lift 7 components (chat-pane.tsx with DefaultChatTransport) + barrel index.ts + relocate 6 tests
-- [ ] 05-04-PLAN.md — Rebuild app/(embedded)/chat/chat-shell.tsx with EmbeddedAdapter + delete legacy components/chat/ tree
-- [ ] 05-05-PLAN.md — Phase 5 verification gate + planning artifact updates
+- [x] 05-01-PLAN.md — Wave 0 RED test scaffolds (barrel isolation + adapter unit + store unit)
+- [x] 05-02-PLAN.md — ChatIdentityAdapter + EmbeddedAdapter + StorefrontAdapter + store interfaces + LocalStorage*Store + useSyncExternalStore hooks
+- [x] 05-03-PLAN.md — Lift 7 components (chat-pane.tsx with DefaultChatTransport) + barrel index.ts + relocate 5 tests (4 unit + 1 integration)
+- [x] 05-04-PLAN.md — Rebuild app/(embedded)/chat/chat-shell.tsx with EmbeddedAdapter + delete legacy components/chat/ tree
+- [x] 05-05-PLAN.md — Phase 5 verification gate + planning artifact updates
 
 **UI hint**: yes
 
@@ -236,7 +236,7 @@ Phases 7 and 8 are parallel-eligible with Phase 6 (no blocking dependencies — 
 | 2. Sync Pipeline | 0/TBD | Not started | - |
 | 3. Embeddings + Search Indexes | 8/8 | Complete | 2026-05-25 |
 | 4. SearchService + Wire Chat | 6/6 | Complete (verified-with-deferred-smoke) | 2026-05-26 |
-| 5. Shared Chat-UI Extraction | 0/TBD | Not started | - |
+| 5. Shared Chat-UI Extraction | 5/5 | Complete | 2026-05-26 |
 | 6. Storefront Surface | 0/TBD | Not started | - |
 | 7. Admin Settings + Model Picker | 0/TBD | Not started | - |
 | 8. Email + Hard Cap | 0/TBD | Not started | - |

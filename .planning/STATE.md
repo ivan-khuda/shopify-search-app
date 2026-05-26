@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-stopped_at: Phase 5 UI-SPEC approved
-last_updated: "2026-05-26T13:23:38.643Z"
-last_activity: 2026-05-26 -- Phase 05 planning complete
+status: phase-complete
+stopped_at: Phase 5 verification gate closed
+last_updated: "2026-05-26T16:13:00.000Z"
+last_activity: 2026-05-26 -- Phase 05 verification gate closed (lib/chat-ui barrel + adapters live)
 progress:
   total_phases: 8
-  completed_phases: 4
+  completed_phases: 5
   total_plans: 39
-  completed_plans: 34
-  percent: 50
+  completed_plans: 39
+  percent: 62
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-22)
 
 **Core value:** A storefront visitor can describe what they want in natural language and immediately see relevant products from the merchant's catalog — synced reliably, embedded into their theme, with no dev work from the merchant.
-**Current focus:** Phase 05 — shared-chat-ui-extraction (ready for discussion)
+**Current focus:** Phase 05 — shared-chat-ui-extraction
 
 ## Current Position
 
-Phase: 05 (shared-chat-ui-extraction) — READY FOR DISCUSSION
-Plan: 0 of TBD
-Status: Ready to execute
-Last activity: 2026-05-26 -- Phase 05 planning complete
+Phase: 05 (shared-chat-ui-extraction) — VERIFIED
+Plan: 5 of 5
+Status: Phase 05 verified (4/4 success criteria PASS; bun build + bun test green for lib/chat-ui scope)
+Last activity: 2026-05-26 -- Phase 05 verification gate closed
 
-Progress: [█████░░░░░] 50%
+Progress: [██████░░░░] 62%
 
 ## Performance Metrics
 
@@ -67,6 +67,7 @@ Recent decisions affecting current work:
 - Pre-roadmap: `db/manual-indexes.sql` idempotent re-apply after every `prisma migrate deploy`
 - Phase 3 (verified 2026-05-25): EMBEDDING_MODEL = 'openai/text-embedding-3-small' pinned via frozen constant; modelVersion column NOT NULL; HNSW + GIN indexes live in db/manual-indexes.sql (outside Prisma); withHnswIterativeScan helper consumed by Phase 4 SearchService.
 - Phase 4 (verified-with-deferred-smoke 2026-05-26): Hybrid RRF search (`services/search/SearchService.hybridSearch`) ships shop-scoped pgvector + tsvector retrieval inside a single `withHnswIterativeScan` transaction with defense-in-depth shop filtering. `/api/chat` migrated to AI Gateway routing via plain model id `google/gemini-2.5-flash`; single camelCase `searchCatalog` tool with Vercel AI SDK v6 `inputSchema` (NOT v5 `parameters`); execute closure forwards shop from withShopifySession ctx. `/api/proxy/chat` ships as a Phase 6 stub importing `hybridSearch` (EMB-07 SC #3 source-level proof). `MOCK_PRODUCTS` deleted from disk; UI reads `message.parts[*].type === 'tool-searchCatalog'` directly. `/chat` is a Server Component server-rendering the preview-mode banner (`Preview mode — using your real catalog · Model: Gemini 2.5 Flash`, em-dash U+2014 + middle-dot U+00B7 byte-precise) above a new `components/chat/chat-shell.tsx` client component. Manual smoke deferred behind pre-existing shopify-install-flow OAuth cookie blocker (out of scope for Phase 4).
+- Phase 5 (verified 2026-05-26): `lib/chat-ui/` barrel ships ChatPane (renamed from Chat, named export, adapter-driven DefaultChatTransport with Resolvable headers/body), ChatMessage, ProductCard, HistoryPanel, SavedProductsPanel, EmptyState. ChatIdentityAdapter interface in lib/chat-ui/adapters/types.ts implemented by EmbeddedAdapter (App Bridge runtime global, ZERO @shopify/* imports) and StorefrontAdapter (localStorage 'smartdiscovery.visitor_id' + crypto.randomUUID, SSR-safe). HistoryStore + SavedProductsStore interfaces in lib/chat-ui/stores/types.ts with LocalStorage default implementations namespaced by scope (T-5-01 empty-scope throw guard). useHistoryStore + useSavedProductsStore React hooks via useSyncExternalStore with SSR snapshot. Embedded surface shell app/(embedded)/chat/chat-shell.tsx instantiates EmbeddedAdapter + store hooks; legacy components/chat/ tree fully deleted (14 files). UI-SPEC locked deltas: chat-message.tsx user bubble clamp `max-w-[min(448px,100%)]`; ChatPane no longer carries surface-specific heights. Barrel-isolation static-grep test (lib/chat-ui/__tests__/barrel-isolation.test.ts) enforces SHR-01 with adapter sub-path exemption (D-04). Full vitest suite GREEN (28 files / 194 tests). `bun build` failure on pre-existing unimported dead file `components/ai-elements/reasoning.tsx` (`@jenius/ui` external package) is unrelated to Phase 5 deliverables — `tsc --noEmit` scoped to `lib/chat-ui/` is clean.
 
 ### Pending Todos
 
@@ -90,6 +91,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-05-26T12:10:04.338Z
-Stopped at: Phase 5 UI-SPEC approved
-Resume file: .planning/phases/05-shared-chat-ui-extraction/05-UI-SPEC.md
+Last session: 2026-05-26T16:13:00.000Z
+Stopped at: Phase 5 verification gate closed
+Resume file: .planning/phases/05-shared-chat-ui-extraction/05-05-SUMMARY.md

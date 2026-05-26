@@ -50,10 +50,10 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Shared Chat-UI Package
 
-- [ ] **SHR-01**: Chat components extracted to `lib/chat-ui/` runtime-neutral barrel with no `window.shopify` / App Bridge imports
-- [ ] **SHR-02**: `ChatIdentityAdapter` interface allows embedded and storefront callers to provide token/identity differently
-- [ ] **SHR-03**: Embedded admin uses `EmbeddedAdapter` (session-token Bearer); storefront drawer uses `StorefrontAdapter` (visitor_id from localStorage)
-- [ ] **SHR-04**: Both surfaces import the same `ChatPane`, `ChatMessage`, `ProductCard`, `HistoryPanel`, `SavedProductsPanel` components
+- [x] **SHR-01**: Chat components extracted to `lib/chat-ui/` runtime-neutral barrel with no `window.shopify` / App Bridge imports
+- [x] **SHR-02**: `ChatIdentityAdapter` interface allows embedded and storefront callers to provide token/identity differently
+- [x] **SHR-03**: Embedded admin uses `EmbeddedAdapter` (session-token Bearer); storefront drawer uses `StorefrontAdapter` (visitor_id from localStorage)
+- [x] **SHR-04**: Both surfaces import the same `ChatPane`, `ChatMessage`, `ProductCard`, `HistoryPanel`, `SavedProductsPanel` components
 
 ### Storefront Surface (Theme App Extension + App Proxy + Drawer)
 
@@ -163,10 +163,10 @@ Explicitly excluded. Documented to prevent scope creep.
 | ADM-04 | Phase 7 | Pending |
 | ADM-05 | Phase 4 | Pending |
 | ADM-06 | Phase 4 | Pending |
-| SHR-01 | Phase 5 | Pending |
-| SHR-02 | Phase 5 | Pending |
-| SHR-03 | Phase 5 | Pending |
-| SHR-04 | Phase 5 | Pending |
+| SHR-01 | Phase 5 | Complete (Phase 5) |
+| SHR-02 | Phase 5 | Complete (Phase 5) |
+| SHR-03 | Phase 5 | Complete (Phase 5) |
+| SHR-04 | Phase 5 | Complete (Phase 5) |
 | STR-01 | Phase 6 | Pending |
 | STR-02 | Phase 6 | Pending |
 | STR-03 | Phase 6 | Pending |
@@ -196,4 +196,4 @@ Explicitly excluded. Documented to prevent scope creep.
 
 ---
 *Requirements defined: 2026-05-22*
-*Last updated: 2026-05-22 — traceability populated by roadmapper*
+*Last updated: 2026-05-26 — SHR-01..04 marked complete after Phase 5 verification gate*
