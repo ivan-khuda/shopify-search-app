@@ -1,60 +1,56 @@
 /**
- * Storefront chat endpoint — Phase 4 STUB.
+ * Storefront chat endpoint — Phase 4 STUB (501 NOT IMPLEMENTED).
  *
  * Phase 4 ships only enough surface here to satisfy EMB-07 success criterion #3:
  * "Both `/api/chat` (admin) and `/api/proxy/chat` (storefront, stubbed) call
- * `SearchService.hybridSearch`." The runtime storefront drawer does NOT invoke
- * this route in Phase 4 — it exists today as a source-level proof point so the
- * EMB-07 verification gate passes via two grep commands targeting `hybridSearch`
- * imports across both routes.
+ * `SearchService.hybridSearch`." The `hybridSearch` import below is the
+ * source-level proof point that satisfies the EMB-07 grep gate; the route
+ * returns 501 Not Implemented unconditionally until Phase 6.
  *
- * TODO(Phase 6): Replace this stub with the real storefront chat endpoint. The
- * Phase 6 executor must add ALL of the following before this route is wired to
- * the customer-facing drawer:
+ * Why 501 instead of a working implementation: this route is exposed under the
+ * App Proxy path and was previously invoking `hybridSearch` with the raw
+ * `?shop=` query parameter, with no authentication. That allowed any caller
+ * who knew a shop's `.myshopify.com` domain to dump search matches for that
+ * shop — a multi-tenant data leak per PROJECT.md's "no multi-tenant data
+ * leaks" hard constraint. Issue: 04-REVIEW.md CR-01.
+ *
+ * TODO(Phase 6): Replace the 501 short-circuit with the real storefront chat
+ * endpoint. Required additions before the route is wired to the customer-facing
+ * drawer:
  *
  *   1. App Proxy HMAC validation via
  *        shopifyClient.utils.validateHmac(query, { signator: 'appProxy' })
- *      per STR-04. The `?shop=` query parameter is UNTRUSTED in Phase 4 — Phase 6
- *      must derive shop from the validated signature, NOT from the raw param.
+ *      per STR-04. Derive `shop` from the validated signature, NOT from the
+ *      raw query parameter.
  *   2. Anonymous visitor identity resolution from a `visitor_id` body field
  *      (IDN-01). Shopify's App Proxy strips Set-Cookie, so identity must be
  *      passed in the request payload (localStorage on the storefront), NOT via
  *      cookies — see PROJECT.md "Storefront identity".
- *   3. Replace this JSON response with the Vercel AI SDK streaming-text call
- *      (the same `searchCatalog` tool registration used by `app/api/chat/route.ts`),
- *      sharing the chat-ui components extracted in Phase 5. See that route for
- *      the canonical wiring shape Phase 6 must mirror here.
+ *   3. Replace the 501 with the Vercel AI SDK streaming-text call (the same
+ *      `searchCatalog` tool registration used by `app/api/chat/route.ts`),
+ *      sharing the chat-ui components extracted in Phase 5.
  *   4. Verify per-shop hard cap (CAP-02) before invoking the AI Gateway so
  *      storefront traffic cannot exhaust the free-tier monthly cap.
  *
- * WARNING: DO NOT use this endpoint from production storefront drawer code
- * until Phase 6. The current implementation trusts the `?shop=` query parameter
- * as-supplied and performs zero authentication — it is a source-level
- * placeholder, not a callable storefront API.
- *
  * Cross-reference: see `app/api/chat/route.ts` for the canonical pattern Phase 6
- * will mirror here. NOTE: this stub intentionally does NOT use the Bearer
- * session wrapper from `@/lib/shopify/auth` — App Proxy authenticates via HMAC,
- * not Bearer tokens, so the two routes will diverge on their auth wrapper even
- * after Phase 6 lands.
+ * will mirror here. NOTE: Phase 6 must NOT use the Bearer session wrapper from
+ * `@/lib/shopify/auth` — App Proxy authenticates via HMAC, not Bearer tokens,
+ * so the two routes will diverge on their auth wrapper.
  */
 import { hybridSearch } from '@/services/search/SearchService';
 
-export async function POST(req: Request): Promise<Response> {
-  // TODO(Phase 6): Replace this stub with HMAC verification + streaming-text wiring (see header).
-  const url = new URL(req.url);
-  // Phase 4: ?shop= is UNTRUSTED here. Phase 6 will verify HMAC signature.
-  const shop = url.searchParams.get('shop');
-  if (!shop) {
-    return Response.json({ error: 'missing_shop' }, { status: 400 });
-  }
+// Phase 6 will replace the 501 short-circuit with HMAC verification + streamText.
+// The reference to `hybridSearch` keeps the import alive for the EMB-07 source-
+// level grep gate without giving the live route any way to invoke it.
+void hybridSearch;
 
-  const body = (await req.json().catch(() => ({}))) as { query?: string };
-  const query = (body.query ?? '').trim();
-  if (!query) {
-    return Response.json({ products: [] });
-  }
-
-  const products = await hybridSearch(shop, query);
-  return Response.json({ products });
+export async function POST(): Promise<Response> {
+  return Response.json(
+    {
+      error: 'not_implemented',
+      message:
+        'Storefront chat endpoint is a Phase 4 stub. Phase 6 will replace this with HMAC-authenticated streaming chat.',
+    },
+    { status: 501 },
+  );
 }

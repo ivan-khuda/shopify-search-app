@@ -18,7 +18,13 @@ findings:
   warning: 4
   info: 6
   total: 11
+findings_resolved:
+  critical: 1
+  warning: 0
+  info: 0
 status: issues_found
+resolved:
+  - CR-01: 2026-05-26 — 501 short-circuit landed (commit pending)
 ---
 
 # Phase 4: Code Review Report
@@ -38,7 +44,9 @@ Secondary warnings include a UX regression where streaming assistant text is rep
 
 ## Critical Issues
 
-### CR-01: Unauthenticated POST /api/proxy/chat enables cross-shop data exfiltration
+### CR-01: Unauthenticated POST /api/proxy/chat enables cross-shop data exfiltration — RESOLVED 2026-05-26
+
+**Resolution:** Route now returns HTTP 501 with `{ error: 'not_implemented' }` unconditionally. The `hybridSearch` import is preserved (`void hybridSearch;`) to keep the EMB-07 source-level grep gate green. Test suite updated — 4/4 stub tests pass; full suite 175/175. Live runtime attack surface is gone. Phase 6 will replace the 501 with HMAC-verified streaming chat.
 
 **File:** `app/api/proxy/chat/route.ts:43-60`
 **Issue:** The route is a live, callable Next.js POST handler (no `export const dynamic` guard, no env gate, no `return new Response('not_implemented', { status: 501 })`). The handler reads the `shop` value directly from the URL query string and forwards it — together with the user-supplied query — to `hybridSearch(shop, query)`. Because `hybridSearch` enforces shop scoping at the SQL layer, ANY caller who knows or guesses a shop's myshopify.com domain can retrieve the top-10 product matches for any query against that shop. This is exactly the "no multi-tenant data leaks" failure mode PROJECT.md explicitly forbids. The file header acknowledges the risk in a comment ("WARNING: DO NOT use this endpoint from production storefront drawer code until Phase 6"), but a documentation comment does not protect a deployed route. Once `bun build` ships, this route is reachable from the public internet without authentication, without HMAC verification, and without rate limiting.

@@ -1,5 +1,7 @@
-// Phase 4 RED scaffold for EMB-07 success criterion #3 (both routes call SearchService).
-// Implementation target: app/api/proxy/chat/route.ts (created in plan 04-04). Phase 6 will replace this stub with HMAC + streamText.
+// Phase 4 stub tests: /api/proxy/chat returns 501 Not Implemented unconditionally
+// until Phase 6 lands HMAC verification + streamText wiring. The `hybridSearch`
+// import is preserved in route.ts as the EMB-07 source-level proof point; tests
+// here confirm the route never reaches it. Issue closed: 04-REVIEW.md CR-01.
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const { hybridSearchMock } = vi.hoisted(() => ({
@@ -24,71 +26,54 @@ beforeEach(() => {
   vi.clearAllMocks();
 });
 
-describe('POST /api/proxy/chat', () => {
-  it("returns 400 with { error: 'missing_shop' } when ?shop= is missing", async () => {
+describe('POST /api/proxy/chat (Phase 4 stub)', () => {
+  it('returns 501 with a not_implemented body and never calls hybridSearch — even with a valid shop and query', async () => {
+    const res = await POST(
+      makeRequest('http://localhost/api/proxy/chat?shop=shop.myshopify.com', { query: 'shoes' }),
+    );
+    expect(res.status).toBe(501);
+    const body = await res.json();
+    expect(body.error).toBe('not_implemented');
+    expect(hybridSearchMock).not.toHaveBeenCalled();
+  });
+
+  it('returns 501 when ?shop= is missing (no preferential 400 leak)', async () => {
     const res = await POST(makeRequest('http://localhost/api/proxy/chat', { query: 'shoes' }));
-    expect(res.status).toBe(400);
-    const body = await res.json();
-    expect(body.error).toBe('missing_shop');
+    expect(res.status).toBe(501);
     expect(hybridSearchMock).not.toHaveBeenCalled();
   });
 
-  it('returns { products: [] } without calling hybridSearch when query body is empty string', async () => {
-    const res = await POST(
-      makeRequest('http://localhost/api/proxy/chat?shop=s.myshopify.com', { query: '' }),
-    );
-    const body = await res.json();
-    expect(hybridSearchMock).not.toHaveBeenCalled();
-    expect(body.products).toEqual([]);
-  });
-
-  it('returns { products: [] } without calling hybridSearch when query body is whitespace-only', async () => {
-    const res = await POST(
-      makeRequest('http://localhost/api/proxy/chat?shop=s.myshopify.com', { query: '   ' }),
-    );
-    const body = await res.json();
-    expect(hybridSearchMock).not.toHaveBeenCalled();
-    expect(body.products).toEqual([]);
-  });
-
-  it('returns { products: [] } without calling hybridSearch when body is missing or non-JSON', async () => {
-    // Missing body
-    const res1 = await POST(
+  it('returns 501 when body is missing or malformed (request parsing never reached)', async () => {
+    const resNoBody = await POST(
       new Request('http://localhost/api/proxy/chat?shop=s.myshopify.com', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
       }),
     );
-    const body1 = await res1.json();
-    expect(body1.products).toEqual([]);
+    expect(resNoBody.status).toBe(501);
     expect(hybridSearchMock).not.toHaveBeenCalled();
 
-    // Malformed JSON
-    const res2 = await POST(
+    const resBadJson = await POST(
       new Request('http://localhost/api/proxy/chat?shop=s.myshopify.com', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: '{not valid json',
       }),
     );
-    const body2 = await res2.json();
-    expect(body2.products).toEqual([]);
+    expect(resBadJson.status).toBe(501);
     expect(hybridSearchMock).not.toHaveBeenCalled();
   });
 
-  it("calls hybridSearch('shop.myshopify.com', 'shoes') and returns its result wrapped in { products }", async () => {
-    const fakeProducts = [
-      { id: '1', title: 'X', price: '$5', description: 'D' },
-    ];
-    hybridSearchMock.mockResolvedValueOnce(fakeProducts);
-
-    const res = await POST(
-      makeRequest('http://localhost/api/proxy/chat?shop=shop.myshopify.com', { query: 'shoes' }),
+  it('returns 501 for empty or whitespace-only query body (no query-shape leak)', async () => {
+    const resEmpty = await POST(
+      makeRequest('http://localhost/api/proxy/chat?shop=s.myshopify.com', { query: '' }),
     );
-    const body = await res.json();
+    expect(resEmpty.status).toBe(501);
 
-    expect(hybridSearchMock).toHaveBeenCalledTimes(1);
-    expect(hybridSearchMock).toHaveBeenCalledWith('shop.myshopify.com', 'shoes');
-    expect(body.products).toEqual(fakeProducts);
+    const resWhitespace = await POST(
+      makeRequest('http://localhost/api/proxy/chat?shop=s.myshopify.com', { query: '   ' }),
+    );
+    expect(resWhitespace.status).toBe(501);
+    expect(hybridSearchMock).not.toHaveBeenCalled();
   });
 });
