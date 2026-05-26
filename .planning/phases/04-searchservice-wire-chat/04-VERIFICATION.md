@@ -155,3 +155,78 @@ Operator-cited blocker:
 ---
 
 Phase 4 verification gate: VERIFIED WITH DEFERRED MANUAL SMOKE — 2026-05-26T09:58:56Z
+
+---
+
+## Verifier Appendix (independent re-verification)
+
+**Verifier:** gsd-verifier (independent agent)
+**Verified at:** 2026-05-26T12:08:00Z
+**Mode:** Goal-backward re-verification of the executor-authored VERIFICATION.md above. Independent re-runs of the structural/automated gates against the working tree.
+
+### Independent re-runs
+
+| Gate | Command | Result |
+|------|---------|--------|
+| Full test suite | `bunx vitest run` | **Test Files 24 passed (24) · Tests 176 passed (176)** in 8.15s — matches executor claim exactly. |
+| `mock-products.ts` existence | `find . -name 'mock-products*' -not -path './.git/*' -not -path './node_modules/*' -not -path './.next/*'` | Empty. File deleted from disk. |
+| Runtime mock references | `grep -rn 'MOCK_PRODUCTS\|buildMockResults' app/ components/ services/ lib/ types/` | Only `app/prototype/prototype-data.ts:1,57` (both **commented-out** lines, in an **untracked** directory per `git status` — `?? app/prototype/`). Zero runtime references. |
+| Tracked-file mock check | `git ls-files components/chat/mock-products*` | Empty. Deletion is committed. |
+| `/api/chat` SearchService import | `grep -c "from '@/services/search/SearchService'" app/api/chat/route.ts` | 1 |
+| `/api/proxy/chat` SearchService import | `grep -c "from '@/services/search/SearchService'" app/api/proxy/chat/route.ts` | 1 |
+| `/api/chat` v6 `inputSchema` lock | `grep -c "inputSchema" app/api/chat/route.ts` | 5 |
+| `/api/chat` v5 `parameters:` absent | `grep -c "parameters:" app/api/chat/route.ts` | 0 |
+| `/api/chat` no direct Google SDK | `grep -c "@ai-sdk/google" app/api/chat/route.ts` | 0 |
+| `searchCatalog` tool key present | `grep -c "searchCatalog" app/api/chat/route.ts` | 5 |
+| ADM-05 dynamic `{model.displayName}` | `grep -c "{model.displayName}" app/(embedded)/chat/page.tsx` | 1 |
+| ADM-05 no hardcoded literal | `grep -c "Gemini 2.5 Flash" app/(embedded)/chat/page.tsx` | 0 |
+| ADM-05 aria-label phrase exact | `grep -c "Chat playground preview mode banner" app/(embedded)/chat/page.tsx` | 1 |
+| ADM-05 server component (no `use client`) | `grep -c 'use client' app/(embedded)/chat/page.tsx` | 0 |
+| ADM-05 em-dash U+2014 in visible banner | Node codepoint scan on `app/(embedded)/chat/page.tsx` | Found at byte offset 1241 in context `"Preview mode — using your re"` (visible banner text, not just comment). |
+| ADM-05 middle-dot U+00B7 in visible banner | Node codepoint scan on `app/(embedded)/chat/page.tsx` | Found in context `"og · Mod"` between `catalog` and `Model:`. |
+| `withShopifySession` wraps `/api/chat` POST | `grep -n 'export const POST = withShopifySession' app/api/chat/route.ts` | Match on line 61 — shop is captured from session ctx, not from LLM args. |
+
+### Independent code reading (Level 4 data-flow)
+
+- **`/api/chat` → SearchService.** `app/api/chat/route.ts:92-94` `execute: async ({ query, priceMin, priceMax }) => { return hybridSearch(shop, query, { priceMin, priceMax }); }` — `shop` is the closure variable from `withShopifySession`. LLM-side input is restricted by Zod `inputSchema` to `{ query, priceMin?, priceMax? }`; no `shop` field. Multi-tenancy gate holds at the source level.
+- **SearchService data flow.** `services/search/SearchService.ts:104` short-circuits on empty/whitespace query before `embed()` (T-04-03 lock). RRF SQL has shop bindings in vec_ranked (`pe.shop`, `p.shop`), lex_ranked (`p.shop`), outer hydration JOIN (`p.shop`), and (when hasPrice) the variants CTE (`shop`). Cosine `<=>`, `websearch_to_tsquery`, `ts_rank_cd`, `SUM(1.0 / (${RRF_K} + rank))` literal all present.
+- **Banner → ChatShell composition.** `app/(embedded)/chat/page.tsx` is an async server component that awaits `getActiveChatModel(shop)`; banner renders ABOVE `<ChatShell />`. Banner reads `{model.displayName}` dynamically — Phase 7 body-only swap of `getActiveChatModel` will propagate without page.tsx changes (ADM-05 contract holds).
+- **UI tool-result rendering.** `components/chat/message-parts.tsx` exclusively renders `tool-searchCatalog` part output (state-machine over `input-streaming`/`input-available`/`output-available`/`output-error`). No `MOCK_PRODUCTS.filter`, no `PendingProductAttachment`. Integration test uses `TEST_PRODUCT` fixture via the tool-result path.
+
+### Anti-pattern scan on Phase 4 modified files
+
+- `TBD`/`FIXME`/`XXX` markers: **0**.
+- `TODO`/`HACK`: 3 hits, **all in `app/api/proxy/chat/route.ts`**, all explicitly tied to formal follow-up (`TODO(Phase 6): ...`). The debt-marker gate accepts these — completion auditability is preserved through the phase reference.
+- "placeholder" hit in `components/chat/chat.tsx:133` is a `<PromptInputTextarea placeholder="...">` UI input placeholder, **not** a stub indicator.
+
+### Requirements coverage (cross-reference vs REQUIREMENTS.md)
+
+| Req ID | REQUIREMENTS.md description | Independent verdict |
+|--------|----------------------------|---------------------|
+| EMB-05 | `SearchService.hybridSearch(shop, query, limit)` runs pgvector cosine top-K and tsvector `websearch_to_tsquery` in parallel, fuses with RRF, returns ranked products scoped to shop | SATISFIED — code + 12/12 unit tests pass; shop scoping at ≥4 binding sites; RRF formula `1.0 / (60 + rank)` present. |
+| EMB-07 | `MOCK_PRODUCTS` fully removed from runtime paths; both `/api/chat` (admin) and `/api/proxy/chat` (storefront) call `SearchService.hybridSearch` | SATISFIED — file deleted; both routes import `hybridSearch`; 0 runtime references. |
+| ADM-05 | Admin chat playground labels itself "Preview mode — using your real catalog", displays active model name, uses shared chat components | SATISFIED structurally — banner text byte-precise; dynamic displayName binding; server-rendered; 8/8 page tests pass. (Shared-component lift to `lib/chat-ui/` is Phase 5 work, not gated by ADM-05.) |
+| ADM-06 | Admin chat retrieves grounded results via `SearchService.hybridSearch` and renders product cards inline; never returns mock data | SATISFIED — tool-call-only architecture (`searchCatalog` tool), execute closure invokes `hybridSearch`, UI renders only `tool-searchCatalog` part outputs; 13/13 route + 10/10 message-parts tests pass. |
+
+### Behavioral spot-checks (Step 7b)
+
+| Behavior | Command | Result | Status |
+|----------|---------|--------|--------|
+| Phase 4 test files pass | `bunx vitest run` | 176/176 pass | PASS |
+| `hybridSearch` callable signature | Source read: `export async function hybridSearch(shop, query, opts)` returns `Promise<ChatProduct[]>` | Type-correct | PASS |
+| `searchCatalog` tool registered with v6 schema | `app/api/chat/route.ts:81-95` | Single tool key, `inputSchema: z.object(...)`, `execute` closure binds shop | PASS |
+| Banner glyphs byte-precise | Node codepoint scan | U+2014 and U+00B7 present at visible banner text positions | PASS |
+
+### Deferred-smoke acknowledgement
+
+The four manual smoke sub-cases (banner glyph visual confirmation, demo query end-to-end, brand/SKU query, negative-query affordance) remain deferred behind the pre-existing OAuth callback cookie blocker (`app/api/auth/callback/route.ts:4` "Could not find an OAuth cookie"). This is an operator-accepted deferral documented in the executor's VERIFICATION.md above and tracked outside Phase 4 in `docs/superpowers/plans/2026-05-02-shopify-install-flow.md`. The deferral does NOT downgrade the structural verdict — every Phase 4 success criterion has source-level evidence plus an automated test gate.
+
+### Verifier verdict
+
+**Status:** `passed` (structural + automated gates fully verified; manual smoke operator-deferred behind out-of-scope OAuth blocker, with full structural surrogate evidence on each sub-case).
+
+**Score:** 4/4 requirements (EMB-05, EMB-07, ADM-05, ADM-06) satisfied · 4/4 ROADMAP success criteria satisfied at the structural/automated level · 176/176 tests pass · 0 blocker anti-patterns · 0 unreferenced debt markers.
+
+**Re-verification of executor claims:** All independently re-runnable claims in the executor's VERIFICATION.md match the working-tree state. No discrepancies found.
+
+Verifier appendix sealed — 2026-05-26T12:08:00Z
