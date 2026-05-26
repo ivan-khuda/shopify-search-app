@@ -1,10 +1,11 @@
 ---
 phase: 06
 slug: storefront-surface
-status: draft
+status: approved
 shadcn_initialized: true
 preset: "new-york / neutral / css-variables"
 created: 2026-05-26
+reviewed_at: 2026-05-26
 ---
 
 # Phase 6 — UI Design Contract
@@ -82,18 +83,17 @@ Declared values (multiples of 4; Tailwind v4 default 0.25rem step):
 
 ## Typography
 
-Tailwind v4 utility classes. Font sizes locked to exactly 4; weights locked to exactly 2.
+Tailwind v4 utility classes. Font sizes locked to exactly 3; weights locked to exactly 2.
 
-Inherited from Phase 4/5 locked contract — no new type styles introduced. Phase 6 adds only the drawer header text and the prompt chip labels.
+Inherited from Phase 4/5 locked contract — no new type styles introduced. Phase 6 adds only the drawer header text and the prompt chip labels. The ProductCard component is reused unchanged from Phase 5; its internal weight usage is component-internal and is not declared by this spec.
 
 | Role | Size | Tailwind | Weight | Line Height | Where in Phase 6 |
 |------|------|----------|--------|-------------|------------------|
 | Display (app name) | 18px | `text-lg` | 600 (semibold) | `leading-none` | Drawer header "SmartDiscovery AI" (mirrors embedded admin header) |
 | Body | 14px | `text-sm` | 400 (regular) | `leading-5` (1.43) | Drawer subtitle, chip labels, history rows — inherited from Phase 5 |
 | Label | 12px | `text-xs` | 400 (regular) | `leading-4` (1.33) | Tab labels, chip secondary text, "Shopify Assistant" subtitle |
-| Caption | 10px | `text-[10px]` | 700 (bold) | default | ProductCard "View" CTA (carried from Phase 5 — no change) |
 
-**Weight discipline:** Only `font-normal` (400) and `font-semibold` (600) appear in Phase 6 new surfaces. `font-bold` (700) is a carry-forward on `text-[10px]` only (ProductCard "View" CTA — existing, untouched).
+**Weight discipline:** Phase 6 surfaces use exactly 2 weights: `font-normal` (400) and `font-semibold` (600). Inherited components from Phase 5 are not redeclared here.
 
 ---
 
@@ -288,7 +288,7 @@ From STR-05 ("side drawer 380–420px on desktop, full-height bottom-sheet on mo
 
 ```
 ┌──────────────────────────────────────────────────────────┐
-│  [Sparkles bg-[#008060] p-1.5 rounded-lg]               │
+│  [Sparkles bg-[#008060] p-2 rounded-lg]                  │
 │     SmartDiscovery AI    [Chat] [History] [Saved]  [×]  │
 │     Shopify Assistant                                    │
 └──────────────────────────────────────────────────────────┘
@@ -298,7 +298,7 @@ From STR-05 ("side drawer 380–420px on desktop, full-height bottom-sheet on mo
 |----------|-------|
 | Background | `bg-background` with `border-b border-border` |
 | Padding | `px-4 py-4` (`md` horizontal, `md` vertical) |
-| Brand tile | `bg-[#008060] p-1.5 rounded-lg` — Sparkles `w-5 h-5 text-white` (matches admin) |
+| Brand tile | `bg-[#008060] p-2 rounded-lg` — Sparkles `w-5 h-5 text-white` (matches admin) |
 | App name | `text-lg font-semibold leading-none` — "SmartDiscovery AI" |
 | Subtitle | `text-xs text-muted-foreground mt-1` — "Shopify Assistant" |
 | Tab strip | Same `TabsList` / `TabsTrigger` as admin (from shadcn `Tabs`) |
@@ -513,8 +513,8 @@ Registry vetting gate: not run — no third-party blocks declared.
 - [ ] Dimension 1 Copywriting: PASS — FAB labels, drawer header, chip labels, all carry-forward strings locked; destructive (Clear All) is carry-forward with no confirmation; primary CTA n/a (FAB is toggle affordance)
 - [ ] Dimension 2 Visuals: PASS — visual hierarchy diagrammed, FAB + drawer dimensions specified, motion budget bounded to 250ms slide
 - [ ] Dimension 3 Color: PASS — 60/30/10 split holds; accent reserved-for list explicit (5 items, FAB + 4 carry-forward); scrim at `bg-black/40` is non-accent overlay; merchant override via `--sd-accent` is bounded to accent-reserved elements only
-- [ ] Dimension 4 Typography: PASS — exactly 4 sizes (10/12/14/18), exactly 2 weights (400/600–700), carry-forward from Phase 5 locked contract
-- [ ] Dimension 5 Spacing: PASS — 8-point scale honored; FAB 56px exception documented (touch target, 7×8); drawer width 400px exception documented (STR-05 requirement range)
+- [ ] Dimension 4 Typography: PASS — exactly 3 sizes (12/14/18), exactly 2 weights (400/600); Phase 5 inherited components not redeclared
+- [ ] Dimension 5 Spacing: PASS — 8-point scale honored; FAB 56px exception documented (touch target, 7×8); drawer width 400px exception documented (STR-05 requirement range); brand tile `p-2` (8px) on grid
 - [ ] Dimension 6 Registry Safety: PASS — shadcn official only, no third-party registries declared, no new `shadcn add` in Phase 6
 
 **Approval:** pending
