@@ -1,5 +1,5 @@
 import { getActiveChatModel } from '@/services/chat/getActiveChatModel';
-import { ChatShell } from '@/components/chat/chat-shell';
+import { ChatShell } from './chat-shell';
 
 // Phase 4 Plan 6 (D-11): /chat is a Server Component.
 // See .planning/phases/04-searchservice-wire-chat/04-UI-SPEC.md for the
@@ -29,7 +29,7 @@ export default async function ChatPage({
                 Preview mode — using your real catalog · Model:{' '}
                 <span className="text-foreground font-semibold">{model.displayName}</span>
             </div>
-            <ChatShell />
+            <ChatShell shop={shop ?? ''} />
         </div>
     );
 }
