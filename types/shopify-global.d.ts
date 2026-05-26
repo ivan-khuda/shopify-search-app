@@ -5,13 +5,29 @@ export {};
 // only augments preact's createElement.JSX, not React's, so we add explicit
 // declarations here for the Polaris tags this app uses.
 //
-// The `shopify` global is typed by `@shopify/app-bridge-types`.
+// Also surface a minimal `shopify` runtime global. `@shopify/app-bridge-types`
+// declares the full type but is not auto-included in `compilerOptions.types`,
+// so consumers under `lib/chat-ui/adapters/` (which must not import from
+// `@shopify/*`) and embedded routes that already rely on `shopify.*` need an
+// ambient declaration here.
 type PolarisIntrinsicProps = {
   children?: import('react').ReactNode;
   onClick?: (e: Event) => void;
 } & Record<string, unknown>;
 
+type ShopifyToastOptions = { isError?: boolean; duration?: number };
+
+interface ShopifyRuntimeGlobal {
+  idToken(): Promise<string>;
+  toast: {
+    show(message: string, options?: ShopifyToastOptions): void;
+  };
+}
+
 declare global {
+  // eslint-disable-next-line no-var
+  var shopify: ShopifyRuntimeGlobal;
+
   namespace React {
     namespace JSX {
       interface IntrinsicElements {
