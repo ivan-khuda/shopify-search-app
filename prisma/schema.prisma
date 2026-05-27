@@ -249,3 +249,14 @@ model VisitorCustomerLink {
   @@index([shop, customerId])
   @@map("visitor_customer_links")
 }
+
+// Phase 7 D-10: per-shop active chat model selection.
+// Empty by design (D-09) — getActiveChatModel falls back to DEFAULT_MODEL
+// when no row exists. First /settings Save creates the row.
+model ShopSettings {
+  shop              String   @id
+  activeChatModelId String
+  updatedAt         DateTime @updatedAt
+
+  @@map("shop_settings")
+}
