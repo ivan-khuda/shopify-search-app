@@ -251,11 +251,11 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2)*
 
-- [ ] 08-03-PLAN.md — [BLOCKING] Option A non-destructive migration apply + prisma generate + bun db:indexes
+- [x] 08-03-PLAN.md — [BLOCKING] Option A non-destructive migration apply + prisma generate + bun db:indexes
 
 **Wave 4** *(blocked on Wave 3 — runs in parallel)*
 
-- [ ] 08-04-PLAN.md — services/email/EmailService.ts + install resend / @react-email/components / @react-email/render
+- [x] 08-04-PLAN.md — services/email/EmailService.ts + install resend / @react-email/components / @react-email/render
 - [ ] 08-05-PLAN.md — lib/email/templates/SyncSuccessEmail.tsx + SyncFailureEmail.tsx (NOT-03)
 - [ ] 08-06-PLAN.md — services/shopify/ShopifyShopService.ts (fetchShopContactEmail GraphQL helper)
 - [ ] 08-07-PLAN.md — lib/db/repositories/RequestCounterRepository.ts (atomic  upsert primitive)
@@ -294,4 +294,4 @@ Phases 7 and 8 are parallel-eligible with Phase 6 (no blocking dependencies — 
 | 5. Shared Chat-UI Extraction | 5/5 | Complete | 2026-05-26 |
 | 6. Storefront Surface | 14/14 | Complete   | 2026-05-27 |
 | 7. Admin Settings + Model Picker | 10/10 | Complete (passed-with-deferred-smoke) | 2026-05-27 |
-| 8. Email + Hard Cap | 2/15 | In Progress|  |
+| 8. Email + Hard Cap | 4/15 | In Progress|  |

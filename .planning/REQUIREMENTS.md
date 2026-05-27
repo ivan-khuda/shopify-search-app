@@ -80,7 +80,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [ ] **NOT-01**: Successful sync sends a Resend email to the shop's `contactEmail` (resolved via Shopify GraphQL `shop { contactEmail }`) with product count and link to admin
 - [ ] **NOT-02**: Failed sync sends a Resend email with failure reason and a retry link
 - [ ] **NOT-03**: Email templates are React Email components stored under `lib/email/templates/`
-- [ ] **NOT-04**: Resend send respects environment-scoped sending domain; no per-shop domain verification required in V1
+- [x] **NOT-04**: Resend send respects environment-scoped sending domain; no per-shop domain verification required in V1
 
 ### Hard Cap (Pre-Billing Safety)
 
@@ -184,7 +184,7 @@ Explicitly excluded. Documented to prevent scope creep.
 | NOT-01 | Phase 8 | Pending |
 | NOT-02 | Phase 8 | Pending |
 | NOT-03 | Phase 8 | Pending |
-| NOT-04 | Phase 8 | Pending |
+| NOT-04 | Phase 8 | Complete |
 | CAP-01 | Phase 8 | Pending |
 | CAP-02 | Phase 8 | Pending |
 | CAP-03 | Phase 8 | Pending |
