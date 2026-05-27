@@ -22,10 +22,13 @@
 -- (plan 03-08) checks `pg_indexes.indexname` against these exact strings.
 
 -- ============================================================
--- 1. pgvector extension (no-op if already installed)
+-- 1. Extensions (no-op if already installed)
 -- ============================================================
 
 CREATE EXTENSION IF NOT EXISTS vector;
+-- pgcrypto provides gen_random_uuid() — used by the identity merge
+-- transaction (D-11) to assign IDs to re-INSERTed SavedProduct rows.
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 -- ============================================================
 -- 2. HNSW index on product_embeddings.embedding (D-05)
