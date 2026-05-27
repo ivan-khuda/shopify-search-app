@@ -10,7 +10,8 @@
     "test": "vitest run",
     "db:indexes": "bunx tsx scripts/apply-manual-indexes.ts",
     "prebuild": "bunx tsx scripts/build-storefront-bundle.ts",
-    "build:storefront-bundle": "bunx tsx scripts/build-storefront-bundle.ts"
+    "build:storefront-bundle": "bunx tsx scripts/build-storefront-bundle.ts",
+    "script:cleanup-conversations": "bunx tsx scripts/cleanup-conversations.ts"
   },
   "dependencies": {
     "@ai-sdk/google": "^3.0.21",

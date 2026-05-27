@@ -28,7 +28,7 @@ vi.mock('@/lib/db/client', () => ({
 import { retentionSweepFunction } from '@/inngest/functions/retention-sweep';
 
 beforeEach(() => {
-  vi.clearAllMocks();
+  vi.resetAllMocks();
 });
 
 describe('retentionSweepFunction (D-07)', () => {
