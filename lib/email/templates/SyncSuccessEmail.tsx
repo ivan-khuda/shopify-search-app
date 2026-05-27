@@ -1,21 +1,84 @@
 /**
- * Stub template — replaced by Plan 08-05 with the real React Email component.
+ * SyncSuccessEmail — transactional notification sent after a successful catalog sync.
  *
- * Plan 08-04 lands the EmailService wrapper, which imports this module by
- * path. Vite's import-analysis transform pre-resolves the import at file
- * load time, BEFORE `vi.mock('@/lib/email/templates/SyncSuccessEmail', ...)`
- * intercepts it — so the file must exist on disk even though tests never
- * call into it. 08-05 replaces this file with the full React Email layout.
+ * Wired in by Plan 08-11/12 via the EmailService (Plan 08-04). React Email primitives
+ * auto-escape text node children (V5 Input Validation — mitigates T-08-EI email-content
+ * injection via shop name or product fields). Do NOT use dangerouslySetInnerHTML.
  *
- * Keep the export surface aligned with 08-05's must_haves
- * (`SyncSuccessEmail` + `SyncSuccessEmailProps`) so the type-check passes.
+ * D-07 minimal-transactional brief: heading + one-line body + single CTA + footer.
+ * No images, no marketing copy, no detailed stats.
  */
+import {
+  Html,
+  Head,
+  Body,
+  Container,
+  Section,
+  Text,
+  Button,
+  Hr,
+} from '@react-email/components';
+
 export interface SyncSuccessEmailProps {
   shop: string;
   productCount: number;
   adminUrl: string;
 }
 
-export function SyncSuccessEmail(_props: SyncSuccessEmailProps): null {
-  return null;
+export function SyncSuccessEmail({
+  shop,
+  productCount,
+  adminUrl,
+}: SyncSuccessEmailProps) {
+  return (
+    <Html>
+      <Head />
+      <Body
+        style={{
+          fontFamily: 'system-ui, -apple-system, sans-serif',
+          backgroundColor: '#f6f9fc',
+        }}
+      >
+        <Container
+          style={{
+            padding: '32px',
+            backgroundColor: '#ffffff',
+            maxWidth: '480px',
+          }}
+        >
+          <Text
+            style={{
+              fontSize: '20px',
+              fontWeight: 600,
+              margin: '0 0 16px',
+            }}
+          >
+            Catalog sync complete
+          </Text>
+          <Text style={{ fontSize: '14px', color: '#374151' }}>
+            SmartDiscovery AI synced {productCount} products from {shop}.
+          </Text>
+          <Section style={{ margin: '24px 0' }}>
+            <Button
+              href={adminUrl}
+              style={{
+                backgroundColor: '#008060',
+                color: '#ffffff',
+                padding: '12px 20px',
+                borderRadius: '6px',
+                textDecoration: 'none',
+                fontSize: '14px',
+              }}
+            >
+              View in admin
+            </Button>
+          </Section>
+          <Hr style={{ borderColor: '#e5e7eb' }} />
+          <Text style={{ fontSize: '12px', color: '#9ca3af' }}>
+            SmartDiscovery AI · transactional notification
+          </Text>
+        </Container>
+      </Body>
+    </Html>
+  );
 }
