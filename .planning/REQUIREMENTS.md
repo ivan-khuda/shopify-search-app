@@ -190,6 +190,7 @@ Explicitly excluded. Documented to prevent scope creep.
 | CAP-03 | Phase 8 | Complete (Phase 8) |
 
 **Coverage:**
+
 - v1 requirements: 54 total (note: traceability table count is 54; original header said 53 — all IDs enumerated in requirements body are mapped)
 - Mapped to phases: 54 ✓
 - Unmapped: 0 ✓
