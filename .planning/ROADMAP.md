@@ -309,13 +309,13 @@ Phases 7 and 8 are parallel-eligible with Phase 6 (no blocking dependencies — 
 **Goal:** Close 4 BLOCKERS + 3 WARNINGS + 15 back-mark hygiene items from the v1.0 milestone audit so the storefront visitor chat (the V1 core-value flow) works end-to-end and `/gsd-audit-milestone v1.0` re-runs `passed`.
 **Requirements**: FND-03, STR-01, STR-05, STR-06, STR-08, SHR-04, EMB-07, IDN-04, IDN-05, NOT-02, ADM-05 (closed via integration/composition fixes; no net-new requirement IDs)
 **Depends on:** Phase 8
-**Plans:** 4/6 plans executed
+**Plans:** 5/6 plans executed
 
 Plans:
 
 - [x] 08.1-01-PLAN.md — proxy/middleware edge guard (curl probe + matcher extension to /settings) — B-1, O-2
 - [x] 08.1-02-PLAN.md — Storefront bundle loading: loader.js URL + StorefrontAdapter endpoint + test pin (B-2, B-4, W-3)
-- [ ] 08.1-03-PLAN.md — StorefrontDrawer composition: DrawerBody + ChatPane/HistoryPanel/SavedProductsPanel from chat-ui (B-3)
+- [x] 08.1-03-PLAN.md — StorefrontDrawer composition: DrawerBody + ChatPane/HistoryPanel/SavedProductsPanel from chat-ui (B-3)
 - [x] 08.1-04-PLAN.md — /onboarding ?retry= deep-link banner with handleStartSync reuse (W-1)
 - [x] 08.1-05-PLAN.md — /chat server-resolved shop via lib/shopify/server-resolve-shop.ts helper (W-2)
 - [ ] 08.1-06-PLAN.md — Verification gate: REQUIREMENTS.md back-mark + Nyquist VALIDATION.md flips + 08.1-VERIFICATION.md + re-run /gsd-audit-milestone (H-1, H-2, D-17)

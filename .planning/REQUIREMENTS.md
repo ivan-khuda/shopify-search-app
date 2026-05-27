@@ -9,25 +9,25 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Foundation (Security, Multi-tenancy, Repository Layer)
 
-- [ ] **FND-01**: Every Prisma model that holds merchant data carries a `shop` (string) column with index; queries always filter by shop
-- [ ] **FND-02**: All `console.log` statements that emit session tokens, auth headers, or Bearer tokens are removed from `middleware.ts`, `app/api/auth/`, and `app/(embedded)/onboarding/`
-- [ ] **FND-03**: Middleware auth check in `middleware.ts` is re-enabled with correct `config.matcher` protecting `/onboarding` and `/chat`
-- [ ] **FND-04**: `ProductRepository` exposes type-safe `upsertProduct`, `deleteProduct`, `listByShop`, `findByShopAndId` methods backed by Prisma transactions
-- [ ] **FND-05**: Service-layer helper `verifyShopSessionToken(request)` extracted from `app/api/shopify/sync/route.ts` and shared across embedded admin routes
+- [x] **FND-01**: Every Prisma model that holds merchant data carries a `shop` (string) column with index; queries always filter by shop
+- [x] **FND-02**: All `console.log` statements that emit session tokens, auth headers, or Bearer tokens are removed from `middleware.ts`, `app/api/auth/`, and `app/(embedded)/onboarding/`
+- [x] **FND-03**: Middleware auth check in `middleware.ts` is re-enabled with correct `config.matcher` protecting `/onboarding` and `/chat`
+- [x] **FND-04**: `ProductRepository` exposes type-safe `upsertProduct`, `deleteProduct`, `listByShop`, `findByShopAndId` methods backed by Prisma transactions
+- [x] **FND-05**: Service-layer helper `verifyShopSessionToken(request)` extracted from `app/api/shopify/sync/route.ts` and shared across embedded admin routes
 
 ### Sync Pipeline (Background Job + Progress + Webhooks)
 
-- [ ] **SYN-01**: `ShopifyProductService.fetchAllProducts` calls Shopify GraphQL with cursor pagination and returns title, description, tags, vendor, productType, status, images, and variant prices
-- [ ] **SYN-02**: `ShopifyProductService.mapToLocalProduct` deterministically maps Shopify schema to local `Product` + `ProductVariant` + `ProductImage` + `ProductOption`
-- [ ] **SYN-03**: `lib/sync/productSync.ts` orchestrates idempotent batched upsert; one failed product does not abort the run
-- [ ] **SYN-04**: New `SyncRun` Prisma model captures `id`, `shop`, `state` (queued/running/succeeded/failed/partial), `processedCount`, `totalCount`, `errors[]`, `cursor`, `startedAt`, `finishedAt`
-- [ ] **SYN-05**: POST `/api/shopify/sync` creates a `SyncRun`, enqueues the Inngest sync workflow, and returns `{ syncRunId }`; never runs longer than serverless-function timeout
-- [ ] **SYN-06**: Inngest step-function processes products in batches, persisting cursor after each batch so runs survive timeouts
-- [ ] **SYN-07**: GET `/api/shopify/sync/status?syncRunId=X` returns current `SyncRun` row for the requesting shop
-- [ ] **SYN-08**: Duplicate sync requests within an active run are de-duplicated (idempotency key `sha256(shop + 5-min-bucket)`)
-- [ ] **SYN-09**: Onboarding page polls `/status` every 2s and renders a progress bar (`processedCount / totalCount`) with state labels
-- [ ] **SYN-10**: `/api/shopify/webhook` verifies HMAC signature and processes `products/create`, `products/update`, `products/delete` events idempotently keyed by `X-Shopify-Event-Id`
-- [ ] **SYN-11**: Webhook upserts use Shopify-provided `product.updatedAt` for conflict resolution against concurrent manual sync runs
+- [x] **SYN-01**: `ShopifyProductService.fetchAllProducts` calls Shopify GraphQL with cursor pagination and returns title, description, tags, vendor, productType, status, images, and variant prices
+- [x] **SYN-02**: `ShopifyProductService.mapToLocalProduct` deterministically maps Shopify schema to local `Product` + `ProductVariant` + `ProductImage` + `ProductOption`
+- [x] **SYN-03**: `lib/sync/productSync.ts` orchestrates idempotent batched upsert; one failed product does not abort the run
+- [x] **SYN-04**: New `SyncRun` Prisma model captures `id`, `shop`, `state` (queued/running/succeeded/failed/partial), `processedCount`, `totalCount`, `errors[]`, `cursor`, `startedAt`, `finishedAt`
+- [x] **SYN-05**: POST `/api/shopify/sync` creates a `SyncRun`, enqueues the Inngest sync workflow, and returns `{ syncRunId }`; never runs longer than serverless-function timeout
+- [x] **SYN-06**: Inngest step-function processes products in batches, persisting cursor after each batch so runs survive timeouts
+- [x] **SYN-07**: GET `/api/shopify/sync/status?syncRunId=X` returns current `SyncRun` row for the requesting shop
+- [x] **SYN-08**: Duplicate sync requests within an active run are de-duplicated (idempotency key `sha256(shop + 5-min-bucket)`)
+- [x] **SYN-09**: Onboarding page polls `/status` every 2s and renders a progress bar (`processedCount / totalCount`) with state labels
+- [x] **SYN-10**: `/api/shopify/webhook` verifies HMAC signature and processes `products/create`, `products/update`, `products/delete` events idempotently keyed by `X-Shopify-Event-Id`
+- [x] **SYN-11**: Webhook upserts use Shopify-provided `product.updatedAt` for conflict resolution against concurrent manual sync runs
 
 ### Embeddings + Hybrid Search
 
@@ -35,18 +35,18 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **EMB-02**: Embeddings are generated in batches during sync; one failed embedding does not abort the run
 - [x] **EMB-03**: `ProductEmbedding` carries a non-null `modelVersion` column (pinned model ID, never an alias) from day one
 - [x] **EMB-04**: Raw-SQL Prisma migration creates HNSW cosine index on `ProductEmbedding.embedding` and a generated `tsvector` column with GIN index on Product searchable text; index SQL lives in an idempotent script invulnerable to `prisma migrate dev` drift
-- [ ] **EMB-05**: `SearchService.hybridSearch(shop, query, limit)` runs pgvector cosine top-K and tsvector `websearch_to_tsquery` in parallel, fuses results with Reciprocal Rank Fusion, returns ranked `Product[]` scoped to the shop
+- [x] **EMB-05**: `SearchService.hybridSearch(shop, query, limit)` runs pgvector cosine top-K and tsvector `websearch_to_tsquery` in parallel, fuses results with Reciprocal Rank Fusion, returns ranked `Product[]` scoped to the shop
 - [x] **EMB-06**: All shop-scoped vector queries enable `hnsw.iterative_scan = 'relaxed_order'` for the session so HNSW is not silently bypassed
-- [ ] **EMB-07**: `MOCK_PRODUCTS` is fully removed from runtime paths; both `/api/chat` (admin) and `/api/proxy/chat` (storefront) call `SearchService.hybridSearch`
+- [x] **EMB-07**: `MOCK_PRODUCTS` is fully removed from runtime paths; both `/api/chat` (admin) and `/api/proxy/chat` (storefront) call `SearchService.hybridSearch`
 
 ### Embedded Admin: Onboarding + Settings + Playground
 
-- [ ] **ADM-01**: Onboarding "Start sync" button posts to `/api/shopify/sync` and transitions UI to progress view on response
-- [ ] **ADM-02**: Onboarding shows real-time progress bar driven by `/status` polling; renders product counts and final summary
+- [x] **ADM-01**: Onboarding "Start sync" button posts to `/api/shopify/sync` and transitions UI to progress view on response
+- [x] **ADM-02**: Onboarding shows real-time progress bar driven by `/status` polling; renders product counts and final summary
 - [x] **ADM-03**: Settings screen at `/settings` lists Vercel AI Gateway chat models (name, provider, context window, $/M input/output tokens, "best for") and persists per-shop selection in a new `ShopSettings` model
 - [x] **ADM-04**: Default chat model is pre-selected on first install (Gemini 2.5 Flash or equivalent balanced default)
-- [ ] **ADM-05**: Admin chat playground (`/chat`) labels itself "Preview mode — using your real catalog", displays the active model name, and uses the same shared chat components as storefront
-- [ ] **ADM-06**: Admin chat retrieves grounded results via `SearchService.hybridSearch` and renders product cards inline; never returns mock data
+- [x] **ADM-05**: Admin chat playground (`/chat`) labels itself "Preview mode — using your real catalog", displays the active model name, and uses the same shared chat components as storefront
+- [x] **ADM-06**: Admin chat retrieves grounded results via `SearchService.hybridSearch` and renders product cards inline; never returns mock data
 
 ### Shared Chat-UI Package
 
@@ -134,35 +134,35 @@ Explicitly excluded. Documented to prevent scope creep.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| FND-01 | Phase 1 | Pending |
-| FND-02 | Phase 1 | Pending |
-| FND-03 | Phase 1 | Pending |
-| FND-04 | Phase 1 | Pending |
-| FND-05 | Phase 1 | Pending |
-| SYN-01 | Phase 2 | Pending |
-| SYN-02 | Phase 2 | Pending |
-| SYN-03 | Phase 2 | Pending |
-| SYN-04 | Phase 2 | Pending |
-| SYN-05 | Phase 2 | Pending |
-| SYN-06 | Phase 2 | Pending |
-| SYN-07 | Phase 2 | Pending |
-| SYN-08 | Phase 2 | Pending |
-| SYN-09 | Phase 2 | Pending |
-| SYN-10 | Phase 2 | Pending |
-| SYN-11 | Phase 2 | Pending |
+| FND-01 | Phase 1 | Complete |
+| FND-02 | Phase 1 | Complete |
+| FND-03 | Phase 1 | Complete |
+| FND-04 | Phase 1 | Complete |
+| FND-05 | Phase 1 | Complete |
+| SYN-01 | Phase 2 | Complete |
+| SYN-02 | Phase 2 | Complete |
+| SYN-03 | Phase 2 | Complete |
+| SYN-04 | Phase 2 | Complete |
+| SYN-05 | Phase 2 | Complete |
+| SYN-06 | Phase 2 | Complete |
+| SYN-07 | Phase 2 | Complete |
+| SYN-08 | Phase 2 | Complete |
+| SYN-09 | Phase 2 | Complete |
+| SYN-10 | Phase 2 | Complete |
+| SYN-11 | Phase 2 | Complete |
 | EMB-01 | Phase 3 | Complete (Phase 3) |
 | EMB-02 | Phase 3 | Complete (Phase 3) |
 | EMB-03 | Phase 3 | Complete (Phase 3) |
 | EMB-04 | Phase 3 | Complete (Phase 3) |
-| EMB-05 | Phase 4 | Pending |
+| EMB-05 | Phase 4 | Complete |
 | EMB-06 | Phase 3 | Complete (Phase 3) |
-| EMB-07 | Phase 4 | Pending |
-| ADM-01 | Phase 2 | Pending |
-| ADM-02 | Phase 2 | Pending |
+| EMB-07 | Phase 4 | Complete |
+| ADM-01 | Phase 2 | Complete |
+| ADM-02 | Phase 2 | Complete |
 | ADM-03 | Phase 7 | Complete |
 | ADM-04 | Phase 7 | Complete |
-| ADM-05 | Phase 4 | Pending |
-| ADM-06 | Phase 4 | Pending |
+| ADM-05 | Phase 4 | Complete |
+| ADM-06 | Phase 4 | Complete |
 | SHR-01 | Phase 5 | Complete (Phase 5) |
 | SHR-02 | Phase 5 | Complete (Phase 5) |
 | SHR-03 | Phase 5 | Complete (Phase 5) |
