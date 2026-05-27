@@ -45,5 +45,6 @@ next-env.d.ts
 .worktrees/
 
 # storefront bundle build artifacts (06-05)
+public/storefront-bundle-*.js
 public/storefront-bundle.*.js
 public/storefront-manifest.json

@@ -31,7 +31,7 @@ async function main(): Promise<void> {
   // Cleanup previous bundles to prevent hash drift accumulation. Restricted
   // to the storefront-bundle.*.js prefix so we never touch other public assets.
   for (const entry of readdirSync('public')) {
-    if (/^storefront-bundle\..*\.js$/.test(entry)) {
+    if (/^storefront-bundle[-.].*\.js$/.test(entry)) {
       unlinkSync(path.join('public', entry));
     }
   }
@@ -51,7 +51,7 @@ async function main(): Promise<void> {
 
   const code = result.outputFiles[0].text;
   const hash = createHash('sha256').update(code).digest('hex').slice(0, 8);
-  const filename = `storefront-bundle.${hash}.js`;
+  const filename = `storefront-bundle-${hash}.js`;
   writeFileSync(path.join('public', filename), code);
 
   let version: string;
