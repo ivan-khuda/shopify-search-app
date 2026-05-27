@@ -270,8 +270,8 @@ Plans:
 
 **Wave 6** *(blocked on Wave 5)*
 
-- [ ] 08-13-PLAN.md — /api/chat route: inject tryConsumeRequest before req.json (D-14)
-- [ ] 08-14-PLAN.md — /api/proxy/chat route: replace D-21 step 4 stub with real cap check
+- [x] 08-13-PLAN.md — /api/chat route: inject tryConsumeRequest before req.json (D-14)
+- [x] 08-14-PLAN.md — /api/proxy/chat route: replace D-21 step 4 stub with real cap check
 
 **Wave 7** *(blocked on Wave 6)*
 
@@ -294,4 +294,4 @@ Phases 7 and 8 are parallel-eligible with Phase 6 (no blocking dependencies — 
 | 5. Shared Chat-UI Extraction | 5/5 | Complete | 2026-05-26 |
 | 6. Storefront Surface | 14/14 | Complete   | 2026-05-27 |
 | 7. Admin Settings + Model Picker | 10/10 | Complete (passed-with-deferred-smoke) | 2026-05-27 |
-| 8. Email + Hard Cap | 12/15 | In Progress|  |
+| 8. Email + Hard Cap | 14/15 | In Progress|  |
