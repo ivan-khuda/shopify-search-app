@@ -79,12 +79,12 @@ Requirements for initial release. Each maps to roadmap phases.
 
 - [x] **NOT-01**: Successful sync sends a Resend email to the shop's `contactEmail` (resolved via Shopify GraphQL `shop { contactEmail }`) with product count and link to admin
 - [x] **NOT-02**: Failed sync sends a Resend email with failure reason and a retry link
-- [ ] **NOT-03**: Email templates are React Email components stored under `lib/email/templates/`
+- [x] **NOT-03**: Email templates are React Email components stored under `lib/email/templates/`
 - [x] **NOT-04**: Resend send respects environment-scoped sending domain; no per-shop domain verification required in V1
 
 ### Hard Cap (Pre-Billing Safety)
 
-- [ ] **CAP-01**: New `RequestCounter` Prisma model tracks `shop`, `period` (year-month), `requestCount`; updated atomically per chat request
+- [x] **CAP-01**: New `RequestCounter` Prisma model tracks `shop`, `period` (year-month), `requestCount`; updated atomically per chat request
 - [x] **CAP-02**: Configurable env-driven monthly cap (e.g., `HARD_CAP_REQUESTS_PER_MONTH=2000`) checked before each chat completion
 - [x] **CAP-03**: When cap reached, both `/api/chat` and `/api/proxy/chat` return a graceful "monthly limit reached" response with HTTP 200 (not an error) so the chat UI shows a friendly message
 
@@ -181,13 +181,13 @@ Explicitly excluded. Documented to prevent scope creep.
 | IDN-04 | Phase 6 | Complete (Phase 6) |
 | IDN-05 | Phase 6 | Complete (Phase 6) |
 | IDN-06 | Phase 6 | Complete (Phase 6) |
-| NOT-01 | Phase 8 | Complete |
-| NOT-02 | Phase 8 | Complete |
-| NOT-03 | Phase 8 | Pending |
-| NOT-04 | Phase 8 | Complete |
-| CAP-01 | Phase 8 | Pending |
-| CAP-02 | Phase 8 | Complete |
-| CAP-03 | Phase 8 | Complete |
+| NOT-01 | Phase 8 | Complete (Phase 8) |
+| NOT-02 | Phase 8 | Complete (Phase 8) |
+| NOT-03 | Phase 8 | Complete (Phase 8) |
+| NOT-04 | Phase 8 | Complete (Phase 8) |
+| CAP-01 | Phase 8 | Complete (Phase 8) |
+| CAP-02 | Phase 8 | Complete (Phase 8) |
+| CAP-03 | Phase 8 | Complete (Phase 8) |
 
 **Coverage:**
 - v1 requirements: 54 total (note: traceability table count is 54; original header said 53 — all IDs enumerated in requirements body are mapped)
@@ -196,4 +196,4 @@ Explicitly excluded. Documented to prevent scope creep.
 
 ---
 *Requirements defined: 2026-05-22*
-*Last updated: 2026-05-26 — SHR-01..04 marked complete after Phase 5 verification gate*
+*Last updated: 2026-05-27 — NOT-01..04 + CAP-01..03 marked Complete (Phase 8) after the V1-closing verification gate; V1 milestone CLOSED (with deferred smoke) — see `.planning/phases/08-email-hard-cap/08-VERIFICATION.md`*

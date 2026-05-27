@@ -22,7 +22,13 @@ SmartDiscovery AI goes from a scaffolded-but-stubbed Shopify embedded app to a f
 - [x] **Phase 7: Admin Settings + Model Picker** - ShopSettings model, model picker UI, per-shop active model (completed 2026-05-27)[^7-smoke-deferred]
 
 [^7-smoke-deferred]: SC4 cross-route playground manual smoke + D-03 cold-start manual smoke deferred to operator. See `.planning/phases/07-admin-settings-model-picker/07-VERIFICATION.md`.
-- [ ] **Phase 8: Email + Hard Cap** - Resend completion emails, per-shop request counter, graceful cap response
+- [x] **Phase 8: Email + Hard Cap** - Resend completion emails, per-shop request counter, graceful cap response (completed 2026-05-27)[^8-smoke-deferred]
+
+[^8-smoke-deferred]: NOT-01 + NOT-02 real Resend send smokes + CAP-03 cross-route cap-reached smoke deferred to operator. One optional `INTEGRATION_DB_URL`-gated race integration test deferred-or-automated. See `.planning/phases/08-email-hard-cap/08-VERIFICATION.md`.
+
+---
+
+**V1 milestone: COMPLETE (with deferred smoke) — 2026-05-27.** All 8 V1 phases delivered. 54/54 v1 requirements dispositioned (47 Complete · 7 Complete-deferred-smoke). See `.planning/phases/08-email-hard-cap/08-VERIFICATION.md` for the closing gate.
 
 ## Phase Details
 
@@ -275,7 +281,7 @@ Plans:
 
 **Wave 7** *(blocked on Wave 6)*
 
-- [ ] 08-15-PLAN.md — Phase 8 verification gate (full suite + tsc + lint + 08-VERIFICATION.md + ROADMAP/REQUIREMENTS/STATE updates)
+- [x] 08-15-PLAN.md — Phase 8 verification gate (full suite + tsc + lint + 08-VERIFICATION.md + ROADMAP/REQUIREMENTS/STATE updates) — passed-with-deferred-smoke 2026-05-27
 
 **UI hint**: no
 
@@ -294,4 +300,4 @@ Phases 7 and 8 are parallel-eligible with Phase 6 (no blocking dependencies — 
 | 5. Shared Chat-UI Extraction | 5/5 | Complete | 2026-05-26 |
 | 6. Storefront Surface | 14/14 | Complete   | 2026-05-27 |
 | 7. Admin Settings + Model Picker | 10/10 | Complete (passed-with-deferred-smoke) | 2026-05-27 |
-| 8. Email + Hard Cap | 14/15 | In Progress|  |
+| 8. Email + Hard Cap | 15/15 | Complete (passed-with-deferred-smoke) | 2026-05-27 |
