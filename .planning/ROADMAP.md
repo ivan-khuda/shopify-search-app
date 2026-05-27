@@ -19,7 +19,9 @@ SmartDiscovery AI goes from a scaffolded-but-stubbed Shopify embedded app to a f
 [^4-smoke-deferred]: Manual smoke deferred behind pre-existing shopify-install-flow OAuth callback cookie blocker (`docs/superpowers/plans/2026-05-02-shopify-install-flow.md`). All Phase 4 structural and automated evidence verified. See `.planning/phases/04-searchservice-wire-chat/04-VERIFICATION.md`.
 - [x] **Phase 5: Shared Chat-UI Extraction** - lib/chat-ui barrel, adapter pattern, persistence models
 - [x] **Phase 6: Storefront Surface** - Theme App Extension, App Proxy, FAB + drawer, visitor identity + persistence (completed 2026-05-27)
-- [ ] **Phase 7: Admin Settings + Model Picker** - ShopSettings model, model picker UI, per-shop active model
+- [x] **Phase 7: Admin Settings + Model Picker** - ShopSettings model, model picker UI, per-shop active model (completed 2026-05-27)[^7-smoke-deferred]
+
+[^7-smoke-deferred]: SC4 cross-route playground manual smoke + D-03 cold-start manual smoke deferred to operator. See `.planning/phases/07-admin-settings-model-picker/07-VERIFICATION.md`.
 - [ ] **Phase 8: Email + Hard Cap** - Resend completion emails, per-shop request counter, graceful cap response
 
 ## Phase Details
@@ -254,5 +256,5 @@ Phases 7 and 8 are parallel-eligible with Phase 6 (no blocking dependencies — 
 | 4. SearchService + Wire Chat | 6/6 | Complete (verified-with-deferred-smoke) | 2026-05-26 |
 | 5. Shared Chat-UI Extraction | 5/5 | Complete | 2026-05-26 |
 | 6. Storefront Surface | 14/14 | Complete   | 2026-05-27 |
-| 7. Admin Settings + Model Picker | 9/10 | In Progress|  |
+| 7. Admin Settings + Model Picker | 10/10 | Complete (passed-with-deferred-smoke) | 2026-05-27 |
 | 8. Email + Hard Cap | 0/TBD | Not started | - |
