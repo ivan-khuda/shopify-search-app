@@ -17,6 +17,14 @@
  *   - Escape closes the drawer; focus returns to FAB.
  */
 import * as React from 'react';
+import {
+  ChatPane,
+  HistoryPanel,
+  SavedProductsPanel,
+  useDbBackedHistoryStore,
+  useDbBackedSavedProductsStore,
+} from '@/lib/chat-ui';
+import { StorefrontAdapter } from '@/lib/chat-ui/adapters/storefront';
 
 interface StorefrontDrawerProps {
   shop?: string;
@@ -27,8 +35,49 @@ interface StorefrontDrawerProps {
   initialOpen?: boolean;
 }
 
+interface DrawerBodyProps {
+  activeTab: 'chat' | 'history' | 'saved';
+  shop: string;
+  visitorId: string;
+  customerId: string | null;
+}
+
+/**
+ * DrawerBody — internal component that owns hook calls.
+ *
+ * Extracted so that the outer StorefrontDrawer can conditionally mount
+ * this component only when shop+visitorId are both truthy. This preserves
+ * Rules of Hooks (no conditional hook calls in parent) and ensures
+ * DbBackedHistoryStore / DbBackedSavedProductsStore are never instantiated
+ * with an empty visitorId (Pitfall 3 — constructors throw on empty visitorId).
+ */
+function DrawerBody({ activeTab, shop, visitorId, customerId }: DrawerBodyProps): React.ReactElement {
+  const adapter = React.useMemo(() => new StorefrontAdapter(), []);
+  const history = useDbBackedHistoryStore({ shop, visitorId, customerId });
+  const saved = useDbBackedSavedProductsStore({ shop, visitorId, customerId });
+  const savedProductIds = React.useMemo(
+    () => new Set(saved.items.map((p) => p.id)),
+    [saved.items],
+  );
+
+  if (activeTab === 'chat') {
+    return (
+      <ChatPane
+        adapter={adapter}
+        savedProductIds={savedProductIds}
+        onToggleSave={saved.toggle}
+        onHistoryAdd={history.add}
+      />
+    );
+  }
+  if (activeTab === 'history') {
+    return <HistoryPanel items={history.items} onClear={history.clear} />;
+  }
+  return <SavedProductsPanel products={saved.items} onToggleSave={saved.toggle} />;
+}
+
 export function StorefrontDrawer(props: StorefrontDrawerProps = {}): React.ReactElement {
-  const { accent = '#008060', position = 'bottom_right', initialOpen = false } = props;
+  const { shop, visitorId, customerId, accent = '#008060', position = 'bottom_right', initialOpen = false } = props;
   const [isOpen, setIsOpen] = React.useState(initialOpen);
   const [activeTab, setActiveTab] = React.useState<'chat' | 'history' | 'saved'>('chat');
   const fabRef = React.useRef<HTMLButtonElement>(null);
@@ -156,12 +205,23 @@ export function StorefrontDrawer(props: StorefrontDrawerProps = {}): React.React
             ))}
           </div>
           <div role="tabpanel" style={{ flex: 1, padding: 16, overflow: 'auto' }}>
-            {activeTab === 'chat' && <p style={{ margin: 0, color: '#6b7280' }}>Chat coming up…</p>}
-            {activeTab === 'history' && (
-              <p style={{ margin: 0, color: '#6b7280' }}>No history yet.</p>
-            )}
-            {activeTab === 'saved' && (
-              <p style={{ margin: 0, color: '#6b7280' }}>No saved products yet.</p>
+            {shop && visitorId ? (
+              <DrawerBody
+                activeTab={activeTab}
+                shop={shop}
+                visitorId={visitorId}
+                customerId={customerId ?? null}
+              />
+            ) : (
+              <>
+                {activeTab === 'chat' && <p style={{ margin: 0, color: '#6b7280' }}>Chat coming up…</p>}
+                {activeTab === 'history' && (
+                  <p style={{ margin: 0, color: '#6b7280' }}>No history yet.</p>
+                )}
+                {activeTab === 'saved' && (
+                  <p style={{ margin: 0, color: '#6b7280' }}>No saved products yet.</p>
+                )}
+              </>
             )}
           </div>
         </aside>
