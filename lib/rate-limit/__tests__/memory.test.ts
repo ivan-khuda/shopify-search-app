@@ -32,7 +32,6 @@ describe('rateLimit — chat bucket (30 req / 5 min)', () => {
     }
     const result = rateLimit(VISITOR_CHAT, 'chat');
     expect(result.ok).toBe(false);
-    expect(result.retryAfterSeconds).toBeDefined();
     expect((result as { ok: false; retryAfterSeconds: number }).retryAfterSeconds).toBe(60);
   });
 
@@ -74,7 +73,6 @@ describe('rateLimit — read bucket (60 req / 1 min)', () => {
     }
     const result = rateLimit(VISITOR_READ, 'read');
     expect(result.ok).toBe(false);
-    expect(result.retryAfterSeconds).toBeDefined();
     expect((result as { ok: false; retryAfterSeconds: number }).retryAfterSeconds).toBe(30);
   });
 

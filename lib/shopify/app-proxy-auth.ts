@@ -57,7 +57,15 @@ export async function verifyAppProxyHmac(
     throw new AppProxyAuthError('missing_signature');
   }
 
-  const isValid = await shopifyClient.utils.validateHmac(query, { signator: 'appProxy' });
+  // Shopify's validateHmac wants a Record<string, string>; materialize one
+  // from URLSearchParams. The wrapper still hands URLSearchParams to the
+  // inner handler (test contract).
+  const authQuery: Record<string, string> = {};
+  query.forEach((value, key) => {
+    authQuery[key] = value;
+  });
+
+  const isValid = await shopifyClient.utils.validateHmac(authQuery, { signator: 'appProxy' });
   if (!isValid) {
     throw new AppProxyAuthError('invalid_signature');
   }
