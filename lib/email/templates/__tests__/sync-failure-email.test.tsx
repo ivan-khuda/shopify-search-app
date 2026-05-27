@@ -10,8 +10,10 @@
  */
 import { describe, it, expect } from 'vitest';
 import { render } from '@react-email/render';
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-expect-error — RED scaffold: module does not exist yet (lands in Plan 08-04).
+// Plan 08-04 lands a stub at lib/email/templates/SyncFailureEmail.tsx so the
+// EmailService import-analysis transform resolves. Plan 08-05 replaces the
+// stub with the real React Email component — this test still fails until
+// 08-05 lands (stub returns null, but module resolves).
 import { SyncFailureEmail } from '@/lib/email/templates/SyncFailureEmail';
 
 const fixture = {

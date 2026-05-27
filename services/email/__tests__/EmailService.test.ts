@@ -47,8 +47,6 @@ beforeEach(() => {
 
 describe('EmailService.sendSyncSuccess (NOT-04, D-04)', () => {
   it('calls resend.emails.send with from === process.env.RESEND_FROM_ADDRESS (env-scoped, not per-shop)', async () => {
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-expect-error — RED scaffold: module does not exist yet (lands in Plan 08-04).
     const { sendSyncSuccess } = await import('@/services/email/EmailService');
     await sendSyncSuccess({
       to: 'owner@example.com',
@@ -63,8 +61,6 @@ describe('EmailService.sendSyncSuccess (NOT-04, D-04)', () => {
   });
 
   it('passes the rendered HTML as the html field', async () => {
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-expect-error — RED scaffold.
     const { sendSyncSuccess } = await import('@/services/email/EmailService');
     await sendSyncSuccess({
       to: 'owner@example.com',
@@ -78,8 +74,6 @@ describe('EmailService.sendSyncSuccess (NOT-04, D-04)', () => {
   });
 
   it('uses subject `Catalog sync complete — {productCount} products`', async () => {
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-expect-error — RED scaffold.
     const { sendSyncSuccess } = await import('@/services/email/EmailService');
     await sendSyncSuccess({
       to: 'owner@example.com',
@@ -93,8 +87,6 @@ describe('EmailService.sendSyncSuccess (NOT-04, D-04)', () => {
   });
 
   it('passes idempotencyKey === `sync-success/${syncRunId}` in the second-arg options bag (D-04)', async () => {
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-expect-error — RED scaffold.
     const { sendSyncSuccess } = await import('@/services/email/EmailService');
     await sendSyncSuccess({
       to: 'owner@example.com',
@@ -112,8 +104,6 @@ describe('EmailService.sendSyncSuccess (NOT-04, D-04)', () => {
       data: null,
       error: { message: 'rate_limited', name: 'rate_limit_exceeded' },
     });
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-expect-error — RED scaffold.
     const { sendSyncSuccess } = await import('@/services/email/EmailService');
     await expect(
       sendSyncSuccess({
@@ -129,8 +119,6 @@ describe('EmailService.sendSyncSuccess (NOT-04, D-04)', () => {
 
 describe('EmailService.sendSyncFailure (NOT-04, D-04)', () => {
   it('uses subject `Catalog sync failed`', async () => {
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-expect-error — RED scaffold.
     const { sendSyncFailure } = await import('@/services/email/EmailService');
     await sendSyncFailure({
       to: 'owner@example.com',
@@ -144,8 +132,6 @@ describe('EmailService.sendSyncFailure (NOT-04, D-04)', () => {
   });
 
   it('reads `from` from process.env.RESEND_FROM_ADDRESS (NOT the args)', async () => {
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-expect-error — RED scaffold.
     const { sendSyncFailure } = await import('@/services/email/EmailService');
     await sendSyncFailure({
       to: 'owner@example.com',
@@ -159,8 +145,6 @@ describe('EmailService.sendSyncFailure (NOT-04, D-04)', () => {
   });
 
   it('passes idempotencyKey === `sync-failure/${syncRunId}` in the options bag', async () => {
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-expect-error — RED scaffold.
     const { sendSyncFailure } = await import('@/services/email/EmailService');
     await sendSyncFailure({
       to: 'owner@example.com',
@@ -178,8 +162,6 @@ describe('EmailService.sendSyncFailure (NOT-04, D-04)', () => {
       data: null,
       error: { message: 'unauthorized', name: 'invalid_api_key' },
     });
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-expect-error — RED scaffold.
     const { sendSyncFailure } = await import('@/services/email/EmailService');
     await expect(
       sendSyncFailure({
