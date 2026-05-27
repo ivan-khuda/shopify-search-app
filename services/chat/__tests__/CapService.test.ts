@@ -37,8 +37,6 @@ beforeEach(() => {
 
 describe('CapService.tryConsumeRequest — env-driven cap (CAP-02)', () => {
   it('uses DEFAULT_CAP = 2000 when HARD_CAP_REQUESTS_PER_MONTH is unset', async () => {
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-expect-error — RED scaffold: module does not exist yet (lands in Plan 08-08).
     const { tryConsumeRequest } = await import('@/services/chat/CapService');
     await tryConsumeRequest('test-shop.myshopify.com');
     expect(tryConsumeMock).toHaveBeenCalledWith('test-shop.myshopify.com', '2026-05', 2000);
@@ -46,8 +44,6 @@ describe('CapService.tryConsumeRequest — env-driven cap (CAP-02)', () => {
 
   it('uses the env value when HARD_CAP_REQUESTS_PER_MONTH is a positive integer string', async () => {
     process.env.HARD_CAP_REQUESTS_PER_MONTH = '500';
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-expect-error — RED scaffold.
     const { tryConsumeRequest } = await import('@/services/chat/CapService');
     await tryConsumeRequest('test-shop.myshopify.com');
     expect(tryConsumeMock).toHaveBeenCalledWith('test-shop.myshopify.com', '2026-05', 500);
@@ -55,8 +51,6 @@ describe('CapService.tryConsumeRequest — env-driven cap (CAP-02)', () => {
 
   it('falls back to 2000 when env value is non-numeric ("abc")', async () => {
     process.env.HARD_CAP_REQUESTS_PER_MONTH = 'abc';
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-expect-error — RED scaffold.
     const { tryConsumeRequest } = await import('@/services/chat/CapService');
     await tryConsumeRequest('test-shop.myshopify.com');
     expect(tryConsumeMock).toHaveBeenCalledWith('test-shop.myshopify.com', '2026-05', 2000);
@@ -64,8 +58,6 @@ describe('CapService.tryConsumeRequest — env-driven cap (CAP-02)', () => {
 
   it('falls back to 2000 when env value is "-1"', async () => {
     process.env.HARD_CAP_REQUESTS_PER_MONTH = '-1';
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-expect-error — RED scaffold.
     const { tryConsumeRequest } = await import('@/services/chat/CapService');
     await tryConsumeRequest('test-shop.myshopify.com');
     expect(tryConsumeMock).toHaveBeenCalledWith('test-shop.myshopify.com', '2026-05', 2000);
@@ -73,8 +65,6 @@ describe('CapService.tryConsumeRequest — env-driven cap (CAP-02)', () => {
 
   it('falls back to 2000 when env value is "0"', async () => {
     process.env.HARD_CAP_REQUESTS_PER_MONTH = '0';
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-expect-error — RED scaffold.
     const { tryConsumeRequest } = await import('@/services/chat/CapService');
     await tryConsumeRequest('test-shop.myshopify.com');
     expect(tryConsumeMock).toHaveBeenCalledWith('test-shop.myshopify.com', '2026-05', 2000);
@@ -84,8 +74,6 @@ describe('CapService.tryConsumeRequest — env-driven cap (CAP-02)', () => {
 describe('CapService.tryConsumeRequest — period derivation', () => {
   it('calls getCurrentPeriod() to resolve the YYYY-MM period for the repo call', async () => {
     getCurrentPeriodMock.mockReturnValue('2026-12');
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-expect-error — RED scaffold.
     const { tryConsumeRequest } = await import('@/services/chat/CapService');
     await tryConsumeRequest('test-shop.myshopify.com');
     expect(getCurrentPeriodMock).toHaveBeenCalled();
@@ -96,8 +84,6 @@ describe('CapService.tryConsumeRequest — period derivation', () => {
 describe('CapService.tryConsumeRequest — return shape (pass-through)', () => {
   it('returns { allowed: true } when repo resolves allowed: true', async () => {
     tryConsumeMock.mockResolvedValueOnce({ allowed: true, requestCount: 42 });
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-expect-error — RED scaffold.
     const { tryConsumeRequest } = await import('@/services/chat/CapService');
     const result = await tryConsumeRequest('test-shop.myshopify.com');
     expect(result).toEqual({ allowed: true });
@@ -105,8 +91,6 @@ describe('CapService.tryConsumeRequest — return shape (pass-through)', () => {
 
   it('returns { allowed: false } when repo resolves allowed: false (cap reached)', async () => {
     tryConsumeMock.mockResolvedValueOnce({ allowed: false });
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-expect-error — RED scaffold.
     const { tryConsumeRequest } = await import('@/services/chat/CapService');
     const result = await tryConsumeRequest('test-shop.myshopify.com');
     expect(result).toEqual({ allowed: false });
