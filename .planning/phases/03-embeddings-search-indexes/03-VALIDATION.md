@@ -1,10 +1,11 @@
 ---
 phase: 3
 slug: embeddings-search-indexes
-status: draft
-nyquist_compliant: false
-wave_0_complete: false
+status: approved
+nyquist_compliant: true
+wave_0_complete: true
 created: 2026-05-25
+approved: 2026-05-28
 ---
 
 # Phase 3 — Validation Strategy
