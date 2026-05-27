@@ -19,3 +19,11 @@ export { EmptyState } from './components/empty-state';
 export type { ChatIdentityAdapter } from './adapters/types';
 export type { HistoryStore, SavedProductsStore } from './stores/types';
 export { useHistoryStore, useSavedProductsStore } from './stores/hooks';
+export {
+  useDbBackedHistoryStore,
+  useDbBackedSavedProductsStore,
+} from './stores/hooks';
+export {
+  DbBackedHistoryStore,
+  DbBackedSavedProductsStore,
+} from './stores/db-backed';

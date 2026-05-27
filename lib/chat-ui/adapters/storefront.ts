@@ -16,6 +16,17 @@ export class StorefrontAdapter implements ChatIdentityAdapter {
       visitorId = crypto.randomUUID();
       window.localStorage.setItem(STORAGE_KEY, visitorId);
     }
-    return { visitor_id: visitorId };
+    const body: Record<string, unknown> = { visitor_id: visitorId };
+    // Phase 6 D-09 / IDN-02: include customer_id when shopper is logged into the
+    // storefront. window.Shopify.customer is set by theme liquid; .id is a
+    // numeric BigInt — coerce to string explicitly to preserve precision
+    // through JSON.parse (Pitfall 7).
+    const shopifyCustomer = (window as unknown as {
+      Shopify?: { customer?: { id?: string | number | null } };
+    }).Shopify?.customer;
+    if (shopifyCustomer && shopifyCustomer.id != null) {
+      body.customer_id = String(shopifyCustomer.id);
+    }
+    return body;
   }
 }
