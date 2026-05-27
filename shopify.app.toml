@@ -19,3 +19,8 @@ redirect_urls = [
   "https://4b71-2a02-8309-518b-6900-6d0c-28a0-cf31-8de2.ngrok-free.app/api/auth/callback",
   "https://4b71-2a02-8309-518b-6900-6d0c-28a0-cf31-8de2.ngrok-free.app/api/auth/online/callback"
 ]
+
+[app_proxy]
+url = "https://4b71-2a02-8309-518b-6900-6d0c-28a0-cf31-8de2.ngrok-free.app/api/proxy"
+subpath = "smartdiscovery"
+prefix = "apps"
