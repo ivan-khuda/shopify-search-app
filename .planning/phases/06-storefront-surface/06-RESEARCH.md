@@ -1050,31 +1050,44 @@ model VisitorCustomerLink {
 | A5 | Liquid `customer.id` emits as a JS-safe numeric string in `data-customer-id` attribute | Pattern 4: App Embed Liquid Block | If wrong: BigInt precision loss. **Mitigation:** stringify on read in loader.js via `dataset.customerId` (a DOMString); never parse to Number. |
 | A6 | Storefront pages reliably load asset `https://<vercel-host>/storefront-bundle-X.js` cross-origin via `import()` (no CORS preflight needed for ES module) | Bundle Build Pipeline | If wrong: bundle won't load on first FAB click. **Mitigation:** ES module `import()` does not require CORS preflight; servers like Vercel serve with `cross-origin-resource-policy` defaults that support cross-origin script loads. If issues: add `<link rel="modulepreload">` in liquid + ensure Vercel `vercel.json` adds CORS header for `/storefront-*` paths. |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Should the planner ship a dedicated `StorefrontProductCard` wrapper or image-adapt `ProductCard` in-place?**
    - What we know: UI-SPEC §Risk #1 flags this. `next/image` won't work in the extension bundle.
    - What's unclear: which option is cheaper to maintain long-term.
    - Recommendation: **image-adapter prop** on `ProductCard` (e.g., `imageRenderer?: (props) => ReactNode`) — keeps single source of truth in `lib/chat-ui/`. Wave 0 should include a test that the extension bundle does NOT import `next/image`.
+   - **RESOLVED:** Option A — add optional `imageRenderer?: (src: string, alt: string, className?: string) => React.ReactNode` prop to `lib/chat-ui/components/product-card.tsx`. Default behavior (prop absent) renders a plain `<img loading="lazy">`. Consumers that want `next/image` (admin code) may pass `imageRenderer={(src, alt, cls) => <Image src={src} alt={alt} className={cls} ... />}` explicitly. The `next/image` import is **removed entirely** from `product-card.tsx` so the extension bundle resolves cleanly without esbuild aliases/externals. Rationale: (1) keeps `lib/chat-ui` runtime-neutral (matches Phase 5 D-06 stance — no host SDK dependencies in the shared barrel), (2) zero new build config in Plan 05's esbuild driver, (3) trivially testable in jsdom unit tests, (4) avoids fragile esbuild external/alias config that would only mask the real issue. Implementation lands in Plan 11 (new Task 5).
 
 2. **History tab "open to resume" — does opening a past conversation REPLACE the active drawer session, or open in a new session?**
    - What we know: D-04 says "loads the row's messages JSONB into the active drawer session, making subsequent messages append to that row."
    - What's unclear: UX detail — if the user is mid-conversation and clicks a history row, the in-flight messages are discarded?
    - Recommendation: per D-04 wording, replacement is fine. Planner clarifies UI-SPEC supplement.
+   - **RESOLVED:** Opening a History row REPLACES the current drawer session's messages with the chosen Conversation row's stored messages JSONB. Per D-04 (single active Conversation per drawer-open session), the active session pointer is re-bound to the chosen row's `conversation_id`, and subsequent chat turns PATCH (`/api/proxy/conversations/[id]`) into that row's messages array. Any in-flight unsent text in the textarea is preserved as draft (not discarded); but the message list above the input is fully replaced with the historical conversation. No "merge" UI in V1.
 
 3. **Skeleton state visual spec (D-15) — what exactly does the skeleton drawer look like?**
    - What we know: UI-SPEC explicitly calls this a Phase 6 supplement that the plan must generate.
    - What's unclear: exact pixel spec.
    - Recommendation: planner ships a small UI-SPEC patch with: gray rectangle drawer panel + 3 stacked gray message bubble placeholders + greyed-out prompt input + grayed tab strip. Match `bg-muted` token.
+   - **RESOLVED:** The skeleton renders inside the loader's `.sd-skeleton-open` body class, painted by loader.js before the React bundle resolves. Pixel spec:
+     - Drawer panel: 400px wide desktop / 100vw mobile; full viewport height desktop; `85vh` mobile bottom-sheet
+     - 3 placeholder chat bubbles stacked vertically with 12px gap; alternating alignment (left, right, left); each bubble is `90% of drawer width`, `20px height`, `#e5e7eb` background, `12px` border-radius
+     - Greyed prompt input bar at the bottom: `90% drawer width`, `40px height`, `#e5e7eb` background, `8px` border-radius, 8px above the drawer's bottom edge
+     - Tab strip: visible at top under header, 3 placeholder tab labels at standard widths in `#f1f1f1`, no active highlight
+     - Header: app brand tile (24px green square, `#008060`) + app name text placeholder (120×16px grey rect) + close-button placeholder (24×24px grey circle)
+     - All styles are **inline CSS only** (no Tailwind classes — Tailwind utilities are not loaded until the React bundle hydrates); total skeleton CSS ≤ 2 KB minified
+     - **No animation** in V1 (no shimmer/pulse) — keeps loader CSS small and minimizes flash before bundle resolves. Bundle typically resolves in 200–500ms; a static grey panel is acceptable UX.
 
 4. **Will Bun built-in bundler or esbuild win in practice?**
    - What we know: Both can emit the required output.
    - What's unclear: Bun's content-hash + manifest emission ergonomics relative to esbuild's `metafile`.
    - Recommendation: planner tries Bun first as a 30-minute spike; if blocks on manifest emission, switch to esbuild. Both are equally valid.
+   - **RESOLVED:** esbuild — already adopted as the primary recommendation in RESEARCH §Bundle Build Pipeline, and Plan 05 ships an esbuild devDependency install + driver script. `bun build` remains documented as a fallback escape hatch (Assumption A4) but is NOT exercised this phase. Decision is final to avoid build-toolchain bikeshedding mid-phase; if esbuild proves problematic during execution, the documented fallback path is to switch to `bun build` in a follow-up plan, not mid-phase.
 
 5. **Should the planner emit a Wave 0 verification gate for the bundle build pipeline?**
    - What we know: This is the riskiest "new tooling" surface in the phase.
    - Recommendation: Yes — Wave 0 should include a `tests/storefront-bundle-build.test.ts` that runs `bun run prebuild` and asserts `public/storefront-manifest.json` parses + `public/storefront-bundle-*.js` exists + bundle size is < some sane cap (e.g., 250KB minified).
+   - **RESOLVED:** YES. Plan 01 already emits `__tests__/bundle-build.test.ts` as a Wave 0 RED gate (running `bun run prebuild` via execSync, asserting manifest parses + bundle exists + size < 250KB). In addition, Plan 01 adds a second Wave 0 RED gate `__tests__/bundle-no-next-image.test.ts` that asserts the produced bundle string does NOT contain the literal `next/image` — this is the failure-mode-specific gate for BLOCKER 2 / Open Question Q1's resolution. Both gates are RED until Plan 05 + 11 + 13 land, then flip GREEN as the build pipeline produces a clean bundle.
+
 
 ## Environment Availability
 

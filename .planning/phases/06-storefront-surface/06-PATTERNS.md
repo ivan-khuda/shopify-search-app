@@ -22,7 +22,7 @@
 | `inngest/functions/retention-sweep.ts` | inngest function | scheduled batch deletes | `inngest/functions/sync-products.ts` | exact (Inngest pattern) |
 | `prisma/schema.prisma` (EDIT) | schema model | DDL | `prisma/schema.prisma` (existing `Product`, `ShopifySession`) | self-extend |
 | `db/manual-indexes.sql` (EDIT) | raw SQL migration | DDL | `db/manual-indexes.sql` (existing pgvector/GIN partial) | self-extend |
-| `extensions/chat-drawer/blocks/chat-drawer.liquid` | Theme Extension block | static asset | (none local — Theme App Extension is net-new) | no analog |
+| `extensions/chat-drawer/blocks/app_embed.liquid` | Theme Extension block | static asset | (none local — Theme App Extension is net-new) | no analog |
 | `extensions/chat-drawer/assets/loader.js` | extension loader script | static asset, lazy import | (none local) | no analog |
 | `extensions/chat-drawer/assets/loader.css` | extension CSS | static asset | (none local) | no analog |
 | `extensions/chat-drawer/src/StorefrontDrawer.tsx` | React component | UI rendering | `lib/chat-ui/components/chat-pane.tsx` (assumed structurally) | role-match |
@@ -829,7 +829,7 @@ Files with no close match in the codebase (planner should rely on RESEARCH.md + 
 
 | File | Role | Data Flow | Reason |
 |------|------|-----------|--------|
-| `extensions/chat-drawer/blocks/chat-drawer.liquid` | Theme Extension liquid | static | First Theme App Extension in repo |
+| `extensions/chat-drawer/blocks/app_embed.liquid` | Theme Extension liquid | static | First Theme App Extension in repo |
 | `extensions/chat-drawer/assets/loader.js` | extension loader | dynamic import | First extension JS in repo |
 | `extensions/chat-drawer/assets/loader.css` | extension CSS | static | First extension CSS in repo |
 | `extensions/chat-drawer/src/entry.tsx` | DOM mount entry | bootstrap | First esbuild bundle entry in repo |
