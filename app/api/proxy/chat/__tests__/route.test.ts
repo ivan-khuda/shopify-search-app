@@ -19,6 +19,9 @@ const {
   conversationCreateMock,
   hybridSearchMock,
   getActiveChatModelMock,
+  // Phase 8 (plan 08-01) additions
+  tryConsumeRequestMock,
+  capReachedResponseMock,
 } = vi.hoisted(() => ({
   validateHmacMock: vi.fn(),
   rateLimitMock: vi.fn().mockReturnValue({ ok: true }),
@@ -26,6 +29,8 @@ const {
   conversationCreateMock: vi.fn(),
   hybridSearchMock: vi.fn().mockResolvedValue([]),
   getActiveChatModelMock: vi.fn().mockReturnValue({ id: 'google/gemini-2.5-flash' }),
+  tryConsumeRequestMock: vi.fn().mockResolvedValue({ allowed: true }),
+  capReachedResponseMock: vi.fn(),
 }));
 
 vi.mock('@/lib/shopify/client', () => ({
@@ -53,6 +58,18 @@ vi.mock('@/services/search/SearchService', () => ({
 
 vi.mock('@/services/chat/getActiveChatModel', () => ({
   getActiveChatModel: getActiveChatModelMock,
+}));
+
+// Phase 8 (plan 08-01) — CapService + cap-reached-response stubs.
+// Both modules ship in Plan 08-08 / 08-09. The storefront route delta
+// (Plan 08-09) injects tryConsumeRequest after App Proxy HMAC validation.
+vi.mock('@/services/chat/CapService', () => ({
+  tryConsumeRequest: tryConsumeRequestMock,
+}));
+
+vi.mock('@/lib/chat/cap-reached-response', () => ({
+  capReachedResponse: capReachedResponseMock,
+  CAP_REACHED_MESSAGE: "You've reached this month's message limit. It resets on the 1st of next month. Reach out to support to raise your cap.",
 }));
 
 vi.mock('ai', async (importOriginal) => {
@@ -117,6 +134,11 @@ beforeEach(() => {
   rateLimitMock.mockReturnValue({ ok: true });
   conversationUpdateMock.mockResolvedValue({});
   conversationCreateMock.mockResolvedValue({ id: 'conv-new' });
+  // Phase 8 default — cap-allowed so existing tests are unaffected.
+  tryConsumeRequestMock.mockResolvedValue({ allowed: true });
+  capReachedResponseMock.mockImplementation(() =>
+    new Response('cap-reached-body', { status: 200, headers: { 'Content-Type': 'text/event-stream' } }),
+  );
 });
 
 describe('POST /api/proxy/chat — STR-04 auth', () => {
@@ -255,5 +277,76 @@ describe('POST /api/proxy/chat — D-19 onFinish DB write', () => {
       const shopArg = hybridSearchMock.mock.calls[0][0] as string;
       expect(shopArg).toBe(SHOP);
     }
+  });
+});
+
+/**
+ * Phase 8 Wave 0 RED scaffold — anchors CAP-02 / CAP-03 / D-13 / D-14
+ * for the storefront route. The cap check fires AFTER HMAC + rate-limit
+ * + customer-id-match (those gates short-circuit first), then BEFORE the
+ * AI Gateway call. Implementation lands in Plan 08-09.
+ */
+describe('POST /api/proxy/chat — Phase 8 hard cap (CAP-02, CAP-03, D-13, D-14)', () => {
+  it('calls tryConsumeRequest with shop derived from HMAC ctx (NOT body/raw query)', async () => {
+    const req = makeRequest({ visitor_id: VISITOR_ID }, {
+      visitor_id: VISITOR_ID,
+      conversation_id: 'conv-existing',
+      messages: [{ role: 'user', parts: [{ type: 'text', text: 'Show me blue shoes' }] }],
+    });
+    await POST(req);
+    expect(tryConsumeRequestMock).toHaveBeenCalledTimes(1);
+    expect(tryConsumeRequestMock).toHaveBeenCalledWith(SHOP);
+  });
+
+  it('allowed: true → reaches the streaming response (normal flow)', async () => {
+    tryConsumeRequestMock.mockResolvedValueOnce({ allowed: true });
+    const req = makeRequest({ visitor_id: VISITOR_ID }, {
+      visitor_id: VISITOR_ID,
+      conversation_id: 'conv-existing',
+      messages: [{ role: 'user', parts: [{ type: 'text', text: 'Show me blue shoes' }] }],
+    });
+    const response = await POST(req);
+    expect(capReachedResponseMock).not.toHaveBeenCalled();
+    expect(response.status).toBe(200);
+  });
+
+  it('allowed: false → returns capReachedResponse() instead of the normal stream', async () => {
+    tryConsumeRequestMock.mockResolvedValueOnce({ allowed: false });
+    const capBody = new Response('cap-reached-body', {
+      status: 200,
+      headers: { 'Content-Type': 'text/event-stream' },
+    });
+    capReachedResponseMock.mockReturnValueOnce(capBody);
+
+    const req = makeRequest({ visitor_id: VISITOR_ID }, {
+      visitor_id: VISITOR_ID,
+      conversation_id: 'conv-existing',
+      messages: [{ role: 'user', parts: [{ type: 'text', text: 'Show me blue shoes' }] }],
+    });
+    const response = await POST(req);
+
+    expect(capReachedResponseMock).toHaveBeenCalledTimes(1);
+    expect(hybridSearchMock).not.toHaveBeenCalled();
+    expect(response).toBe(capBody);
+    expect(response.status).toBe(200); // CAP-03: HTTP 200
+  });
+
+  it('cap check fires AFTER auth/rate-limit/customer-id-match gates (gate ordering)', async () => {
+    // If HMAC fails first, the cap check must NOT run.
+    validateHmacMock.mockResolvedValueOnce(false);
+    const params = { shop: SHOP, visitor_id: VISITOR_ID };
+    const signature = signParams(params);
+    const url = new URL(`http://${SHOP}/apps/smartdiscovery/chat`);
+    for (const [k, v] of Object.entries({ ...params, signature })) {
+      url.searchParams.set(k, v);
+    }
+    const req = new Request(url.toString(), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ visitor_id: VISITOR_ID, messages: [] }),
+    });
+    const response = await POST(req);
+    expect(response.status).toBe(401);
+    expect(tryConsumeRequestMock).not.toHaveBeenCalled();
   });
 });
