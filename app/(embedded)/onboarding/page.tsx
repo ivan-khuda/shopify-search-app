@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 
 type SyncState = 'queued' | 'running' | 'succeeded' | 'partial' | 'failed';
 
@@ -12,12 +13,16 @@ function stateLabel(s: SyncState | null): string {
 }
 
 export default function OnboardingPage() {
+  const searchParams = useSearchParams();
+  const retryId = searchParams?.get('retry') ?? null;
+
   const [syncing, setSyncing] = useState(false);
   const [syncRunId, setSyncRunId] = useState<string | null>(null);
   const [syncState, setSyncState] = useState<SyncState | null>(null);
   const [processedCount, setProcessedCount] = useState(0);
   const [totalCount, setTotalCount] = useState<number | null>(null);
   const [errors, setErrors] = useState<string[]>([]);
+  const [retryRun, setRetryRun] = useState<{ state: SyncState; errors: string[] } | null>(null);
 
   async function handleStartSync() {
     if (syncing) return;
@@ -59,6 +64,34 @@ export default function OnboardingPage() {
     }
   }
 
+  // One-shot lookup for ?retry= deep-link from failure notification email.
+  // Only fires when retryId is present and no active sync is in progress.
+  useEffect(() => {
+    if (!retryId || syncRunId !== null) return;
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const token = await shopify.idToken();
+        const res = await fetch(`/api/shopify/sync/status?syncRunId=${retryId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!cancelled && res.ok) {
+          const data = await res.json();
+          if (data.state === 'failed') {
+            setRetryRun({ state: 'failed', errors: data.errors ?? [] });
+          }
+        }
+      } catch {
+        // Treat network/auth errors as silent dismiss (D-11)
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [retryId, syncRunId]);
+
   useEffect(() => {
     if (!syncRunId) return;
     if (syncState && TERMINAL_STATES.includes(syncState)) return;
@@ -96,6 +129,16 @@ export default function OnboardingPage() {
           <s-list-item>Our AI uses it to answer customer search queries</s-list-item>
           <s-list-item>You&apos;ll receive an email when the first sync completes</s-list-item>
         </s-unordered-list>
+
+        {retryRun?.state === 'failed' && syncRunId === null ? (
+          <s-banner tone="critical">
+            Your previous sync failed — Retry?
+            {retryRun.errors[0] ? <s-text>{retryRun.errors[0]}</s-text> : null}
+            <s-button data-testid="retry-deep-link" variant="primary" onClick={handleStartSync}>
+              Retry sync
+            </s-button>
+          </s-banner>
+        ) : null}
 
         {syncRunId === null ? (
           <s-button
