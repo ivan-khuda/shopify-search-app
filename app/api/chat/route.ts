@@ -39,7 +39,9 @@
  *     by the `ai` package; it is never referenced in source.
  *   - DoS lock (T-04-11):
  *     Zod inputSchema caps `query` at 500 chars. AI Gateway and the Phase 8
- *     hard cap (CAP-01/02/03) layer atop this.
+ *     hard cap (CAP-01/02/03) layer atop this. Per D-14, the cap check is the
+ *     first action after auth resolves `shop` — before req.json() parsing,
+ *     before model resolution, before any AI Gateway call.
  *
  * v6 lock (Pitfall 1):
  *   The tool uses `inputSchema` with a real z.object schema. The legacy v5
@@ -54,11 +56,16 @@ import {
 } from 'ai';
 import dedent from 'dedent';
 import { z } from 'zod';
+import { capReachedResponse } from '@/lib/chat/cap-reached-response';
 import { withShopifySession } from '@/lib/shopify/auth';
+import { tryConsumeRequest } from '@/services/chat/CapService';
 import { getActiveChatModel } from '@/services/chat/getActiveChatModel';
 import { hybridSearch } from '@/services/search/SearchService';
 
 export const POST = withShopifySession(async ({ shop, req }) => {
+  const consume = await tryConsumeRequest(shop);
+  if (!consume.allowed) return capReachedResponse();
+
   const { messages }: { messages: UIMessage[] } = await req.json();
 
   const model = await getActiveChatModel(shop);
