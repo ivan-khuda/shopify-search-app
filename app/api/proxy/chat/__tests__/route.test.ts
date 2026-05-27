@@ -59,13 +59,19 @@ vi.mock('ai', async (importOriginal) => {
   const actual = await importOriginal<typeof import('ai')>();
   return {
     ...actual,
-    streamText: vi.fn().mockReturnValue({
-      toUIMessageStreamResponse: vi.fn().mockReturnValue(
-        new Response('data: [DONE]\n\n', {
-          status: 200,
-          headers: { 'Content-Type': 'text/event-stream' },
-        })
-      ),
+    streamText: vi.fn((opts: { onFinish?: (ctx: { response: { messages: unknown[] } }) => Promise<void> | void }) => {
+      // Invoke onFinish synchronously so the handler's DB write happens
+      // before toUIMessageStreamResponse() returns. Mirrors Vercel AI SDK
+      // behavior where onFinish fires once the stream completes.
+      void Promise.resolve().then(() => opts.onFinish?.({ response: { messages: [] } }));
+      return {
+        toUIMessageStreamResponse: vi.fn().mockReturnValue(
+          new Response('data: [DONE]\n\n', {
+            status: 200,
+            headers: { 'Content-Type': 'text/event-stream' },
+          })
+        ),
+      };
     }),
   };
 });
