@@ -22,8 +22,8 @@
  * v6 lock (Pitfall 1): tool uses inputSchema; response is
  * toUIMessageStreamResponse — toAIStreamResponse (v5) must not appear.
  *
- * Hard cap (Phase 8): D-21 step 4 is a stub. Once CAP-01/02/03 ship, the
- * DB-backed RequestCounter check goes here.
+ * Hard cap (Phase 8): D-21 step 4 enforces CAP-02/03 via tryConsumeRequest
+ * after HMAC + customer-id + rate-limit gates, before conversation lifecycle.
  */
 import {
   convertToModelMessages,
@@ -40,6 +40,8 @@ import { mergeVisitorIntoCustomer } from '@/lib/identity/merge';
 import { prisma } from '@/lib/db/client';
 import { getActiveChatModel } from '@/services/chat/getActiveChatModel';
 import { hybridSearch } from '@/services/search/SearchService';
+import { tryConsumeRequest } from '@/services/chat/CapService';
+import { capReachedResponse } from '@/lib/chat/cap-reached-response';
 
 function assertCustomerMatch(
   bodyCustomerId: string | undefined,
@@ -92,7 +94,9 @@ export const POST = withAppProxyHmac(async ({ shop, query, req }) => {
     );
   }
 
-  // D-21 step 4: hard-cap stub (Phase 8 fills in via DB-backed RequestCounter).
+  // D-21 step 4 / D-14: hard cap (CAP-02/03). Last gate before AI Gateway.
+  const consume = await tryConsumeRequest(shop);
+  if (!consume.allowed) return capReachedResponse();
 
   // D-21 steps 6 + 7: conversation lifecycle + merge.
   let conversationId: string;
