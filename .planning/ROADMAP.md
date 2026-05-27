@@ -265,8 +265,8 @@ Plans:
 **Wave 5** *(blocked on Wave 4)*
 
 - [x] 08-10-PLAN.md — services/chat/CapService.ts (tryConsumeRequest composer)
-- [ ] 08-11-PLAN.md — Inngest sync-products.ts: append send-success-email step after finalize
-- [ ] 08-12-PLAN.md — Inngest sync-products.ts: extend onFailure with send-failure-email step (distinct step ID per Pitfall 2)
+- [x] 08-11-PLAN.md — Inngest sync-products.ts: append send-success-email step after finalize
+- [x] 08-12-PLAN.md — Inngest sync-products.ts: extend onFailure with send-failure-email step (distinct step ID per Pitfall 2)
 
 **Wave 6** *(blocked on Wave 5)*
 
@@ -294,4 +294,4 @@ Phases 7 and 8 are parallel-eligible with Phase 6 (no blocking dependencies — 
 | 5. Shared Chat-UI Extraction | 5/5 | Complete | 2026-05-26 |
 | 6. Storefront Surface | 14/14 | Complete   | 2026-05-27 |
 | 7. Admin Settings + Model Picker | 10/10 | Complete (passed-with-deferred-smoke) | 2026-05-27 |
-| 8. Email + Hard Cap | 10/15 | In Progress|  |
+| 8. Email + Hard Cap | 12/15 | In Progress|  |
