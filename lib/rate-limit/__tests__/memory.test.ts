@@ -4,12 +4,13 @@
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-import { rateLimit } from '@/lib/rate-limit/memory';
+import { rateLimit, __resetRateLimitForTests } from '@/lib/rate-limit/memory';
 
 const VISITOR_CHAT = 'visitor-chat-001';
 const VISITOR_READ = 'visitor-read-001';
 
 beforeEach(() => {
+  __resetRateLimitForTests();
   vi.useFakeTimers();
 });
 
