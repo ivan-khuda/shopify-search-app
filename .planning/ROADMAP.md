@@ -247,7 +247,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1)*
 
-- [ ] 08-02-PLAN.md — Prisma schema delta: RequestCounter model + SyncRun.emailSentAt (NO migration apply)
+- [x] 08-02-PLAN.md — Prisma schema delta: RequestCounter model + SyncRun.emailSentAt (NO migration apply)
 
 **Wave 3** *(blocked on Wave 2)*
 
@@ -294,4 +294,4 @@ Phases 7 and 8 are parallel-eligible with Phase 6 (no blocking dependencies — 
 | 5. Shared Chat-UI Extraction | 5/5 | Complete | 2026-05-26 |
 | 6. Storefront Surface | 14/14 | Complete   | 2026-05-27 |
 | 7. Admin Settings + Model Picker | 10/10 | Complete (passed-with-deferred-smoke) | 2026-05-27 |
-| 8. Email + Hard Cap | 1/15 | In Progress|  |
+| 8. Email + Hard Cap | 2/15 | In Progress|  |
