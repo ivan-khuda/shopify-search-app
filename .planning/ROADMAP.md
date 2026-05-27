@@ -18,7 +18,7 @@ SmartDiscovery AI goes from a scaffolded-but-stubbed Shopify embedded app to a f
 
 [^4-smoke-deferred]: Manual smoke deferred behind pre-existing shopify-install-flow OAuth callback cookie blocker (`docs/superpowers/plans/2026-05-02-shopify-install-flow.md`). All Phase 4 structural and automated evidence verified. See `.planning/phases/04-searchservice-wire-chat/04-VERIFICATION.md`.
 - [x] **Phase 5: Shared Chat-UI Extraction** - lib/chat-ui barrel, adapter pattern, persistence models
-- [ ] **Phase 6: Storefront Surface** - Theme App Extension, App Proxy, FAB + drawer, visitor identity + persistence
+- [x] **Phase 6: Storefront Surface** - Theme App Extension, App Proxy, FAB + drawer, visitor identity + persistence (completed 2026-05-27)
 - [ ] **Phase 7: Admin Settings + Model Picker** - ShopSettings model, model picker UI, per-shop active model
 - [ ] **Phase 8: Email + Hard Cap** - Resend completion emails, per-shop request counter, graceful cap response
 
@@ -206,7 +206,7 @@ Plans:
 - [x] 06-11-PLAN.md — DbBackedHistoryStore + DbBackedSavedProductsStore + StorefrontAdapter customer_id edit + barrel re-export
 - [x] 06-12-PLAN.md — Theme App Extension scaffold + App Embed liquid + loader.js + loader.css
 - [x] 06-13-PLAN.md — Drawer React shell (StorefrontDrawer + PromptChips + entry.tsx) + bundle-url discovery route + bun run prebuild
-- [ ] 06-14-PLAN.md — Phase 6 verification gate (full suite + shopify app deploy + 5-SC manual smoke + planning artifact updates)
+- [x] 06-14-PLAN.md — Phase 6 verification gate (full suite + shopify app deploy + 5-SC manual smoke + planning artifact updates)
 
 **UI hint**: yes
 
@@ -253,6 +253,6 @@ Phases 7 and 8 are parallel-eligible with Phase 6 (no blocking dependencies — 
 | 3. Embeddings + Search Indexes | 8/8 | Complete | 2026-05-25 |
 | 4. SearchService + Wire Chat | 6/6 | Complete (verified-with-deferred-smoke) | 2026-05-26 |
 | 5. Shared Chat-UI Extraction | 5/5 | Complete | 2026-05-26 |
-| 6. Storefront Surface | 13/14 | In Progress|  |
+| 6. Storefront Surface | 14/14 | Complete   | 2026-05-27 |
 | 7. Admin Settings + Model Picker | 0/TBD | Not started | - |
 | 8. Email + Hard Cap | 0/TBD | Not started | - |
