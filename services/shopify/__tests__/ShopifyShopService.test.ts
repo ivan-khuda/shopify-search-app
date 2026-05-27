@@ -40,8 +40,6 @@ describe('fetchShopContactEmail (D-05)', () => {
     graphqlRequestMock.mockResolvedValueOnce({
       data: { shop: { contactEmail: 'owner@example.com' } },
     });
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-expect-error — RED scaffold: module does not exist yet (lands in Plan 08-05).
     const { fetchShopContactEmail } = await import('@/services/shopify/ShopifyShopService');
     const result = await fetchShopContactEmail(mockSession);
     expect(result).toBe('owner@example.com');
@@ -51,8 +49,6 @@ describe('fetchShopContactEmail (D-05)', () => {
     graphqlRequestMock.mockResolvedValueOnce({
       data: { shop: { contactEmail: null } },
     });
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-expect-error — RED scaffold.
     const { fetchShopContactEmail } = await import('@/services/shopify/ShopifyShopService');
     const result = await fetchShopContactEmail(mockSession);
     expect(result).toBeNull();
@@ -62,8 +58,6 @@ describe('fetchShopContactEmail (D-05)', () => {
     graphqlRequestMock.mockResolvedValueOnce({
       data: { shop: { contactEmail: '' } },
     });
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-expect-error — RED scaffold.
     const { fetchShopContactEmail } = await import('@/services/shopify/ShopifyShopService');
     const result = await fetchShopContactEmail(mockSession);
     expect(result).toBeNull();
@@ -71,8 +65,6 @@ describe('fetchShopContactEmail (D-05)', () => {
 
   it('returns null when the GraphQL client throws (D-05 — does NOT bubble)', async () => {
     graphqlRequestMock.mockRejectedValueOnce(new Error('GraphQL 500'));
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-expect-error — RED scaffold.
     const { fetchShopContactEmail } = await import('@/services/shopify/ShopifyShopService');
     const result = await fetchShopContactEmail(mockSession);
     expect(result).toBeNull();
@@ -80,8 +72,6 @@ describe('fetchShopContactEmail (D-05)', () => {
 
   it('returns null when the response shape is malformed (missing shop)', async () => {
     graphqlRequestMock.mockResolvedValueOnce({ data: {} });
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-expect-error — RED scaffold.
     const { fetchShopContactEmail } = await import('@/services/shopify/ShopifyShopService');
     const result = await fetchShopContactEmail(mockSession);
     expect(result).toBeNull();
@@ -91,8 +81,6 @@ describe('fetchShopContactEmail (D-05)', () => {
     graphqlRequestMock.mockResolvedValueOnce({
       data: { shop: { contactEmail: 'owner@example.com' } },
     });
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-expect-error — RED scaffold.
     const { fetchShopContactEmail } = await import('@/services/shopify/ShopifyShopService');
     await fetchShopContactEmail(mockSession);
     expect(graphqlRequestMock).toHaveBeenCalledTimes(1);
