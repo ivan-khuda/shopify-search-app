@@ -239,7 +239,44 @@ Plans:
   3. When a shop exceeds its monthly chat request cap (configurable via `HARD_CAP_REQUESTS_PER_MONTH`), both `/api/chat` and `/api/proxy/chat` return HTTP 200 with a "monthly limit reached" message that the chat UI renders as a friendly inline response
   4. The request counter increment is atomic — concurrent requests from the same shop cannot both succeed when the counter is at cap − 1 (race-condition safe)
 
-**Plans**: TBD
+**Plans**: 15 plans
+
+**Wave 1**
+
+- [ ] 08-01-PLAN.md — Wave 0 RED test scaffolds (11 mandatory + 1 optional gated integration test)
+
+**Wave 2** *(blocked on Wave 1)*
+
+- [ ] 08-02-PLAN.md — Prisma schema delta: RequestCounter model + SyncRun.emailSentAt (NO migration apply)
+
+**Wave 3** *(blocked on Wave 2)*
+
+- [ ] 08-03-PLAN.md — [BLOCKING] Option A non-destructive migration apply + prisma generate + bun db:indexes
+
+**Wave 4** *(blocked on Wave 3 — runs in parallel)*
+
+- [ ] 08-04-PLAN.md — services/email/EmailService.ts + install resend / @react-email/components / @react-email/render
+- [ ] 08-05-PLAN.md — lib/email/templates/SyncSuccessEmail.tsx + SyncFailureEmail.tsx (NOT-03)
+- [ ] 08-06-PLAN.md — services/shopify/ShopifyShopService.ts (fetchShopContactEmail GraphQL helper)
+- [ ] 08-07-PLAN.md — lib/db/repositories/RequestCounterRepository.ts (atomic  upsert primitive)
+- [ ] 08-08-PLAN.md — lib/util/period.ts (getCurrentPeriod YYYY-MM UTC)
+- [ ] 08-09-PLAN.md — lib/chat/cap-reached-response.ts (AI SDK v6 synthetic UI message stream)
+
+**Wave 5** *(blocked on Wave 4)*
+
+- [ ] 08-10-PLAN.md — services/chat/CapService.ts (tryConsumeRequest composer)
+- [ ] 08-11-PLAN.md — Inngest sync-products.ts: append send-success-email step after finalize
+- [ ] 08-12-PLAN.md — Inngest sync-products.ts: extend onFailure with send-failure-email step (distinct step ID per Pitfall 2)
+
+**Wave 6** *(blocked on Wave 5)*
+
+- [ ] 08-13-PLAN.md — /api/chat route: inject tryConsumeRequest before req.json (D-14)
+- [ ] 08-14-PLAN.md — /api/proxy/chat route: replace D-21 step 4 stub with real cap check
+
+**Wave 7** *(blocked on Wave 6)*
+
+- [ ] 08-15-PLAN.md — Phase 8 verification gate (full suite + tsc + lint + 08-VERIFICATION.md + ROADMAP/REQUIREMENTS/STATE updates)
+
 **UI hint**: no
 
 ## Progress
