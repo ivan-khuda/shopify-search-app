@@ -37,9 +37,11 @@ created: 2026-05-27
 
 ## Per-Task Verification Map
 
+> Per-task rows are populated by plan **07-10 Task 3** during the verification wave, once final task IDs crystallize during execution. Each PLAN.md already carries an `<automated>` verify command (or explicit Wave-0 RED dependency) per task; this map aggregates them post-execution for the Nyquist sign-off.
+
 | Task ID | Plan | Wave | Requirement | Threat Ref | Secure Behavior | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|------------|-----------------|-----------|-------------------|-------------|--------|
-| (planner populates during PLAN.md generation per task) | | | | | | | | | ⬜ pending |
+| (populated by 07-10 Task 3) | | | | | | | | | ⬜ pending |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 

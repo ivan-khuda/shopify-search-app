@@ -837,32 +837,19 @@ export const BEST_FOR: Record<string, string> = {
 | A5 | The 15-min in-memory cache is sufficient even with multiple Vercel lambda instances (each warming its own cache) | Pattern 2 | If the catalog updates frequently AND cold lambdas are common, merchants may see different catalogs in close succession. Acceptable per D-03; low real-world risk because catalog changes are infrequent. |
 | A6 | The PATCH endpoint's catalog-validation step (Pattern 4) hits the same 15-min cache and adds negligible latency | Pattern 4 | If a fresh fetch is forced at every PATCH, latency could climb. The same `fetchModelCatalog()` is reused; the cache absorbs back-to-back saves. |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **How many catalog rows should we display?**
-   - What we know: The gateway returns ~190 language models. D-04 says "side-by-side pricing comparison" implies bounded. Deferred ideas explicitly defer search/filter "if catalog grows past ~30 models."
-   - What's unclear: Phase 7 doesn't enumerate which models to show. Researcher's recommendation: filter to `models.filter(m => BEST_FOR[m.id] || m.id === activeId)` for ~10–12 rows.
-   - Recommendation: Planner picks one of: (a) BEST_FOR-only filter (Researcher's recommendation), (b) full catalog with sort + scroll, (c) provider allowlist (`google` + `anthropic` + `openai` + `xai`). Plan should make this an explicit task.
+> All five resolutions are encoded in the relevant PLAN.md Decision Logs. Markers below close them at the source.
 
-2. **Should we route as `/api/settings/model` or `/api/settings`?**
-   - What we know: CONTEXT.md Claude's Discretion explicitly leaves this open. Phase 8 will add email + cap settings.
-   - What's unclear: Whether Phase 8's settings will be PATCHed via the same endpoint with a richer body or a sibling route.
-   - Recommendation: Use `/api/settings/model` for Phase 7 — it's the most specific and lowest-coupling choice. Phase 8 can add `/api/settings/email`, `/api/settings/cap`, etc., without renaming. The alternative (`/api/settings` with discriminated body) introduces premature generalization risk.
+1. **How many catalog rows should we display?** **RESOLVED:** BEST_FOR-keyed filter + the currently-active id (Researcher's recommendation (a)). ~10–12 rows total. Encoded in 07-04 (catalog client filter) and 07-08 (page render). The alternative full-catalog scroll deferred until catalog growth pressure surfaces.
 
-3. **Should `getActiveChatModel` hydrate `displayName` from the catalog, or store it in `ShopSettings`?**
-   - What we know: D-10 specifies the table is minimal (`shop`, `activeChatModelId`, `updatedAt`). The catalog is the source of truth for displayName per the model-catalog module.
-   - What's unclear: If the catalog fetch fails AND the resolver returns a DB row, what's the displayName?
-   - Recommendation: Pattern 3 above — try the catalog; on failure, synthesize displayName from the id segment (`'google/gemini-2.5-flash'` → `'gemini-2.5-flash'`). The chat banner is decorative; truncated id is acceptable degradation.
+2. **Should we route as `/api/settings/model` or `/api/settings`?** **RESOLVED:** `/api/settings/model`. Lowest-coupling choice; Phase 8 adds sibling routes (`/api/settings/email`, etc.) without renaming. Encoded in 07-07.
 
-4. **Should we add an "auto-rotate to default if active model is removed" behavior?**
-   - What we know: D-06 says "If the active id is not in the rendered catalog, select nothing and surface an inline warning." This is read-side; the saved row is not changed.
-   - What's unclear: Should `/api/chat` and `/api/proxy/chat` ALSO detect this and fall back to DEFAULT_MODEL silently, or should they fail loudly?
-   - Recommendation: Silent fallback to DEFAULT_MODEL at the resolver level (already implied by Pattern 3's `if (match) return match; else …`). The settings page surfaces the warning so merchants notice and update; chat never breaks.
+3. **Should `getActiveChatModel` hydrate `displayName` from the catalog, or store it in `ShopSettings`?** **RESOLVED:** Catalog hydration with id-segment synthesis fallback (`'google/gemini-2.5-flash'` → `'gemini-2.5-flash'`) when the catalog is unavailable. D-10 stays minimal (no displayName column). Encoded in 07-06.
 
-5. **Sort defaults — what order do we display rows in on first render?**
-   - What we know: CONTEXT.md leaves this to Claude's Discretion.
-   - What's unclear: Provider alphabetical vs `inputPricePerMillion` ascending.
-   - Recommendation: Provider alphabetical, with active model floated to the top of its group. Provider grouping is the most natural mental model for merchants ("I want Google" / "I want Anthropic"). Active-at-top is a Shopify-admin convention for current selection.
+4. **Should we add an "auto-rotate to default if active model is removed" behavior?** **RESOLVED:** Silent fallback to `DEFAULT_MODEL` at the resolver when the saved id is not in the catalog. Settings page surfaces D-06's warning banner so merchants notice; chat path never breaks. Encoded in 07-06 (resolver) + 07-08 (warning banner).
+
+5. **Sort defaults — what order do we display rows in on first render?** **RESOLVED:** Provider alphabetical, with the active model floated to the top of its provider group. Encoded in 07-08.
 
 ## Environment Availability
 
