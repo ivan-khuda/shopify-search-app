@@ -191,6 +191,7 @@ model SyncRun {
   idempotencyKey String    @unique
   startedAt      DateTime  @default(now())
   finishedAt     DateTime?
+  emailSentAt    DateTime? // Phase 8 D-04 — NULL = email not yet sent
 
   @@index([shop])
   @@map("sync_runs")
@@ -259,4 +260,17 @@ model ShopSettings {
   updatedAt         DateTime @updatedAt
 
   @@map("shop_settings")
+}
+
+// Phase 8 D-08 / CAP-01: per-shop monthly request counter.
+// Empty by design — first chat request of a (shop, period) INSERTs the row
+// via the atomic upsert primitive in RequestCounterRepository.tryConsume.
+model RequestCounter {
+  shop         String
+  period       String // YYYY-MM UTC — D-12
+  requestCount Int      @default(0)
+  updatedAt    DateTime @updatedAt
+
+  @@id([shop, period])
+  @@map("request_counter")
 }
