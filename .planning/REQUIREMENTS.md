@@ -43,7 +43,7 @@ Requirements for initial release. Each maps to roadmap phases.
 
 - [ ] **ADM-01**: Onboarding "Start sync" button posts to `/api/shopify/sync` and transitions UI to progress view on response
 - [ ] **ADM-02**: Onboarding shows real-time progress bar driven by `/status` polling; renders product counts and final summary
-- [ ] **ADM-03**: Settings screen at `/settings` lists Vercel AI Gateway chat models (name, provider, context window, $/M input/output tokens, "best for") and persists per-shop selection in a new `ShopSettings` model
+- [x] **ADM-03**: Settings screen at `/settings` lists Vercel AI Gateway chat models (name, provider, context window, $/M input/output tokens, "best for") and persists per-shop selection in a new `ShopSettings` model
 - [ ] **ADM-04**: Default chat model is pre-selected on first install (Gemini 2.5 Flash or equivalent balanced default)
 - [ ] **ADM-05**: Admin chat playground (`/chat`) labels itself "Preview mode — using your real catalog", displays the active model name, and uses the same shared chat components as storefront
 - [ ] **ADM-06**: Admin chat retrieves grounded results via `SearchService.hybridSearch` and renders product cards inline; never returns mock data
@@ -159,7 +159,7 @@ Explicitly excluded. Documented to prevent scope creep.
 | EMB-07 | Phase 4 | Pending |
 | ADM-01 | Phase 2 | Pending |
 | ADM-02 | Phase 2 | Pending |
-| ADM-03 | Phase 7 | Pending |
+| ADM-03 | Phase 7 | Complete |
 | ADM-04 | Phase 7 | Pending |
 | ADM-05 | Phase 4 | Pending |
 | ADM-06 | Phase 4 | Pending |

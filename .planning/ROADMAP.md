@@ -254,5 +254,5 @@ Phases 7 and 8 are parallel-eligible with Phase 6 (no blocking dependencies — 
 | 4. SearchService + Wire Chat | 6/6 | Complete (verified-with-deferred-smoke) | 2026-05-26 |
 | 5. Shared Chat-UI Extraction | 5/5 | Complete | 2026-05-26 |
 | 6. Storefront Surface | 14/14 | Complete   | 2026-05-27 |
-| 7. Admin Settings + Model Picker | 0/TBD | Not started | - |
+| 7. Admin Settings + Model Picker | 4/10 | In Progress|  |
 | 8. Email + Hard Cap | 0/TBD | Not started | - |
