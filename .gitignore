@@ -43,3 +43,7 @@ next-env.d.ts
 
 /app/generated/prisma
 .worktrees/
+
+# storefront bundle build artifacts (06-05)
+public/storefront-bundle.*.js
+public/storefront-manifest.json
