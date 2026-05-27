@@ -55,3 +55,29 @@ CREATE INDEX IF NOT EXISTS "product_embeddings_embedding_hnsw_idx"
 CREATE INDEX IF NOT EXISTS "products_searchVector_gin_idx"
   ON products
   USING GIN ("searchVector");
+
+-- ============================================================
+-- 4. SavedProduct anon-only uniqueness (D-20)
+-- ============================================================
+-- Partial unique index covering anonymous-visitor saves: ensures a single
+-- (shop, visitorId, productId) row exists while customerId IS NULL.
+--
+-- These indexes back the ON CONFLICT clauses in `/api/proxy/saved-products`
+-- POST (D-20) and the visitor→customer merge transaction (D-11). Do NOT add
+-- equivalent `@@unique` declarations in Prisma — Prisma cannot model partial
+-- indexes.
+
+CREATE UNIQUE INDEX IF NOT EXISTS "saved_products_anon_unique_idx"
+  ON saved_products (shop, "visitorId", "productId")
+  WHERE "customerId" IS NULL;
+
+-- ============================================================
+-- 5. SavedProduct customer-linked uniqueness (D-20)
+-- ============================================================
+-- Partial unique index covering customer-linked saves: ensures a single
+-- (shop, customerId, productId) row exists once a customer has been merged
+-- onto the save (customerId IS NOT NULL).
+
+CREATE UNIQUE INDEX IF NOT EXISTS "saved_products_customer_unique_idx"
+  ON saved_products (shop, "customerId", "productId")
+  WHERE "customerId" IS NOT NULL;
