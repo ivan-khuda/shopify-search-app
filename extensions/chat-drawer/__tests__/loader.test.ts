@@ -93,8 +93,8 @@ describe('loader.js — STR-07 designMode guard', () => {
       return;
     }
 
-    // Loader source should reference the manifest path
-    expect(loaderText).toMatch(/storefront-manifest\.json/);
+    // Loader source should reference the App Proxy bundle-url path (B-2 fix)
+    expect(loaderText).toMatch(/_meta\/bundle-url/);
   });
 
   it('D-15: paints skeleton container with class sd-skeleton-open before bundle resolves', async () => {

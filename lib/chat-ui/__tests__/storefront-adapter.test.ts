@@ -13,9 +13,9 @@ describe('StorefrontAdapter (SHR-03)', () => {
     vi.unstubAllGlobals();
   });
 
-  it('endpoint is /api/proxy/chat', () => {
+  it('endpoint is /apps/smartdiscovery/chat (App Proxy path)', () => {
     const adapter = new StorefrontAdapter();
-    expect(adapter.endpoint).toBe('/api/proxy/chat');
+    expect(adapter.endpoint).toBe('/apps/smartdiscovery/chat');
   });
 
   it('getAuthHeaders returns {}', async () => {
@@ -50,9 +50,11 @@ describe('StorefrontAdapter (SHR-03)', () => {
 
 // ── IDN-02: customer_id injection from window.Shopify.customer (Phase 6) ─────
 //
-// STR-08: endpoint stays exactly '/api/proxy/chat' — no cross-origin URL.
-// IDN-02: when window.Shopify.customer.id is present, getRequestBody() includes
-// customer_id as a STRING (BigInt precision preserved — Pitfall 7 from RESEARCH).
+// STR-08: endpoint is an App Proxy path '/apps/smartdiscovery/chat' so the
+// request stays same-origin from the storefront and Shopify HMAC-signs it
+// before forwarding to the app backend. IDN-02: when window.Shopify.customer.id
+// is present, getRequestBody() includes customer_id as a STRING (BigInt
+// precision preserved — Pitfall 7 from RESEARCH).
 
 describe('IDN-02 customer_id — window.Shopify.customer injection (Phase 6)', () => {
   afterEach(() => {
@@ -105,7 +107,7 @@ describe('IDN-02 customer_id — window.Shopify.customer injection (Phase 6)', (
     expect('customer_id' in body).toBe(false);
   });
 
-  it('STR-08: endpoint remains /api/proxy/chat regardless of customer presence', () => {
+  it('STR-08: endpoint is the App Proxy path regardless of customer presence', () => {
     Object.defineProperty(window, 'Shopify', {
       value: { customer: { id: 12345 } },
       configurable: true,
@@ -114,7 +116,7 @@ describe('IDN-02 customer_id — window.Shopify.customer injection (Phase 6)', (
 
     const adapter = new StorefrontAdapter();
     // Endpoint must never be a full URL or cross-origin path
-    expect(adapter.endpoint).toBe('/api/proxy/chat');
+    expect(adapter.endpoint).toBe('/apps/smartdiscovery/chat');
     expect(adapter.endpoint).not.toMatch(/^https?:\/\//);
   });
 
