@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone gaps
 status: completed
-stopped_at: v1 milestone complete (Phase 8 verified-with-deferred-smoke)
-last_updated: "2026-05-27T21:39:25.768Z"
+stopped_at: Phase 8.1 context gathered
+last_updated: "2026-05-27T21:44:28.482Z"
 last_activity: 2026-05-27
 progress:
   total_phases: 8
@@ -127,6 +127,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-05-27T21:55:00Z
-Stopped at: v1 milestone complete (Phase 8 verified-with-deferred-smoke)
-Resume file: None
+Last session: 2026-05-27T21:44:28.459Z
+Stopped at: Phase 8.1 context gathered
+Resume file: .planning/phases/08.1-close-v1-0-milestone-gaps/08.1-CONTEXT.md
