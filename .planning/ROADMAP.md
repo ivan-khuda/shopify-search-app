@@ -260,7 +260,7 @@ Plans:
 - [x] 08-06-PLAN.md — services/shopify/ShopifyShopService.ts (fetchShopContactEmail GraphQL helper)
 - [x] 08-07-PLAN.md — lib/db/repositories/RequestCounterRepository.ts (atomic  upsert primitive)
 - [x] 08-08-PLAN.md — lib/util/period.ts (getCurrentPeriod YYYY-MM UTC)
-- [ ] 08-09-PLAN.md — lib/chat/cap-reached-response.ts (AI SDK v6 synthetic UI message stream)
+- [x] 08-09-PLAN.md — lib/chat/cap-reached-response.ts (AI SDK v6 synthetic UI message stream)
 
 **Wave 5** *(blocked on Wave 4)*
 
@@ -294,4 +294,4 @@ Phases 7 and 8 are parallel-eligible with Phase 6 (no blocking dependencies — 
 | 5. Shared Chat-UI Extraction | 5/5 | Complete | 2026-05-26 |
 | 6. Storefront Surface | 14/14 | Complete   | 2026-05-27 |
 | 7. Admin Settings + Model Picker | 10/10 | Complete (passed-with-deferred-smoke) | 2026-05-27 |
-| 8. Email + Hard Cap | 7/15 | In Progress|  |
+| 8. Email + Hard Cap | 8/15 | In Progress|  |
