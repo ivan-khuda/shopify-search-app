@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-stopped_at: Completed 08-12-PLAN.md
-last_updated: "2026-05-27T19:47:00.519Z"
+status: complete-v1-milestone
+stopped_at: v1 milestone complete (Phase 8 verified-with-deferred-smoke)
+last_updated: "2026-05-27T21:55:00Z"
 last_activity: 2026-05-27
 progress:
   total_phases: 8
-  completed_phases: 7
-  total_plans: 78
-  completed_plans: 77
-  percent: 88
+  completed_phases: 8
+  total_plans: 93
+  completed_plans: 93
+  percent: 100
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-22)
 
 **Core value:** A storefront visitor can describe what they want in natural language and immediately see relevant products from the merchant's catalog — synced reliably, embedded into their theme, with no dev work from the merchant.
-**Current focus:** Phase 8 — email + hard cap (final phase)
+**Current focus:** v1 milestone CLOSED — all 8 phases delivered.
 
 ## Current Position
 
-Phase: 8
-Plan: 9 of 15 (complete)
-Status: Ready to execute
+Phase: —
+Plan: —
+Status: v1 milestone complete (passed-with-deferred-smoke)
 Last activity: 2026-05-27
 
-Progress: [██████████] 99%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
@@ -82,6 +82,7 @@ Recent decisions affecting current work:
 - Phase 3 (verified 2026-05-25): EMBEDDING_MODEL = 'openai/text-embedding-3-small' pinned via frozen constant; modelVersion column NOT NULL; HNSW + GIN indexes live in db/manual-indexes.sql (outside Prisma); withHnswIterativeScan helper consumed by Phase 4 SearchService.
 - Phase 4 (verified-with-deferred-smoke 2026-05-26): Hybrid RRF search (`services/search/SearchService.hybridSearch`) ships shop-scoped pgvector + tsvector retrieval inside a single `withHnswIterativeScan` transaction with defense-in-depth shop filtering. `/api/chat` migrated to AI Gateway routing via plain model id `google/gemini-2.5-flash`; single camelCase `searchCatalog` tool with Vercel AI SDK v6 `inputSchema` (NOT v5 `parameters`); execute closure forwards shop from withShopifySession ctx. `/api/proxy/chat` ships as a Phase 6 stub importing `hybridSearch` (EMB-07 SC #3 source-level proof). `MOCK_PRODUCTS` deleted from disk; UI reads `message.parts[*].type === 'tool-searchCatalog'` directly. `/chat` is a Server Component server-rendering the preview-mode banner (`Preview mode — using your real catalog · Model: Gemini 2.5 Flash`, em-dash U+2014 + middle-dot U+00B7 byte-precise) above a new `components/chat/chat-shell.tsx` client component. Manual smoke deferred behind pre-existing shopify-install-flow OAuth cookie blocker (out of scope for Phase 4).
 - Phase 5 (verified 2026-05-26): `lib/chat-ui/` barrel ships ChatPane (renamed from Chat, named export, adapter-driven DefaultChatTransport with Resolvable headers/body), ChatMessage, ProductCard, HistoryPanel, SavedProductsPanel, EmptyState. ChatIdentityAdapter interface in lib/chat-ui/adapters/types.ts implemented by EmbeddedAdapter (App Bridge runtime global, ZERO @shopify/* imports) and StorefrontAdapter (localStorage 'smartdiscovery.visitor_id' + crypto.randomUUID, SSR-safe). HistoryStore + SavedProductsStore interfaces in lib/chat-ui/stores/types.ts with LocalStorage default implementations namespaced by scope (T-5-01 empty-scope throw guard). useHistoryStore + useSavedProductsStore React hooks via useSyncExternalStore with SSR snapshot. Embedded surface shell app/(embedded)/chat/chat-shell.tsx instantiates EmbeddedAdapter + store hooks; legacy components/chat/ tree fully deleted (14 files). UI-SPEC locked deltas: chat-message.tsx user bubble clamp `max-w-[min(448px,100%)]`; ChatPane no longer carries surface-specific heights. Barrel-isolation static-grep test (lib/chat-ui/__tests__/barrel-isolation.test.ts) enforces SHR-01 with adapter sub-path exemption (D-04). Full vitest suite GREEN (28 files / 194 tests). `bun build` failure on pre-existing unimported dead file `components/ai-elements/reasoning.tsx` (`@jenius/ui` external package) is unrelated to Phase 5 deliverables — `tsc --noEmit` scoped to `lib/chat-ui/` is clean.
+- Phase 8 (verified-with-deferred-smoke 2026-05-27): Email + Hard Cap complete (15/15 plans, NOT-01..04 + CAP-01..03 satisfied) — **FINAL V1 PHASE; v1 milestone CLOSED**. New `lib/email/templates/{SyncSuccess,SyncFailure}Email.tsx` (React Email auto-escaping primitives only; no `dangerouslySetInnerHTML`); `services/email/EmailService.ts` Resend wrapper using SDK second-arg `idempotencyKey: 'sync-{success,failure}/{syncRunId}'` (Pitfall 4) + env-scoped FROM (NOT-04); `services/shopify/ShopifyShopService.ts:fetchShopContactEmail` GraphQL helper (bare-catch + zero `console.*` PII protection per D-05); `lib/db/repositories/RequestCounterRepository.ts:tryConsume` atomic primitive — single `$queryRaw` `INSERT … ON CONFLICT (shop, period) DO UPDATE … WHERE "requestCount" < cap RETURNING` (Postgres serializes; cap check folded into the atomic UPDATE; tagged-template SQL-injection safe; CAP-01 race-free anchor); `lib/util/period.ts:getCurrentPeriod` UTC-by-construction `toISOString().slice(0,7)` (D-12); `services/chat/CapService.ts:tryConsumeRequest` env-at-call-time composer (CAP-02 default 2000 + override + `Number.isFinite` + `> 0` guards); `lib/chat/cap-reached-response.ts:capReachedResponse` AI SDK v6 synthetic UI message stream (HTTP 200 + locked `CAP_REACHED_MESSAGE` copy + shared admin/storefront constant; CAP-03). Inngest `syncProductsFunction` extended additively: `send-success-email` step after finalize + `send-failure-email` step in onFailure with DISTINCT step ID (Pitfall 2) + inline fallback in failing step.run callbacks (deviation R1 — `@inngest/test` halt-on-step-error workaround); three-layer idempotency (step memo + atomic `SyncRun.emailSentAt IS NULL` UPDATE + Resend `idempotencyKey`). `SyncRun.emailSentAt` nullable column applied via Option A non-destructive migration `20260527190121_add_request_counter_and_email_sent_at` (`prisma db execute` + `prisma migrate resolve --applied`; manual HNSW + GIN preserved per Phase 7 precedent). Admin `/api/chat` + storefront `/api/proxy/chat` both gained a 2-line cap-check guard sourcing `shop` from auth context (D-14; `withShopifySession` ctx for admin, `withAppProxyHmac` signed query for storefront; cap check upstream of streamText so AI Gateway is never invoked on cap-reached requests — cost protection). Full vitest suite: 60 files / 418 active tests pass + 5 intentionally skipped / 0 failed. **Manual smokes deferred:** NOT-01 real Resend success send, NOT-02 real Resend failure send + retry-link click-through, CAP-03 cross-route browser smoke at `HARD_CAP_REQUESTS_PER_MONTH=3`. Optional `INTEGRATION_DB_URL`-gated `RequestCounterRepository.race.integration.test.ts` deferred-or-automated (Postgres `ON CONFLICT … DO UPDATE` atomicity docs + SQL-shape unit test accepted as primary SC4 evidence).
 - Phase 7 (verified-with-deferred-smoke 2026-05-27): Admin Settings + Model Picker complete (10/10 plans, ADM-03 + ADM-04 satisfied). New `services/chat/model-catalog.ts` exposes `fetchModelCatalog()` with 15-min cache + stale-LKG + cold-start DEFAULT_MODEL fallback ladder (D-01, D-02, D-03); 10-entry curated BEST_FOR map. `services/chat/getActiveChatModel.ts` body-only swapped per Phase 4 D-09 contract anchor — reads `prisma.shopSettings.findUnique` + hydrates `displayName` from catalog with id-segment synthesis fallback; consumers `/api/chat` + `/api/proxy/chat` UNCHANGED (`git diff` empty). New Prisma `ShopSettings` model (`shop @id` + `activeChatModelId` + `@updatedAt`) applied via non-destructive `prisma db execute` + `prisma migrate resolve --applied` (Prisma 7.3 flags manual HNSW + GIN indexes as false-positive drift; manual indexes preserved). New `lib/db/repositories/ShopSettingsRepository.ts` (singleton; get + upsert mirroring ProductRepository pattern). New PATCH `/api/settings/model` wrapped with `withShopifySession`; Zod schema deliberately omits `shop` so tampered body.shop is silently dropped; defense-in-depth catalog membership check before upsert. New `/settings` Server Component + `settings-form.tsx` Client Component pair with D-04 7-column `<s-table>` + hand-rolled sort cycle (null→asc→desc→null) + `<ui-save-bar>` dirty-state + App Bridge toast. Settings nav entry appended to `<s-app-nav>` (D-05). Phase 4 deferred items T-04-24 (XSS via displayName) + T-04-25 (`searchParams.shop` asymmetry) closed at JSDoc layer in `getActiveChatModel.ts` + `settings/page.tsx`. Full vitest suite: 51 files / 354 passed / 4 skipped historical / 0 failed. SC4 cross-route playground manual smoke + D-03 cold-start manual smoke deferred to operator (browser-only against dev shop / network-blocking required).
 - [Phase 07]: Plan 07-08: Default render order is catalog-as-passed (pass-through) — Wave-0 test contract supersedes the plan's provider-alphabetical-with-active-on-top sketch (Rule 1)
 - [Phase 07]: Plan 07-08: BEST_FOR curation is NOT applied at the /settings page layer — Wave-0 mock doesn't expose BEST_FOR; production catalog client already returns the canonical language-model slice
@@ -115,9 +116,13 @@ None yet.
 | Phase 5/6 | `productCount` history derivation — currently 0 at submit because tool-result arrives async; re-derive from useEffect watching messages | tracked in 04-VERIFICATION.md Handoff Notes | 2026-05-26 |
 | Verification — manual smoke | SC4 cross-route playground update (navigate /settings → Save → /chat banner reflects new model) | held behind operator-only browser smoke against a seeded dev shop | 2026-05-27 |
 | Verification — manual smoke | D-03 cold-start banner (block egress to ai-gateway.vercel.sh, reload /settings, confirm DEFAULT_MODEL-only row + critical banner + disabled Save) | held behind operator-only network-blocking smoke | 2026-05-27 |
+| Verification — manual smoke | Phase 8 NOT-01 real Resend success-email send (trigger sync from `/onboarding` → confirm "Catalog sync complete — {productCount} products" lands at dev shop's contactEmail + admin URL works); 6-step checklist in 08-VERIFICATION.md § Smoke 1 | held behind verified Resend sending domain + real Shopify dev shop with contactEmail | 2026-05-27 |
+| Verification — manual smoke | Phase 8 NOT-02 real Resend failure-email + retry-link send (force sync failure → confirm "Catalog sync failed" email + retry URL `${HOST}/onboarding?retry={syncRunId}` lands a working Retry-sync UI affordance); 6-step checklist in 08-VERIFICATION.md § Smoke 2 | held behind verified Resend sending domain + ability to force-fail a sync (revoke scope or stub `fetchProductBatch`) | 2026-05-27 |
+| Verification — manual smoke | Phase 8 CAP-03 cross-route cap-reached smoke (`HARD_CAP_REQUESTS_PER_MONTH=3` → send 3 messages in admin `/chat` + 1 in storefront FAB drawer → 4th admin + 1st storefront both stream locked copy with HTTP 200); 7-step checklist in 08-VERIFICATION.md § Smoke 3 | held behind operator-only browser smoke against dev shop's admin + storefront | 2026-05-27 |
+| Verification — optional integration | Phase 8 SC4 race integration test (N=200 concurrent `tryConsume` at cap-1 → exactly 1 wins); `INTEGRATION_DB_URL=… bunx vitest run lib/db/repositories/__tests__/RequestCounterRepository.race.integration.test.ts` | gated on `INTEGRATION_DB_URL`; Postgres `ON CONFLICT … DO UPDATE` atomicity docs + SQL-shape unit test accepted as primary SC4 evidence; integration stress test is bonus | 2026-05-27 |
 
 ## Session Continuity
 
-Last session: 2026-05-27T19:46:52.089Z
-Stopped at: Completed 08-12-PLAN.md
+Last session: 2026-05-27T21:55:00Z
+Stopped at: v1 milestone complete (Phase 8 verified-with-deferred-smoke)
 Resume file: None
