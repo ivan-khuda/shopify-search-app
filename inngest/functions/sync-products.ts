@@ -1,0 +1,201 @@
+import { inngest } from '@/lib/inngest/client';
+import { prisma } from '@/lib/db/client';
+import { productRepository } from '@/lib/db/repositories/ProductRepository';
+import {
+  fetchProductBatch,
+  fetchTotalCount,
+  mapToUpsertInput,
+  type FetchBatchResult,
+} from '@/services/shopify/ShopifyProductService';
+import { shopifyClient } from '@/lib/shopify/client';
+import { sessionStorage } from '@/lib/shopify/session-storage';
+import { embedBatch, EMBEDDING_MODEL } from '@/services/embeddings/EmbeddingService';
+import { buildSearchableText } from '@/services/search/searchableText';
+
+interface SyncEventData {
+  syncRunId: string;
+  shop: string;
+}
+
+interface UpsertError {
+  shopifyId: string;
+  message: string;
+}
+
+export const syncProductsFunction = inngest.createFunction(
+  {
+    id: 'sync-products',
+    triggers: [{ event: 'shopify/product.sync' }],
+    retries: 3,
+    onFailure: async ({ event, error }) => {
+      const original = (event.data as { event: { data: SyncEventData } }).event.data;
+      await prisma.syncRun.update({
+        where: { id: original.syncRunId },
+        data: {
+          state: 'failed',
+          finishedAt: new Date(),
+          errors: { push: [String(error?.message ?? error)] },
+        },
+      });
+    },
+  },
+  async ({ event, step }) => {
+    const { syncRunId, shop } = event.data as SyncEventData;
+
+    const offlineId = shopifyClient.session.getOfflineId(shop);
+    const session = await sessionStorage.loadSession(offlineId);
+    if (!session) {
+      throw new Error(`No offline session for shop ${shop}`);
+    }
+
+    await step.run('mark-running', async () => {
+      await prisma.syncRun.update({
+        where: { id: syncRunId },
+        data: { state: 'running', startedAt: new Date() },
+      });
+    });
+
+    await step.run('fetch-total-count', async () => {
+      const total = await fetchTotalCount(session);
+      await prisma.syncRun.update({
+        where: { id: syncRunId },
+        data: { totalCount: total },
+      });
+      return total;
+    });
+
+    let cursor: string | null = null;
+    let hasNextPage = true;
+
+    while (hasNextPage) {
+      const cursorKey: string = cursor ?? 'start';
+
+      const batch: FetchBatchResult = await step.run(`fetch-batch-${cursorKey}`, async () =>
+        fetchProductBatch(session, cursor, 100)
+      );
+
+      const { errors: upsertErrors }: { errors: UpsertError[] } = await step.run(
+        `upsert-batch-${cursorKey}`,
+        async () => {
+          const batchErrors: UpsertError[] = [];
+          for (const node of batch.products) {
+            try {
+              await productRepository.upsertProduct(shop, mapToUpsertInput(node));
+            } catch (err) {
+              batchErrors.push({
+                shopifyId: node.id,
+                message: err instanceof Error ? err.message : String(err),
+              });
+            }
+          }
+          if (
+            batch.products.length > 0 &&
+            batchErrors.length === batch.products.length
+          ) {
+            throw new Error(
+              `Full batch failed: ${batchErrors.map((e) => e.message).join(', ')}`
+            );
+          }
+          return { errors: batchErrors };
+        }
+      );
+
+      // Phase 3 / D-01 / EMB-01..03: embed every successfully-upserted product; partial failures recorded but do not abort run.
+      const { errors: embedErrors }: { errors: UpsertError[] } = await step.run(
+        `embed-batch-${cursorKey}`,
+        async () => {
+          const batchErrors: UpsertError[] = [];
+          // Only embed the products that actually upserted successfully.
+          const failedShopifyIds = new Set(upsertErrors.map((e) => e.shopifyId));
+          const productsToEmbed = batch.products.filter((n) => !failedShopifyIds.has(n.id));
+
+          if (productsToEmbed.length === 0) return { errors: [] };
+
+          const mapped = productsToEmbed.map((n) => mapToUpsertInput(n));
+          const texts = mapped.map(buildSearchableText);
+
+          const result = await embedBatch(texts);
+
+          // Persist successes
+          for (const { index, vector } of result.ok) {
+            const m = mapped[index];
+            try {
+              const product = await prisma.product.findUnique({
+                where: { shop_handle: { shop, handle: m.handle } },
+                select: { id: true },
+              });
+              if (!product) {
+                batchErrors.push({
+                  shopifyId: productsToEmbed[index].id,
+                  message: 'Product not found after upsert',
+                });
+                continue;
+              }
+              const vectorLiteral = `[${vector.join(',')}]`;
+              await prisma.$executeRaw`INSERT INTO product_embeddings (shop, "productShop", "productId", content, embedding, "modelVersion", "searchableText", "createdAt") VALUES (${shop}, ${shop}, ${product.id}, ${texts[index]}, ${vectorLiteral}::vector, ${EMBEDDING_MODEL}, ${texts[index]}, NOW()) ON CONFLICT (shop, "productShop", "productId") DO UPDATE SET embedding = EXCLUDED.embedding, content = EXCLUDED.content, "modelVersion" = EXCLUDED."modelVersion", "searchableText" = EXCLUDED."searchableText"`;
+            } catch (err) {
+              batchErrors.push({
+                shopifyId: productsToEmbed[index].id,
+                message: err instanceof Error ? err.message : String(err),
+              });
+            }
+          }
+
+          // Record AI Gateway failures
+          for (const { index, message } of result.failed) {
+            batchErrors.push({ shopifyId: productsToEmbed[index].id, message });
+          }
+
+          // EMB-02: partial failure must NOT abort the run. Throw ONLY if every item failed.
+          if (
+            productsToEmbed.length > 0 &&
+            batchErrors.length === productsToEmbed.length
+          ) {
+            throw new Error(
+              `Full embed batch failed: ${batchErrors.map((e) => e.message).join(', ')}`
+            );
+          }
+
+          return { errors: batchErrors };
+        }
+      );
+
+      await step.run(`persist-cursor-${cursorKey}`, async () => {
+        await prisma.syncRun.update({
+          where: { id: syncRunId },
+          data: {
+            cursor: batch.endCursor,
+            processedCount: {
+              increment: batch.products.length - upsertErrors.length,
+            },
+            errors: {
+              push: [
+                ...upsertErrors.map((e) => JSON.stringify(e)),
+                ...embedErrors.map((e) => JSON.stringify({ ...e, stage: 'embed' })),
+              ],
+            },
+          },
+        });
+        return { cursor: batch.endCursor };
+      });
+
+      cursor = batch.endCursor;
+      hasNextPage = batch.hasNextPage;
+    }
+
+    return await step.run('finalize', async () => {
+      const run = await prisma.syncRun.findUnique({ where: { id: syncRunId } });
+      const errorCount = run?.errors.length ?? 0;
+      const finalState: 'partial' | 'succeeded' = errorCount > 0 ? 'partial' : 'succeeded';
+      await prisma.syncRun.update({
+        where: { id: syncRunId },
+        data: { state: finalState, finishedAt: new Date() },
+      });
+      return {
+        state: finalState,
+        processedCount: run?.processedCount ?? 0,
+        errorCount,
+      };
+    });
+  }
+);

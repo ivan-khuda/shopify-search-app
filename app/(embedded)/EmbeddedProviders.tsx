@@ -1,18 +1,11 @@
-'use client';
-
-import { NavMenu } from '@shopify/app-bridge-react';
-import { AppProvider as PolarisProvider } from '@shopify/polaris';
-import enTranslations from '@shopify/polaris/locales/en.json';
-import '@shopify/polaris/build/esm/styles.css';
-
 export default function EmbeddedProviders({ children }: { children: React.ReactNode }) {
   return (
-    <PolarisProvider i18n={enTranslations}>
-      <NavMenu>
-        <a href="/chat" rel="home">Search</a>
-        <a href="/onboarding">Onboarding</a>
-      </NavMenu>
+    <>
+      <s-app-nav>
+        <s-link href="/chat" rel="home">Search</s-link>
+        <s-link href="/onboarding">Onboarding</s-link>
+      </s-app-nav>
       {children}
-    </PolarisProvider>
+    </>
   );
 }

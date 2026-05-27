@@ -1,0 +1,92 @@
+import { useSyncExternalStore, useMemo, useEffect } from 'react';
+import type { ChatHistoryItem, ChatProduct } from '@/types/product';
+import type { HistoryStore, SavedProductsStore } from './types';
+import {
+  LocalStorageHistoryStore,
+  LocalStorageSavedProductsStore,
+} from './local-storage';
+import { DbBackedHistoryStore, DbBackedSavedProductsStore } from './db-backed';
+
+export function useHistoryStore(scope: string) {
+  const store: HistoryStore = useMemo(
+    () => new LocalStorageHistoryStore(scope),
+    [scope],
+  );
+  const items = useSyncExternalStore(
+    store.subscribe.bind(store),
+    () => store.list(),
+    () => [],
+  );
+  return {
+    items,
+    add: (entry: ChatHistoryItem) => store.add(entry),
+    clear: () => store.clear(),
+  };
+}
+
+export function useSavedProductsStore(scope: string) {
+  const store: SavedProductsStore = useMemo(
+    () => new LocalStorageSavedProductsStore(scope),
+    [scope],
+  );
+  const items = useSyncExternalStore(
+    store.subscribe.bind(store),
+    () => store.list(),
+    () => [],
+  );
+  return {
+    items,
+    toggle: (product: ChatProduct) => store.toggle(product),
+    clear: () => store.clear(),
+    has: (id: string) => store.has(id),
+  };
+}
+
+interface DbStoreOpts {
+  shop: string;
+  visitorId: string;
+  customerId?: string | null;
+}
+
+export function useDbBackedHistoryStore(opts: DbStoreOpts) {
+  const store = useMemo(
+    () => new DbBackedHistoryStore(opts),
+    [opts.shop, opts.visitorId, opts.customerId]
+  );
+  useEffect(() => {
+    void store.refresh();
+  }, [store]);
+  const items = useSyncExternalStore(
+    store.subscribe.bind(store),
+    () => store.list(),
+    () => []
+  );
+  return {
+    items,
+    add: (entry: ChatHistoryItem) => store.add(entry),
+    clear: () => store.clear(),
+    refresh: () => store.refresh(),
+  };
+}
+
+export function useDbBackedSavedProductsStore(opts: DbStoreOpts) {
+  const store = useMemo(
+    () => new DbBackedSavedProductsStore(opts),
+    [opts.shop, opts.visitorId, opts.customerId]
+  );
+  useEffect(() => {
+    void store.refresh();
+  }, [store]);
+  const items = useSyncExternalStore(
+    store.subscribe.bind(store),
+    () => store.list(),
+    () => []
+  );
+  return {
+    items,
+    toggle: (product: ChatProduct) => store.toggle(product),
+    clear: () => store.clear(),
+    has: (id: string) => store.has(id),
+    refresh: () => store.refresh(),
+  };
+}

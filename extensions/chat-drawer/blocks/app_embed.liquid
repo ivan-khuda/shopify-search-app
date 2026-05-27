@@ -1,0 +1,56 @@
+{% comment %}
+  SmartDiscovery AI — App Embed block (D-13, D-16).
+
+  Paints a custom element <smartdiscovery-app> with merchant settings on its
+  dataset; loader.js paints a FAB and lazy-loads the main React bundle on
+  first click. Main bundle URL is resolved at runtime by loader.js via the
+  signed App Proxy endpoint /apps/smartdiscovery/_meta/bundle-url
+  (Plan 13 ships that route alongside the React shell).
+
+  The "data-customer-id" attribute is emitted ONLY when the storefront
+  customer is logged in (IDN-01). The numeric Shopify customer ID is
+  liquid-escaped automatically; loader.js reads it via dataset.customerId
+  which is always a DOMString — BigInt precision is preserved (Pitfall 7).
+{% endcomment %}
+
+{% if block.settings.enabled %}
+  <smartdiscovery-app
+    data-accent="{{ block.settings.accent_color }}"
+    data-fab-position="{{ block.settings.fab_position }}"
+    data-shop="{{ shop.permanent_domain }}"
+    {% if customer %}data-customer-id="{{ customer.id }}"{% endif %}
+  ></smartdiscovery-app>
+  {{ 'loader.css' | asset_url | stylesheet_tag }}
+  {{ 'loader.js' | asset_url | script_tag }}
+{% endif %}
+
+{% schema %}
+{
+  "name": "SmartDiscovery AI",
+  "target": "body",
+  "settings": [
+    {
+      "type": "checkbox",
+      "id": "enabled",
+      "label": "Enable SmartDiscovery AI chat",
+      "default": true
+    },
+    {
+      "type": "color",
+      "id": "accent_color",
+      "label": "Chat accent color",
+      "default": "#008060"
+    },
+    {
+      "type": "select",
+      "id": "fab_position",
+      "label": "Button position",
+      "options": [
+        { "value": "bottom_right", "label": "Bottom right" },
+        { "value": "bottom_left", "label": "Bottom left" }
+      ],
+      "default": "bottom_right"
+    }
+  ]
+}
+{% endschema %}

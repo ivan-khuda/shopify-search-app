@@ -15,9 +15,10 @@ datasource db {
 
 model Product {
   id                Int       @id @default(autoincrement())
-  shopifyId         BigInt?   @unique
+  shop              String // myshopify.com hostname, e.g. "example-store.myshopify.com" (D-02)
+  shopifyId         BigInt?
   title             String
-  handle            String    @unique
+  handle            String
   description       String?   @db.Text
   descriptionHtml   String?   @db.Text
   vendor            String?
@@ -31,14 +32,18 @@ model Product {
   compareAtPriceMax Decimal?  @db.Decimal(10, 2)
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
+  updatedAtShopify  DateTime? // Phase 2 D-17: SYN-11 conflict resolution
 
   variants   ProductVariant[]
   images     ProductImage[]
   options    ProductOption[]
   embeddings ProductEmbedding[]
 
-  @@index([shopifyId])
-  @@index([handle])
+  @@unique([shop, id])
+  @@unique([shop, shopifyId])
+  @@unique([shop, handle])
+  @@index([shop])
+  @@index([shop, shopifyId])
   @@index([status])
   @@index([vendor])
   @@index([productType])
@@ -47,8 +52,10 @@ model Product {
 
 model ProductVariant {
   id                Int      @id @default(autoincrement())
-  shopifyId         BigInt?  @unique
-  productId         Int
+  shop              String // redundant with parent — intentional (D-04)
+  productShop       String // composite FK field 1
+  productId         Int // composite FK field 2
+  shopifyId         BigInt?
   title             String
   sku               String?
   barcode           String?
@@ -68,63 +75,76 @@ model ProductVariant {
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
-  product Product        @relation(fields: [productId], references: [id], onDelete: Cascade)
+  product Product        @relation(fields: [productShop, productId], references: [shop, id], onDelete: Cascade)
   images  ProductImage[]
 
-  @@index([shopifyId])
-  @@index([productId])
+  @@index([shop])
+  @@index([productShop, productId])
+  @@index([shop, shopifyId])
   @@index([sku])
   @@index([availableForSale])
   @@map("product_variants")
 }
 
 model ProductImage {
-  id        Int      @id @default(autoincrement())
-  shopifyId BigInt?  @unique
-  productId Int?
-  variantId Int?
-  url       String
-  altText   String?
-  width     Int?
-  height    Int?
-  position  Int      @default(1)
-  createdAt DateTime @default(now())
+  id          Int      @id @default(autoincrement())
+  shop        String
+  productShop String? // nullable — mirrors productId Int? (D-04)
+  shopifyId   BigInt?
+  productId   Int?
+  variantId   Int?
+  url         String
+  altText     String?
+  width       Int?
+  height      Int?
+  position    Int      @default(1)
+  createdAt   DateTime @default(now())
 
-  product Product?        @relation(fields: [productId], references: [id], onDelete: Cascade)
+  product Product?        @relation(fields: [productShop, productId], references: [shop, id], onDelete: Cascade)
   variant ProductVariant? @relation(fields: [variantId], references: [id], onDelete: Cascade)
 
-  @@index([productId])
+  @@index([shop])
+  @@index([productShop, productId])
   @@index([variantId])
-  @@index([shopifyId])
+  @@index([shop, shopifyId])
   @@map("product_images")
 }
 
 model ProductOption {
-  id        Int      @id @default(autoincrement())
-  shopifyId BigInt?  @unique
-  productId Int
-  name      String // e.g., "Color", "Size", "Material"
-  position  Int // 1, 2, or 3
-  values    String[] // Array of option values
-  createdAt DateTime @default(now())
+  id          Int      @id @default(autoincrement())
+  shop        String // redundant with parent — intentional (D-04)
+  productShop String // composite FK field 1
+  shopifyId   BigInt?
+  productId   Int // composite FK field 2
+  name        String // e.g., "Color", "Size", "Material"
+  position    Int // 1, 2, or 3
+  values      String[] // Array of option values
+  createdAt   DateTime @default(now())
 
-  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productShop, productId], references: [shop, id], onDelete: Cascade)
 
-  @@index([productId])
-  @@index([shopifyId])
+  @@index([shop])
+  @@index([productShop, productId])
+  @@index([shop, shopifyId])
   @@map("product_options")
 }
 
 model ProductEmbedding {
-  id        Int                    @id @default(autoincrement())
-  productId Int
-  content   String                 @db.Text
-  embedding Unsupported("vector")? // pgvector extension - will need raw SQL for migration
-  createdAt DateTime               @default(now())
+  id             Int                    @id @default(autoincrement())
+  shop           String // redundant with parent — intentional (D-04)
+  productShop    String // composite FK field 1
+  productId      Int // composite FK field 2
+  content        String                 @db.Text
+  searchableText String                 @db.Text // D-10: exact text that was embedded; diagnostics + future re-embed detection
+  modelVersion   String // EMB-03 / D-10: pinned model ID (NEVER an alias). NOT NULL — migration wipes dev rows.
+  embedding      Unsupported("vector")? // pgvector extension - will need raw SQL for migration
+  createdAt      DateTime               @default(now())
 
-  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productShop, productId], references: [shop, id], onDelete: Cascade)
 
-  @@index([productId])
+  @@unique([shop, productShop, productId]) // D-10: enables ON CONFLICT in EmbeddingService.embedAndStore upsert
+  @@index([shop])
+  @@index([productShop, productId])
   @@map("product_embeddings")
 }
 
@@ -148,4 +168,84 @@ model ShopifySession {
   @@index([shop])
   @@index([state])
   @@map("shopify_sessions")
+}
+
+// Phase 2 additions — D-03, D-07, D-17.
+
+enum SyncState {
+  queued
+  running
+  succeeded
+  failed
+  partial
+}
+
+model SyncRun {
+  id             String    @id @default(cuid())
+  shop           String
+  state          SyncState @default(queued)
+  processedCount Int       @default(0)
+  totalCount     Int?
+  errors         String[]  @default([])
+  cursor         String?
+  idempotencyKey String    @unique
+  startedAt      DateTime  @default(now())
+  finishedAt     DateTime?
+
+  @@index([shop])
+  @@map("sync_runs")
+}
+
+model WebhookEvent {
+  eventId    String   @id
+  shop       String
+  topic      String
+  receivedAt DateTime @default(now())
+
+  @@index([shop])
+  @@map("webhook_events")
+}
+
+model Conversation {
+  id            String   @id @default(cuid())
+  shop          String
+  visitorId     String
+  customerId    String?
+  title         String   @db.VarChar(60)
+  messages      Json     @default("[]")
+  lastMessageAt DateTime @default(now())
+  createdAt     DateTime @default(now())
+
+  @@index([shop])
+  @@index([shop, visitorId, lastMessageAt(sort: Desc)])
+  @@index([shop, customerId, lastMessageAt(sort: Desc)])
+  @@index([lastMessageAt])
+  @@map("conversations")
+}
+
+model SavedProduct {
+  // Partial unique indexes live in db/manual-indexes.sql (D-20)
+  id         String   @id @default(cuid())
+  shop       String
+  visitorId  String
+  customerId String?
+  productId  String
+  savedAt    DateTime @default(now())
+
+  @@index([shop])
+  @@index([shop, visitorId])
+  @@index([shop, customerId])
+  @@map("saved_products")
+}
+
+model VisitorCustomerLink {
+  shop       String
+  visitorId  String
+  customerId String
+  mergedAt   DateTime @default(now())
+
+  @@id([shop, visitorId, customerId])
+  @@index([shop, visitorId])
+  @@index([shop, customerId])
+  @@map("visitor_customer_links")
 }

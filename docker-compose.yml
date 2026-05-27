@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg17
+    container_name: smartdiscovery-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: smartdiscovery
+      POSTGRES_PASSWORD: smartdiscovery_dev
+      POSTGRES_DB: smartdiscovery_dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - smartdiscovery_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U smartdiscovery -d smartdiscovery_dev"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  smartdiscovery_pgdata:

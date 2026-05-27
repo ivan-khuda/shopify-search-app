@@ -1,0 +1,6 @@
+api_version = "2026-04"
+
+[[extensions]]
+name = "SmartDiscovery AI Chat Drawer"
+handle = "chat-drawer"
+type = "theme"
