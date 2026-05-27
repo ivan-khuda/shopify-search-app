@@ -11,6 +11,8 @@ import { shopifyClient } from '@/lib/shopify/client';
 import { sessionStorage } from '@/lib/shopify/session-storage';
 import { embedBatch, EMBEDDING_MODEL } from '@/services/embeddings/EmbeddingService';
 import { buildSearchableText } from '@/services/search/searchableText';
+import { sendSyncSuccess } from '@/services/email/EmailService';
+import { fetchShopContactEmail } from '@/services/shopify/ShopifyShopService';
 
 interface SyncEventData {
   syncRunId: string;
@@ -183,7 +185,7 @@ export const syncProductsFunction = inngest.createFunction(
       hasNextPage = batch.hasNextPage;
     }
 
-    return await step.run('finalize', async () => {
+    const finalizeResult = await step.run('finalize', async () => {
       const run = await prisma.syncRun.findUnique({ where: { id: syncRunId } });
       const errorCount = run?.errors.length ?? 0;
       const finalState: 'partial' | 'succeeded' = errorCount > 0 ? 'partial' : 'succeeded';
@@ -197,5 +199,43 @@ export const syncProductsFunction = inngest.createFunction(
         errorCount,
       };
     });
+
+    // Phase 8 / NOT-01 / D-03 / D-04 / D-05 — success-branch completion email.
+    // Three-layer idempotency defense:
+    //   1. Inngest step.run memoization keyed by 'send-success-email' (Pitfall 2: distinct from 'send-failure-email')
+    //   2. Application-level SyncRun.emailSentAt stamp (atomic UPDATE ... WHERE emailSentAt IS NULL)
+    //   3. Resend platform-level idempotencyKey 'sync-success/{syncRunId}' (24h server-side; EmailService)
+    await step.run('send-success-email', async () => {
+      const run = await prisma.syncRun.findUnique({ where: { id: syncRunId } });
+      // Skip when already sent (D-04) OR when finalize marked the run failed
+      // (defensive — the success branch must not send if upstream judged failure).
+      if (!run || run.emailSentAt || run.state === 'failed') return;
+
+      // D-05: graceful skip when shop has no contactEmail. Never throw —
+      // notifications are auxiliary; the sync result is the contract.
+      const contactEmail = await fetchShopContactEmail(session);
+      if (!contactEmail) return;
+
+      // Build admin URL from server-side env (Assumption A1 defensive fallback,
+      // T-08-11-T3 mitigation — no user input in URL path).
+      const shopSlug = shop.replace('.myshopify.com', '');
+      const handle = process.env.SHOPIFY_APP_HANDLE;
+      const adminUrl = handle
+        ? `https://admin.shopify.com/store/${shopSlug}/apps/${handle}`
+        : `https://admin.shopify.com/store/${shopSlug}`;
+
+      await sendSyncSuccess({
+        to: contactEmail,
+        shop,
+        productCount: run.processedCount,
+        adminUrl,
+        syncRunId,
+      });
+
+      // Atomic stamp — second concurrent update is a no-op (T-08-11-T2 mitigation).
+      await prisma.$executeRaw`UPDATE sync_runs SET "emailSentAt" = NOW() WHERE id = ${syncRunId} AND "emailSentAt" IS NULL`;
+    });
+
+    return finalizeResult;
   }
 );
