@@ -18,6 +18,8 @@
     "@ai-sdk/react": "^3.0.75",
     "@prisma/adapter-pg": "^7.3.0",
     "@prisma/client": "^7.3.0",
+    "@react-email/components": "^1.0.12",
+    "@react-email/render": "^2.0.8",
     "@shopify/shopify-api": "^12.3.0",
     "@shopify/shopify-app-session-storage-prisma": "8.0.1",
     "ai": "^6.0.77",
@@ -35,6 +37,7 @@
     "radix-ui": "^1.4.3",
     "react": "19.2.3",
     "react-dom": "19.2.3",
+    "resend": "^6.12.4",
     "streamdown": "^2.1.0",
     "tailwind-merge": "^3.4.0",
     "zod": "^4.3.6"
