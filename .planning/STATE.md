@@ -1,10 +1,10 @@
 ---
 gsd_state_version: 1.0
 milestone: v1.0
-milestone_name: milestone
-status: complete-v1-milestone
+milestone_name: milestone gaps
+status: completed
 stopped_at: v1 milestone complete (Phase 8 verified-with-deferred-smoke)
-last_updated: "2026-05-27T21:55:00Z"
+last_updated: "2026-05-27T21:39:25.768Z"
 last_activity: 2026-05-27
 progress:
   total_phases: 8
@@ -68,6 +68,10 @@ Progress: [██████████] 100%
 | Phase 08 P14 | 81s | 1 tasks | 1 files |
 
 ## Accumulated Context
+
+### Roadmap Evolution
+
+- Phase 08.1 inserted after Phase 8: Close v1.0 milestone gaps — 4 blockers + 3 warnings + back-mark + Nyquist back-fill (URGENT)
 
 ### Decisions
 

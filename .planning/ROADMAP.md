@@ -301,3 +301,13 @@ Phases 7 and 8 are parallel-eligible with Phase 6 (no blocking dependencies — 
 | 6. Storefront Surface | 14/14 | Complete   | 2026-05-27 |
 | 7. Admin Settings + Model Picker | 10/10 | Complete (passed-with-deferred-smoke) | 2026-05-27 |
 | 8. Email + Hard Cap | 15/15 | Complete (passed-with-deferred-smoke) | 2026-05-27 |
+
+### Phase 08.1: Close v1.0 milestone gaps (INSERTED)
+
+**Goal:** [Urgent work - to be planned]
+**Requirements**: TBD
+**Depends on:** Phase 8
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 08.1 to break down)
