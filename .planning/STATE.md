@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: planning
-stopped_at: Phase 7 context gathered
-last_updated: "2026-05-27T16:42:58.299Z"
+stopped_at: Phase 7 verified (passed-with-deferred-smoke)
+last_updated: "2026-05-27T18:45:03.000Z"
 last_activity: 2026-05-27
 progress:
   total_phases: 8
-  completed_phases: 6
+  completed_phases: 7
   total_plans: 63
-  completed_plans: 62
-  percent: 75
+  completed_plans: 72
+  percent: 88
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-22)
 
 **Core value:** A storefront visitor can describe what they want in natural language and immediately see relevant products from the merchant's catalog — synced reliably, embedded into their theme, with no dev work from the merchant.
-**Current focus:** Phase 7 — admin settings + model picker
+**Current focus:** Phase 8 — email + hard cap (final phase)
 
 ## Current Position
 
-Phase: 7
+Phase: 8
 Plan: Not started
 Status: Ready to plan
 Last activity: 2026-05-27
 
-Progress: [██████████] 98%
+Progress: [██████████] 88%
 
 ## Performance Metrics
 
@@ -73,6 +73,7 @@ Recent decisions affecting current work:
 - Phase 3 (verified 2026-05-25): EMBEDDING_MODEL = 'openai/text-embedding-3-small' pinned via frozen constant; modelVersion column NOT NULL; HNSW + GIN indexes live in db/manual-indexes.sql (outside Prisma); withHnswIterativeScan helper consumed by Phase 4 SearchService.
 - Phase 4 (verified-with-deferred-smoke 2026-05-26): Hybrid RRF search (`services/search/SearchService.hybridSearch`) ships shop-scoped pgvector + tsvector retrieval inside a single `withHnswIterativeScan` transaction with defense-in-depth shop filtering. `/api/chat` migrated to AI Gateway routing via plain model id `google/gemini-2.5-flash`; single camelCase `searchCatalog` tool with Vercel AI SDK v6 `inputSchema` (NOT v5 `parameters`); execute closure forwards shop from withShopifySession ctx. `/api/proxy/chat` ships as a Phase 6 stub importing `hybridSearch` (EMB-07 SC #3 source-level proof). `MOCK_PRODUCTS` deleted from disk; UI reads `message.parts[*].type === 'tool-searchCatalog'` directly. `/chat` is a Server Component server-rendering the preview-mode banner (`Preview mode — using your real catalog · Model: Gemini 2.5 Flash`, em-dash U+2014 + middle-dot U+00B7 byte-precise) above a new `components/chat/chat-shell.tsx` client component. Manual smoke deferred behind pre-existing shopify-install-flow OAuth cookie blocker (out of scope for Phase 4).
 - Phase 5 (verified 2026-05-26): `lib/chat-ui/` barrel ships ChatPane (renamed from Chat, named export, adapter-driven DefaultChatTransport with Resolvable headers/body), ChatMessage, ProductCard, HistoryPanel, SavedProductsPanel, EmptyState. ChatIdentityAdapter interface in lib/chat-ui/adapters/types.ts implemented by EmbeddedAdapter (App Bridge runtime global, ZERO @shopify/* imports) and StorefrontAdapter (localStorage 'smartdiscovery.visitor_id' + crypto.randomUUID, SSR-safe). HistoryStore + SavedProductsStore interfaces in lib/chat-ui/stores/types.ts with LocalStorage default implementations namespaced by scope (T-5-01 empty-scope throw guard). useHistoryStore + useSavedProductsStore React hooks via useSyncExternalStore with SSR snapshot. Embedded surface shell app/(embedded)/chat/chat-shell.tsx instantiates EmbeddedAdapter + store hooks; legacy components/chat/ tree fully deleted (14 files). UI-SPEC locked deltas: chat-message.tsx user bubble clamp `max-w-[min(448px,100%)]`; ChatPane no longer carries surface-specific heights. Barrel-isolation static-grep test (lib/chat-ui/__tests__/barrel-isolation.test.ts) enforces SHR-01 with adapter sub-path exemption (D-04). Full vitest suite GREEN (28 files / 194 tests). `bun build` failure on pre-existing unimported dead file `components/ai-elements/reasoning.tsx` (`@jenius/ui` external package) is unrelated to Phase 5 deliverables — `tsc --noEmit` scoped to `lib/chat-ui/` is clean.
+- Phase 7 (verified-with-deferred-smoke 2026-05-27): Admin Settings + Model Picker complete (10/10 plans, ADM-03 + ADM-04 satisfied). New `services/chat/model-catalog.ts` exposes `fetchModelCatalog()` with 15-min cache + stale-LKG + cold-start DEFAULT_MODEL fallback ladder (D-01, D-02, D-03); 10-entry curated BEST_FOR map. `services/chat/getActiveChatModel.ts` body-only swapped per Phase 4 D-09 contract anchor — reads `prisma.shopSettings.findUnique` + hydrates `displayName` from catalog with id-segment synthesis fallback; consumers `/api/chat` + `/api/proxy/chat` UNCHANGED (`git diff` empty). New Prisma `ShopSettings` model (`shop @id` + `activeChatModelId` + `@updatedAt`) applied via non-destructive `prisma db execute` + `prisma migrate resolve --applied` (Prisma 7.3 flags manual HNSW + GIN indexes as false-positive drift; manual indexes preserved). New `lib/db/repositories/ShopSettingsRepository.ts` (singleton; get + upsert mirroring ProductRepository pattern). New PATCH `/api/settings/model` wrapped with `withShopifySession`; Zod schema deliberately omits `shop` so tampered body.shop is silently dropped; defense-in-depth catalog membership check before upsert. New `/settings` Server Component + `settings-form.tsx` Client Component pair with D-04 7-column `<s-table>` + hand-rolled sort cycle (null→asc→desc→null) + `<ui-save-bar>` dirty-state + App Bridge toast. Settings nav entry appended to `<s-app-nav>` (D-05). Phase 4 deferred items T-04-24 (XSS via displayName) + T-04-25 (`searchParams.shop` asymmetry) closed at JSDoc layer in `getActiveChatModel.ts` + `settings/page.tsx`. Full vitest suite: 51 files / 354 passed / 4 skipped historical / 0 failed. SC4 cross-route playground manual smoke + D-03 cold-start manual smoke deferred to operator (browser-only against dev shop / network-blocking required).
 - [Phase 07]: Plan 07-08: Default render order is catalog-as-passed (pass-through) — Wave-0 test contract supersedes the plan's provider-alphabetical-with-active-on-top sketch (Rule 1)
 - [Phase 07]: Plan 07-08: BEST_FOR curation is NOT applied at the /settings page layer — Wave-0 mock doesn't expose BEST_FOR; production catalog client already returns the canonical language-model slice
 - [Phase 07]: Plan 07-08: <s-choice> rendered self-closing with aria-label only; visible displayName lives in the Model-name cell to avoid duplicate text-query matches
@@ -96,10 +97,11 @@ None yet.
 | Verification — manual smoke | 4-step end-to-end checklist for /chat against a seeded dev shop (banner glyphs, demo query, brand-name query, no-results affordance) | held behind shopify-install-flow OAuth callback cookie blocker (`docs/superpowers/plans/2026-05-02-shopify-install-flow.md`) — out of scope for Phase 4 | 2026-05-26 |
 | Phase 5 cleanup | Inline hex literals (#008060, #e1e3e5) in chat-shell.tsx / chat.tsx — replace with Tailwind tokens during `lib/chat-ui/` lift | tracked in 04-VERIFICATION.md Handoff Notes | 2026-05-26 |
 | Phase 5/6 | `productCount` history derivation — currently 0 at submit because tool-result arrives async; re-derive from useEffect watching messages | tracked in 04-VERIFICATION.md Handoff Notes | 2026-05-26 |
-| Phase 7 prerequisites | displayName XSS validation gate + searchParams.shop ↔ session.shop verification before body-only swap of `getActiveChatModel` | tracked in 04-VERIFICATION.md Handoff Notes (T-04-24, T-04-25) | 2026-05-26 |
+| Verification — manual smoke | SC4 cross-route playground update (navigate /settings → Save → /chat banner reflects new model) | held behind operator-only browser smoke against a seeded dev shop | 2026-05-27 |
+| Verification — manual smoke | D-03 cold-start banner (block egress to ai-gateway.vercel.sh, reload /settings, confirm DEFAULT_MODEL-only row + critical banner + disabled Save) | held behind operator-only network-blocking smoke | 2026-05-27 |
 
 ## Session Continuity
 
-Last session: 2026-05-27T16:42:51.410Z
-Stopped at: Phase 7 context gathered
+Last session: 2026-05-27T18:45:03.000Z
+Stopped at: Phase 7 verified (passed-with-deferred-smoke); ready for Phase 8 (Email + Hard Cap)
 Resume file: None
