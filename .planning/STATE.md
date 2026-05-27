@@ -4,13 +4,13 @@ milestone: v1.0
 milestone_name: milestone
 status: planning
 stopped_at: Phase 7 context gathered
-last_updated: "2026-05-27T16:41:06.063Z"
+last_updated: "2026-05-27T16:42:58.299Z"
 last_activity: 2026-05-27
 progress:
   total_phases: 8
   completed_phases: 6
   total_plans: 63
-  completed_plans: 61
+  completed_plans: 62
   percent: 75
 ---
 
@@ -30,7 +30,7 @@ Plan: Not started
 Status: Ready to plan
 Last activity: 2026-05-27
 
-Progress: [██████████] 97%
+Progress: [██████████] 98%
 
 ## Performance Metrics
 
@@ -56,6 +56,7 @@ Progress: [██████████] 97%
 | Phase 07 P05 | 5min | 1 tasks | 1 files |
 | Phase 07 P07 | 66 | 1 tasks | 1 files |
 | Phase 07 P08 | 240 | 2 tasks | 2 files |
+| Phase 07 P09 | <1m | 1 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -75,6 +76,7 @@ Recent decisions affecting current work:
 - [Phase 07]: Plan 07-08: Default render order is catalog-as-passed (pass-through) — Wave-0 test contract supersedes the plan's provider-alphabetical-with-active-on-top sketch (Rule 1)
 - [Phase 07]: Plan 07-08: BEST_FOR curation is NOT applied at the /settings page layer — Wave-0 mock doesn't expose BEST_FOR; production catalog client already returns the canonical language-model slice
 - [Phase 07]: Plan 07-08: <s-choice> rendered self-closing with aria-label only; visible displayName lives in the Model-name cell to avoid duplicate text-query matches
+- [Phase 07]: Plan 07-09: D-05 fulfilled — Settings is a top-level nav entry in <s-app-nav> (order: Search rel='home' -> Onboarding -> Settings)
 
 ### Pending Todos
 
@@ -98,6 +100,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-05-27T16:40:35.736Z
+Last session: 2026-05-27T16:42:51.410Z
 Stopped at: Phase 7 context gathered
 Resume file: None
