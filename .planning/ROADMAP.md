@@ -193,7 +193,7 @@ Plans:
 
 **Plans**: 14 plans
 
-- [ ] 06-01-PLAN.md — Wave 0 RED test scaffolds (20 vitest files driving Waves 2-3 to GREEN)
+- [x] 06-01-PLAN.md — Wave 0 RED test scaffolds (20 vitest files driving Waves 2-3 to GREEN)
 - [ ] 06-02-PLAN.md — Prisma schema (Conversation, SavedProduct, VisitorCustomerLink) + partial unique indexes + [BLOCKING] migration push
 - [ ] 06-03-PLAN.md — shopify.app.toml [app_proxy] block (STR-03)
 - [ ] 06-04-PLAN.md — withAppProxyHmac wrapper + lib/rate-limit/memory.ts sliding-window limiter
@@ -253,6 +253,6 @@ Phases 7 and 8 are parallel-eligible with Phase 6 (no blocking dependencies — 
 | 3. Embeddings + Search Indexes | 8/8 | Complete | 2026-05-25 |
 | 4. SearchService + Wire Chat | 6/6 | Complete (verified-with-deferred-smoke) | 2026-05-26 |
 | 5. Shared Chat-UI Extraction | 5/5 | Complete | 2026-05-26 |
-| 6. Storefront Surface | 0/14 | Not started | - |
+| 6. Storefront Surface | 1/14 | In Progress|  |
 | 7. Admin Settings + Model Picker | 0/TBD | Not started | - |
 | 8. Email + Hard Cap | 0/TBD | Not started | - |

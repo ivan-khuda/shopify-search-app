@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: verifying
+status: executing
 stopped_at: Phase 6 context gathered
-last_updated: "2026-05-26T15:41:31.126Z"
-last_activity: 2026-05-26 -- Phase 05 verification gate closed
+last_updated: "2026-05-27T09:42:56.227Z"
+last_activity: 2026-05-27 -- Phase 06 execution started
 progress:
   total_phases: 8
   completed_phases: 5
-  total_plans: 39
+  total_plans: 53
   completed_plans: 39
   percent: 63
 ---
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-22)
 
 **Core value:** A storefront visitor can describe what they want in natural language and immediately see relevant products from the merchant's catalog — synced reliably, embedded into their theme, with no dev work from the merchant.
-**Current focus:** Phase 05 — shared-chat-ui-extraction
+**Current focus:** Phase 06 — storefront-surface
 
 ## Current Position
 
-Phase: 05 (shared-chat-ui-extraction) — VERIFIED
-Plan: 5 of 5
-Status: Phase 05 verified (4/4 success criteria PASS; bun build + bun test green for lib/chat-ui scope)
-Last activity: 2026-05-26 -- Phase 05 verification gate closed
+Phase: 06 (storefront-surface) — EXECUTING
+Plan: 1 of 14
+Status: Executing Phase 06
+Last activity: 2026-05-27 -- Phase 06 execution started
 
 Progress: [██████░░░░] 62%
 
