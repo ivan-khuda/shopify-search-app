@@ -4,13 +4,13 @@ milestone: v1.0
 milestone_name: milestone
 status: planning
 stopped_at: Phase 7 context gathered
-last_updated: "2026-05-27T16:33:11.404Z"
+last_updated: "2026-05-27T16:41:06.063Z"
 last_activity: 2026-05-27
 progress:
   total_phases: 8
   completed_phases: 6
   total_plans: 63
-  completed_plans: 60
+  completed_plans: 61
   percent: 75
 ---
 
@@ -30,7 +30,7 @@ Plan: Not started
 Status: Ready to plan
 Last activity: 2026-05-27
 
-Progress: [██████████] 95%
+Progress: [██████████] 97%
 
 ## Performance Metrics
 
@@ -55,6 +55,7 @@ Progress: [██████████] 95%
 | Phase 07 P04 | 15min | 1 tasks | 1 files |
 | Phase 07 P05 | 5min | 1 tasks | 1 files |
 | Phase 07 P07 | 66 | 1 tasks | 1 files |
+| Phase 07 P08 | 240 | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -71,6 +72,9 @@ Recent decisions affecting current work:
 - Phase 3 (verified 2026-05-25): EMBEDDING_MODEL = 'openai/text-embedding-3-small' pinned via frozen constant; modelVersion column NOT NULL; HNSW + GIN indexes live in db/manual-indexes.sql (outside Prisma); withHnswIterativeScan helper consumed by Phase 4 SearchService.
 - Phase 4 (verified-with-deferred-smoke 2026-05-26): Hybrid RRF search (`services/search/SearchService.hybridSearch`) ships shop-scoped pgvector + tsvector retrieval inside a single `withHnswIterativeScan` transaction with defense-in-depth shop filtering. `/api/chat` migrated to AI Gateway routing via plain model id `google/gemini-2.5-flash`; single camelCase `searchCatalog` tool with Vercel AI SDK v6 `inputSchema` (NOT v5 `parameters`); execute closure forwards shop from withShopifySession ctx. `/api/proxy/chat` ships as a Phase 6 stub importing `hybridSearch` (EMB-07 SC #3 source-level proof). `MOCK_PRODUCTS` deleted from disk; UI reads `message.parts[*].type === 'tool-searchCatalog'` directly. `/chat` is a Server Component server-rendering the preview-mode banner (`Preview mode — using your real catalog · Model: Gemini 2.5 Flash`, em-dash U+2014 + middle-dot U+00B7 byte-precise) above a new `components/chat/chat-shell.tsx` client component. Manual smoke deferred behind pre-existing shopify-install-flow OAuth cookie blocker (out of scope for Phase 4).
 - Phase 5 (verified 2026-05-26): `lib/chat-ui/` barrel ships ChatPane (renamed from Chat, named export, adapter-driven DefaultChatTransport with Resolvable headers/body), ChatMessage, ProductCard, HistoryPanel, SavedProductsPanel, EmptyState. ChatIdentityAdapter interface in lib/chat-ui/adapters/types.ts implemented by EmbeddedAdapter (App Bridge runtime global, ZERO @shopify/* imports) and StorefrontAdapter (localStorage 'smartdiscovery.visitor_id' + crypto.randomUUID, SSR-safe). HistoryStore + SavedProductsStore interfaces in lib/chat-ui/stores/types.ts with LocalStorage default implementations namespaced by scope (T-5-01 empty-scope throw guard). useHistoryStore + useSavedProductsStore React hooks via useSyncExternalStore with SSR snapshot. Embedded surface shell app/(embedded)/chat/chat-shell.tsx instantiates EmbeddedAdapter + store hooks; legacy components/chat/ tree fully deleted (14 files). UI-SPEC locked deltas: chat-message.tsx user bubble clamp `max-w-[min(448px,100%)]`; ChatPane no longer carries surface-specific heights. Barrel-isolation static-grep test (lib/chat-ui/__tests__/barrel-isolation.test.ts) enforces SHR-01 with adapter sub-path exemption (D-04). Full vitest suite GREEN (28 files / 194 tests). `bun build` failure on pre-existing unimported dead file `components/ai-elements/reasoning.tsx` (`@jenius/ui` external package) is unrelated to Phase 5 deliverables — `tsc --noEmit` scoped to `lib/chat-ui/` is clean.
+- [Phase 07]: Plan 07-08: Default render order is catalog-as-passed (pass-through) — Wave-0 test contract supersedes the plan's provider-alphabetical-with-active-on-top sketch (Rule 1)
+- [Phase 07]: Plan 07-08: BEST_FOR curation is NOT applied at the /settings page layer — Wave-0 mock doesn't expose BEST_FOR; production catalog client already returns the canonical language-model slice
+- [Phase 07]: Plan 07-08: <s-choice> rendered self-closing with aria-label only; visible displayName lives in the Model-name cell to avoid duplicate text-query matches
 
 ### Pending Todos
 
@@ -94,6 +98,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-05-27T16:33:05.379Z
+Last session: 2026-05-27T16:40:35.736Z
 Stopped at: Phase 7 context gathered
 Resume file: None
