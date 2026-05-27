@@ -57,23 +57,23 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Storefront Surface (Theme App Extension + App Proxy + Drawer)
 
-- [ ] **STR-01**: Shopify CLI Theme App Extension package at `extensions/chat-drawer/` with App Embed block (`target: body`) bundled JS that mounts the drawer
-- [ ] **STR-02**: App Embed block JSON schema exposes merchant-configurable settings: enabled toggle, accent color, FAB position (bottom-right default)
-- [ ] **STR-03**: `shopify.app.toml` declares `[app_proxy]` block routing `/apps/smartdiscovery/*` to backend
-- [ ] **STR-04**: Storefront-facing routes live under `app/api/proxy/` and verify App Proxy HMAC via `shopifyClient.utils.validateHmac(query, { signator: 'appProxy' })` at top of each handler
-- [ ] **STR-05**: FAB renders bottom-right (56px circle, merchant-themable color); clicking opens a side drawer (380–420px on desktop, full-height bottom-sheet on mobile) with tabs Chat / History / Saved
-- [ ] **STR-06**: Drawer empty state shows greeting + 3–4 suggested prompt chips; no-results state surfaces nearest semantic neighbors with explanatory copy
-- [ ] **STR-07**: Drawer styling is z-index-safe (no theme collisions) and respects Theme Editor `Shopify.designMode` for preview behavior
-- [ ] **STR-08**: Drawer talks to backend exclusively through Shopify App Proxy paths — no cross-origin calls
+- [x] **STR-01**: Shopify CLI Theme App Extension package at `extensions/chat-drawer/` with App Embed block (`target: body`) bundled JS that mounts the drawer
+- [x] **STR-02**: App Embed block JSON schema exposes merchant-configurable settings: enabled toggle, accent color, FAB position (bottom-right default)
+- [x] **STR-03**: `shopify.app.toml` declares `[app_proxy]` block routing `/apps/smartdiscovery/*` to backend
+- [x] **STR-04**: Storefront-facing routes live under `app/api/proxy/` and verify App Proxy HMAC via `shopifyClient.utils.validateHmac(query, { signator: 'appProxy' })` at top of each handler
+- [x] **STR-05**: FAB renders bottom-right (56px circle, merchant-themable color); clicking opens a side drawer (380–420px on desktop, full-height bottom-sheet on mobile) with tabs Chat / History / Saved
+- [x] **STR-06**: Drawer empty state shows greeting + 3–4 suggested prompt chips; no-results state surfaces nearest semantic neighbors with explanatory copy
+- [x] **STR-07**: Drawer styling is z-index-safe (no theme collisions) and respects Theme Editor `Shopify.designMode` for preview behavior
+- [x] **STR-08**: Drawer talks to backend exclusively through Shopify App Proxy paths — no cross-origin calls
 
 ### Storefront Identity + Persistence
 
-- [ ] **IDN-01**: Drawer init generates a UUID `visitor_id` stored in `localStorage` (NOT a cookie, because App Proxy strips `Set-Cookie`)
-- [ ] **IDN-02**: If `window.Shopify.customer` is present, drawer links `visitor_id` → `customer_id` in backend; subsequent loads on other devices fetch by `customer_id`
-- [ ] **IDN-03**: `Conversation` Prisma model stores `id`, `shop`, `visitorId`, `customerId?`, `createdAt`, `lastMessageAt`, `messages` (jsonb or related table)
-- [ ] **IDN-04**: History tab lists past conversations for visitor (or merged set when customer is logged in), opens to resume
-- [ ] **IDN-05**: `SavedProduct` Prisma model stores `id`, `shop`, `visitorId`, `customerId?`, `productId`, `savedAt`; Saved tab renders bookmark list
-- [ ] **IDN-06**: Customer-id link merges anonymous visitor history/saved into customer-keyed records (no data loss)
+- [x] **IDN-01**: Drawer init generates a UUID `visitor_id` stored in `localStorage` (NOT a cookie, because App Proxy strips `Set-Cookie`)
+- [x] **IDN-02**: If `window.Shopify.customer` is present, drawer links `visitor_id` → `customer_id` in backend; subsequent loads on other devices fetch by `customer_id`
+- [x] **IDN-03**: `Conversation` Prisma model stores `id`, `shop`, `visitorId`, `customerId?`, `createdAt`, `lastMessageAt`, `messages` (jsonb or related table)
+- [x] **IDN-04**: History tab lists past conversations for visitor (or merged set when customer is logged in), opens to resume
+- [x] **IDN-05**: `SavedProduct` Prisma model stores `id`, `shop`, `visitorId`, `customerId?`, `productId`, `savedAt`; Saved tab renders bookmark list
+- [x] **IDN-06**: Customer-id link merges anonymous visitor history/saved into customer-keyed records (no data loss)
 
 ### Notifications (Resend)
 
@@ -167,20 +167,20 @@ Explicitly excluded. Documented to prevent scope creep.
 | SHR-02 | Phase 5 | Complete (Phase 5) |
 | SHR-03 | Phase 5 | Complete (Phase 5) |
 | SHR-04 | Phase 5 | Complete (Phase 5) |
-| STR-01 | Phase 6 | Pending |
-| STR-02 | Phase 6 | Pending |
-| STR-03 | Phase 6 | Pending |
-| STR-04 | Phase 6 | Pending |
-| STR-05 | Phase 6 | Pending |
-| STR-06 | Phase 6 | Pending |
-| STR-07 | Phase 6 | Pending |
-| STR-08 | Phase 6 | Pending |
-| IDN-01 | Phase 6 | Pending |
-| IDN-02 | Phase 6 | Pending |
-| IDN-03 | Phase 6 | Pending |
-| IDN-04 | Phase 6 | Pending |
-| IDN-05 | Phase 6 | Pending |
-| IDN-06 | Phase 6 | Pending |
+| STR-01 | Phase 6 | Complete (Phase 6) |
+| STR-02 | Phase 6 | Complete (Phase 6) |
+| STR-03 | Phase 6 | Complete (Phase 6) |
+| STR-04 | Phase 6 | Complete (Phase 6) |
+| STR-05 | Phase 6 | Complete (Phase 6) |
+| STR-06 | Phase 6 | Complete (Phase 6) |
+| STR-07 | Phase 6 | Complete (Phase 6) |
+| STR-08 | Phase 6 | Complete (Phase 6) |
+| IDN-01 | Phase 6 | Complete (Phase 6) |
+| IDN-02 | Phase 6 | Complete (Phase 6) |
+| IDN-03 | Phase 6 | Complete (Phase 6) |
+| IDN-04 | Phase 6 | Complete (Phase 6) |
+| IDN-05 | Phase 6 | Complete (Phase 6) |
+| IDN-06 | Phase 6 | Complete (Phase 6) |
 | NOT-01 | Phase 8 | Pending |
 | NOT-02 | Phase 8 | Pending |
 | NOT-03 | Phase 8 | Pending |

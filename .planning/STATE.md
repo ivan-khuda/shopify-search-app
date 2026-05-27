@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-stopped_at: Phase 6 context gathered
-last_updated: "2026-05-27T09:42:56.227Z"
+status: ready_to_plan
+stopped_at: Phase 06 complete (13/14) — ready to discuss Phase 7
+last_updated: 2026-05-27T13:12:24.025Z
 last_activity: 2026-05-27 -- Phase 06 execution started
 progress:
   total_phases: 8
   completed_phases: 5
   total_plans: 53
-  completed_plans: 39
+  completed_plans: 52
   percent: 63
 ---
 
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-22)
 
 **Core value:** A storefront visitor can describe what they want in natural language and immediately see relevant products from the merchant's catalog — synced reliably, embedded into their theme, with no dev work from the merchant.
-**Current focus:** Phase 06 — storefront-surface
+**Current focus:** Phase 7 — admin settings + model picker
 
 ## Current Position
 
-Phase: 06 (storefront-surface) — EXECUTING
-Plan: 1 of 14
-Status: Executing Phase 06
-Last activity: 2026-05-27 -- Phase 06 execution started
+Phase: 7
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-05-27
 
 Progress: [██████░░░░] 62%
 
@@ -36,7 +36,7 @@ Progress: [██████░░░░] 62%
 
 **Velocity:**
 
-- Total plans completed: 0
+- Total plans completed: 13
 - Average duration: —
 - Total execution time: 0 hours
 
@@ -44,7 +44,7 @@ Progress: [██████░░░░] 62%
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| - | - | - | - |
+| 06 | 13 | - | - |
 
 **Recent Trend:**
 
