@@ -85,7 +85,7 @@ Requirements for initial release. Each maps to roadmap phases.
 ### Hard Cap (Pre-Billing Safety)
 
 - [ ] **CAP-01**: New `RequestCounter` Prisma model tracks `shop`, `period` (year-month), `requestCount`; updated atomically per chat request
-- [ ] **CAP-02**: Configurable env-driven monthly cap (e.g., `HARD_CAP_REQUESTS_PER_MONTH=2000`) checked before each chat completion
+- [x] **CAP-02**: Configurable env-driven monthly cap (e.g., `HARD_CAP_REQUESTS_PER_MONTH=2000`) checked before each chat completion
 - [ ] **CAP-03**: When cap reached, both `/api/chat` and `/api/proxy/chat` return a graceful "monthly limit reached" response with HTTP 200 (not an error) so the chat UI shows a friendly message
 
 ## v2 Requirements
@@ -186,7 +186,7 @@ Explicitly excluded. Documented to prevent scope creep.
 | NOT-03 | Phase 8 | Pending |
 | NOT-04 | Phase 8 | Complete |
 | CAP-01 | Phase 8 | Pending |
-| CAP-02 | Phase 8 | Pending |
+| CAP-02 | Phase 8 | Complete |
 | CAP-03 | Phase 8 | Pending |
 
 **Coverage:**
