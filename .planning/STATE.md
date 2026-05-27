@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone gaps
-status: completed
+status: executing
 stopped_at: Phase 8.1 context gathered
-last_updated: "2026-05-27T21:44:28.482Z"
-last_activity: 2026-05-27
+last_updated: "2026-05-27T22:17:22.231Z"
+last_activity: 2026-05-27 -- Phase 08.1 execution started
 progress:
-  total_phases: 8
+  total_phases: 9
   completed_phases: 8
-  total_plans: 93
-  completed_plans: 93
-  percent: 100
+  total_plans: 84
+  completed_plans: 78
+  percent: 89
 ---
 
 # Project State
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-22)
 
 **Core value:** A storefront visitor can describe what they want in natural language and immediately see relevant products from the merchant's catalog — synced reliably, embedded into their theme, with no dev work from the merchant.
-**Current focus:** v1 milestone CLOSED — all 8 phases delivered.
+**Current focus:** Phase 08.1 — close-v1-0-milestone-gaps
 
 ## Current Position
 
-Phase: —
-Plan: —
-Status: v1 milestone complete (passed-with-deferred-smoke)
-Last activity: 2026-05-27
+Phase: 08.1 (close-v1-0-milestone-gaps) — EXECUTING
+Plan: 1 of 6
+Status: Executing Phase 08.1
+Last activity: 2026-05-27 -- Phase 08.1 execution started
 
 Progress: [██████████] 100%
 

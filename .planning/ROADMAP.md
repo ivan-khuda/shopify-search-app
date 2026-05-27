@@ -17,11 +17,13 @@ SmartDiscovery AI goes from a scaffolded-but-stubbed Shopify embedded app to a f
 - [x] **Phase 4: SearchService + Wire Chat** - RRF hybrid search, MOCK_PRODUCTS removed, admin playground on real data[^4-smoke-deferred]
 
 [^4-smoke-deferred]: Manual smoke deferred behind pre-existing shopify-install-flow OAuth callback cookie blocker (`docs/superpowers/plans/2026-05-02-shopify-install-flow.md`). All Phase 4 structural and automated evidence verified. See `.planning/phases/04-searchservice-wire-chat/04-VERIFICATION.md`.
+
 - [x] **Phase 5: Shared Chat-UI Extraction** - lib/chat-ui barrel, adapter pattern, persistence models
 - [x] **Phase 6: Storefront Surface** - Theme App Extension, App Proxy, FAB + drawer, visitor identity + persistence (completed 2026-05-27)
 - [x] **Phase 7: Admin Settings + Model Picker** - ShopSettings model, model picker UI, per-shop active model (completed 2026-05-27)[^7-smoke-deferred]
 
 [^7-smoke-deferred]: SC4 cross-route playground manual smoke + D-03 cold-start manual smoke deferred to operator. See `.planning/phases/07-admin-settings-model-picker/07-VERIFICATION.md`.
+
 - [x] **Phase 8: Email + Hard Cap** - Resend completion emails, per-shop request counter, graceful cap response (completed 2026-05-27)[^8-smoke-deferred]
 
 [^8-smoke-deferred]: NOT-01 + NOT-02 real Resend send smokes + CAP-03 cross-route cap-reached smoke deferred to operator. One optional `INTEGRATION_DB_URL`-gated race integration test deferred-or-automated. See `.planning/phases/08-email-hard-cap/08-VERIFICATION.md`.
@@ -307,12 +309,13 @@ Phases 7 and 8 are parallel-eligible with Phase 6 (no blocking dependencies — 
 **Goal:** Close 4 BLOCKERS + 3 WARNINGS + 15 back-mark hygiene items from the v1.0 milestone audit so the storefront visitor chat (the V1 core-value flow) works end-to-end and `/gsd-audit-milestone v1.0` re-runs `passed`.
 **Requirements**: FND-03, STR-01, STR-05, STR-06, STR-08, SHR-04, EMB-07, IDN-04, IDN-05, NOT-02, ADM-05 (closed via integration/composition fixes; no net-new requirement IDs)
 **Depends on:** Phase 8
-**Plans:** 6 plans
+**Plans:** 4/6 plans executed
 
 Plans:
-- [ ] 08.1-01-PLAN.md — proxy/middleware edge guard (curl probe + matcher extension to /settings) — B-1, O-2
-- [ ] 08.1-02-PLAN.md — Storefront bundle loading: loader.js URL + StorefrontAdapter endpoint + test pin (B-2, B-4, W-3)
+
+- [x] 08.1-01-PLAN.md — proxy/middleware edge guard (curl probe + matcher extension to /settings) — B-1, O-2
+- [x] 08.1-02-PLAN.md — Storefront bundle loading: loader.js URL + StorefrontAdapter endpoint + test pin (B-2, B-4, W-3)
 - [ ] 08.1-03-PLAN.md — StorefrontDrawer composition: DrawerBody + ChatPane/HistoryPanel/SavedProductsPanel from chat-ui (B-3)
-- [ ] 08.1-04-PLAN.md — /onboarding ?retry= deep-link banner with handleStartSync reuse (W-1)
-- [ ] 08.1-05-PLAN.md — /chat server-resolved shop via lib/shopify/server-resolve-shop.ts helper (W-2)
+- [x] 08.1-04-PLAN.md — /onboarding ?retry= deep-link banner with handleStartSync reuse (W-1)
+- [x] 08.1-05-PLAN.md — /chat server-resolved shop via lib/shopify/server-resolve-shop.ts helper (W-2)
 - [ ] 08.1-06-PLAN.md — Verification gate: REQUIREMENTS.md back-mark + Nyquist VALIDATION.md flips + 08.1-VERIFICATION.md + re-run /gsd-audit-milestone (H-1, H-2, D-17)
