@@ -1,5 +1,5 @@
 import { render } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 /**
  * Phase 4 Plan 6 — page.tsx server-component banner test.
@@ -14,6 +14,12 @@ import { describe, expect, it, vi } from 'vitest';
  * only asserts the banner's contract (typography, ARIA, dynamic
  * interpolation, style tokens) per UI-SPEC.md Copywriting + Accessibility +
  * Color rows.
+ *
+ * Phase 8.1 Plan 05 — W-2 session-resolved shop tests.
+ *
+ * Three new tests verify that ChatPage prefers the session-token shop over
+ * searchParams.shop (T-08.1.05-01 mitigation). The helper under test is
+ * resolveShopFromRequest which decodes the Authorization Bearer header.
  */
 
 vi.mock('@/services/chat/getActiveChatModel', () => ({
@@ -27,6 +33,23 @@ vi.mock('../chat-shell', () => ({
   ChatShell: () => <div data-testid="chat-shell-stub">chat shell</div>,
 }));
 
+// W-2: mock next/headers so resolveShopFromRequest can be exercised in jsdom
+vi.mock('next/headers', () => ({
+  headers: vi.fn(),
+}));
+
+// W-2: mock shopifyClient so decodeSessionToken can be controlled per-test
+vi.mock('@/lib/shopify/client', () => ({
+  shopifyClient: {
+    session: {
+      decodeSessionToken: vi.fn(),
+    },
+  },
+}));
+
+import { headers } from 'next/headers';
+import { shopifyClient } from '@/lib/shopify/client';
+import { getActiveChatModel } from '@/services/chat/getActiveChatModel';
 import ChatPage from '@/app/(embedded)/chat/page';
 
 async function renderServerPage(searchParams: Record<string, string | undefined>) {
@@ -36,7 +59,19 @@ async function renderServerPage(searchParams: Record<string, string | undefined>
   return render(tree as React.ReactElement);
 }
 
+// W-2 helper: build a minimal Headers-like object for next/headers mock
+function makeHeadersMap(authValue: string | null) {
+  return { get: (key: string) => (key.toLowerCase() === 'authorization' ? authValue : null) };
+}
+
 describe('ChatPage server component — preview-mode banner', () => {
+  // Default: no Authorization header — resolveShopFromRequest returns null, falls back to searchParams
+  beforeEach(() => {
+    vi.mocked(headers).mockResolvedValue(
+      makeHeadersMap(null) as Awaited<ReturnType<typeof headers>>,
+    );
+  });
+
   it('renders the banner with byte-precise em-dash and middle-dot glyphs', async () => {
     const { container } = await renderServerPage({ shop: 'example.myshopify.com' });
     const banner = container.querySelector('[role="status"]');
@@ -98,5 +133,63 @@ describe('ChatPage server component — preview-mode banner', () => {
     const banner = container.querySelector('[role="status"]');
     expect(banner).not.toBeNull();
     expect(banner?.textContent).toContain('Gemini 2.5 Flash');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Phase 8.1 Plan 05 — W-2: session-resolved shop tests
+// ---------------------------------------------------------------------------
+
+describe('ChatPage server component — W-2 session-resolved shop (ADM-05)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    // Restore getActiveChatModel default implementation after clearAllMocks
+    vi.mocked(getActiveChatModel).mockResolvedValue({ id: 'google/gemini-2.5-flash', displayName: 'Gemini 2.5 Flash' });
+  });
+
+  it('resolves shop from Authorization Bearer session-token, ignoring searchParams.shop when both differ', async () => {
+    // Arrange: Authorization header returns session-shop via decodeSessionToken
+    vi.mocked(headers).mockResolvedValue(
+      makeHeadersMap('Bearer valid-token') as Awaited<ReturnType<typeof headers>>,
+    );
+    vi.mocked(shopifyClient.session.decodeSessionToken).mockResolvedValue({
+      dest: 'https://session-shop.myshopify.com/admin',
+    } as Awaited<ReturnType<typeof shopifyClient.session.decodeSessionToken>>);
+
+    // Act: render with a different shop in searchParams
+    await renderServerPage({ shop: 'query-shop.myshopify.com' });
+
+    // Assert: getActiveChatModel was called with the session-resolved shop
+    expect(vi.mocked(getActiveChatModel)).toHaveBeenCalledWith('session-shop.myshopify.com');
+    expect(vi.mocked(getActiveChatModel)).not.toHaveBeenCalledWith('query-shop.myshopify.com');
+  });
+
+  it('falls back to searchParams.shop when no Authorization header is present', async () => {
+    // Arrange: no Authorization header
+    vi.mocked(headers).mockResolvedValue(
+      makeHeadersMap(null) as Awaited<ReturnType<typeof headers>>,
+    );
+
+    // Act
+    await renderServerPage({ shop: 'fallback-shop.myshopify.com' });
+
+    // Assert: falls back to searchParams value
+    expect(vi.mocked(getActiveChatModel)).toHaveBeenCalledWith('fallback-shop.myshopify.com');
+  });
+
+  it('falls back to searchParams.shop when session-token decode throws', async () => {
+    // Arrange: Authorization header present but decodeSessionToken throws
+    vi.mocked(headers).mockResolvedValue(
+      makeHeadersMap('Bearer bad-token') as Awaited<ReturnType<typeof headers>>,
+    );
+    vi.mocked(shopifyClient.session.decodeSessionToken).mockRejectedValue(
+      new Error('invalid signature'),
+    );
+
+    // Act
+    await renderServerPage({ shop: 'fallback-shop.myshopify.com' });
+
+    // Assert: falls back to searchParams value
+    expect(vi.mocked(getActiveChatModel)).toHaveBeenCalledWith('fallback-shop.myshopify.com');
   });
 });

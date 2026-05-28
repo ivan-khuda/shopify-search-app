@@ -19,6 +19,10 @@ const {
   executeRawMock,
   productFindUniqueMock,
   buildSearchableTextMock,
+  // Phase 8 additions (plan 08-01 RED scaffold — completion emails)
+  sendSyncSuccessMock,
+  sendSyncFailureMock,
+  fetchShopContactEmailMock,
 } = vi.hoisted(() => ({
   syncRunUpdate: vi.fn(),
   syncRunFindUnique: vi.fn(),
@@ -32,6 +36,9 @@ const {
   executeRawMock: vi.fn(),
   productFindUniqueMock: vi.fn(),
   buildSearchableTextMock: vi.fn(),
+  sendSyncSuccessMock: vi.fn(),
+  sendSyncFailureMock: vi.fn(),
+  fetchShopContactEmailMock: vi.fn(),
 }));
 
 vi.mock('@/lib/db/client', () => ({
@@ -78,6 +85,20 @@ vi.mock('@/lib/shopify/session-storage', () => ({
   sessionStorage: { loadSession: loadSessionMock },
 }));
 
+// Phase 8 additions (plan 08-01) — EmailService + ShopifyShopService.
+// These modules do not yet exist; the factory-form vi.mock registers a
+// virtual factory so the existing Phase 2/3 tests are unaffected (the
+// SUT does not import these symbols yet — RED). Phase 8 plans 08-04 /
+// 08-05 / 08-10 will land the real implementations + the SUT delta.
+vi.mock('@/services/email/EmailService', () => ({
+  sendSyncSuccess: sendSyncSuccessMock,
+  sendSyncFailure: sendSyncFailureMock,
+}));
+
+vi.mock('@/services/shopify/ShopifyShopService', () => ({
+  fetchShopContactEmail: fetchShopContactEmailMock,
+}));
+
 import { syncProductsFunction } from '../sync-products';
 
 beforeEach(() => {
@@ -94,6 +115,10 @@ beforeEach(() => {
   buildSearchableTextMock.mockImplementation((p: { handle: string }) => `text-${p.handle}`);
   productFindUniqueMock.mockResolvedValue({ id: 1 });
   executeRawMock.mockResolvedValue(1);
+  // Phase 8 defaults — happy path: contactEmail present, sends succeed.
+  fetchShopContactEmailMock.mockResolvedValue('owner@example.com');
+  sendSyncSuccessMock.mockResolvedValue(undefined);
+  sendSyncFailureMock.mockResolvedValue(undefined);
 });
 
 describe('syncProductsFunction (SYN-03, SYN-06)', () => {
@@ -420,5 +445,168 @@ describe('embed-batch step (Phase 3)', () => {
     expect(executeRawMock).toHaveBeenCalled();
     const allValues = executeRawMock.mock.calls.flatMap((call) => call.slice(1));
     expect(allValues).toContain('openai/text-embedding-3-small');
+  });
+});
+
+/**
+ * Phase 8 Wave 0 RED scaffold — anchors NOT-01 / NOT-02 / D-04 / D-05 +
+ * Pitfall 2 (distinct step IDs). The SUT (inngest/functions/sync-products.ts)
+ * does NOT yet append the send-success-email / send-failure-email steps —
+ * implementation lands in Plan 08-10. Until then, every assertion below
+ * fails because `sendSyncSuccessMock` / `sendSyncFailureMock` are never
+ * invoked.
+ */
+describe('syncProductsFunction — Phase 8 completion emails (NOT-01, NOT-02, D-04, D-05)', () => {
+  function setupHappyBatch(syncRunId: string) {
+    fetchTotalCountMock.mockResolvedValueOnce(1);
+    fetchBatchMock.mockResolvedValueOnce({
+      products: [{ id: 'gid://shopify/Product/1' }],
+      endCursor: null,
+      hasNextPage: false,
+    });
+    upsertMock.mockResolvedValueOnce({ id: 1 });
+    syncRunFindUnique.mockResolvedValue({
+      id: syncRunId,
+      processedCount: 1,
+      errors: [],
+      state: 'running',
+      emailSentAt: null,
+    });
+  }
+
+  it('sends success email after finalize when emailSentAt is null (NOT-01)', async () => {
+    setupHappyBatch('sr_email_001');
+    const engine = new InngestTestEngine({ function: syncProductsFunction });
+    await engine.execute({
+      events: [{ name: 'shopify/product.sync', data: { syncRunId: 'sr_email_001', shop: 'test.myshopify.com' } }],
+    });
+
+    expect(sendSyncSuccessMock).toHaveBeenCalledTimes(1);
+    const args = sendSyncSuccessMock.mock.calls[0][0];
+    expect(args.to).toBe('owner@example.com');
+    expect(args.syncRunId).toBe('sr_email_001');
+    expect(args.shop).toBe('test.myshopify.com');
+    expect(args.productCount).toBe(1);
+    expect(typeof args.adminUrl).toBe('string');
+    expect(args.adminUrl).toMatch(/admin\.shopify\.com/);
+  });
+
+  it('sends failure email inside onFailure when emailSentAt is null (NOT-02)', async () => {
+    // Force a full-batch failure so the function rejects and onFailure fires.
+    fetchTotalCountMock.mockResolvedValueOnce(1);
+    fetchBatchMock.mockResolvedValueOnce({
+      products: [{ id: 'gid://shopify/Product/1' }],
+      endCursor: null,
+      hasNextPage: false,
+    });
+    upsertMock.mockRejectedValueOnce(new Error('db down'));
+    syncRunFindUnique.mockResolvedValue({
+      id: 'sr_email_fail_001',
+      processedCount: 0,
+      errors: [],
+      state: 'failed',
+      emailSentAt: null,
+    });
+
+    const engine = new InngestTestEngine({ function: syncProductsFunction });
+    await engine.execute({
+      events: [{ name: 'shopify/product.sync', data: { syncRunId: 'sr_email_fail_001', shop: 'test.myshopify.com' } }],
+    });
+
+    // onFailure must invoke sendSyncFailure with the retry URL.
+    expect(sendSyncFailureMock).toHaveBeenCalledTimes(1);
+    const args = sendSyncFailureMock.mock.calls[0][0];
+    expect(args.to).toBe('owner@example.com');
+    expect(args.syncRunId).toBe('sr_email_fail_001');
+    expect(args.shop).toBe('test.myshopify.com');
+    expect(typeof args.errorMessage).toBe('string');
+    expect(args.errorMessage.length).toBeGreaterThan(0);
+    expect(args.retryUrl).toMatch(/\/onboarding\?retry=sr_email_fail_001/);
+  });
+
+  it('skips success email when emailSentAt is already set (D-04 idempotency)', async () => {
+    fetchTotalCountMock.mockResolvedValueOnce(1);
+    fetchBatchMock.mockResolvedValueOnce({
+      products: [{ id: 'gid://shopify/Product/1' }],
+      endCursor: null,
+      hasNextPage: false,
+    });
+    upsertMock.mockResolvedValueOnce({ id: 1 });
+    // Preload SyncRun with a non-null emailSentAt — email must be skipped.
+    syncRunFindUnique.mockResolvedValue({
+      id: 'sr_email_idem_001',
+      processedCount: 1,
+      errors: [],
+      state: 'running',
+      emailSentAt: new Date('2026-05-27T00:00:00Z'),
+    });
+
+    const engine = new InngestTestEngine({ function: syncProductsFunction });
+    await engine.execute({
+      events: [{ name: 'shopify/product.sync', data: { syncRunId: 'sr_email_idem_001', shop: 'test.myshopify.com' } }],
+    });
+
+    expect(sendSyncSuccessMock).not.toHaveBeenCalled();
+  });
+
+  it('skips email when contactEmail is null (D-05) and does NOT throw / fail the sync', async () => {
+    setupHappyBatch('sr_email_no_contact_001');
+    fetchShopContactEmailMock.mockResolvedValue(null);
+
+    const engine = new InngestTestEngine({ function: syncProductsFunction });
+    const { result, error } = await engine.execute({
+      events: [{ name: 'shopify/product.sync', data: { syncRunId: 'sr_email_no_contact_001', shop: 'test.myshopify.com' } }],
+    });
+
+    expect(sendSyncSuccessMock).not.toHaveBeenCalled();
+    // D-05 explicit: sync must still succeed.
+    expect(error).toBeUndefined();
+    expect((result as { state: string }).state).not.toBe('failed');
+  });
+
+  it("uses distinct step IDs 'send-success-email' vs 'send-failure-email' (Pitfall 2)", async () => {
+    // Wave-0 contract assertion: when implementation lands, the two
+    // email-send code paths MUST use distinct step IDs so Inngest's
+    // step-level idempotency does not collapse them. We assert this
+    // indirectly: each branch fires its own mock with a distinct
+    // syncRunId-derived idempotency suffix.
+    //
+    // Success branch:
+    setupHappyBatch('sr_step_id_success');
+    const successEngine = new InngestTestEngine({ function: syncProductsFunction });
+    await successEngine.execute({
+      events: [{ name: 'shopify/product.sync', data: { syncRunId: 'sr_step_id_success', shop: 'test.myshopify.com' } }],
+    });
+    expect(sendSyncSuccessMock).toHaveBeenCalledTimes(1);
+    expect(sendSyncFailureMock).not.toHaveBeenCalled();
+
+    // Reset and run failure branch:
+    vi.clearAllMocks();
+    fetchShopContactEmailMock.mockResolvedValue('owner@example.com');
+    sendSyncSuccessMock.mockResolvedValue(undefined);
+    sendSyncFailureMock.mockResolvedValue(undefined);
+    syncRunUpdate.mockResolvedValue({});
+
+    fetchTotalCountMock.mockResolvedValueOnce(1);
+    fetchBatchMock.mockResolvedValueOnce({
+      products: [{ id: 'gid://shopify/Product/1' }],
+      endCursor: null,
+      hasNextPage: false,
+    });
+    upsertMock.mockRejectedValueOnce(new Error('db down'));
+    syncRunFindUnique.mockResolvedValue({
+      id: 'sr_step_id_failure',
+      processedCount: 0,
+      errors: [],
+      state: 'failed',
+      emailSentAt: null,
+    });
+
+    const failureEngine = new InngestTestEngine({ function: syncProductsFunction });
+    await failureEngine.execute({
+      events: [{ name: 'shopify/product.sync', data: { syncRunId: 'sr_step_id_failure', shop: 'test.myshopify.com' } }],
+    });
+    expect(sendSyncFailureMock).toHaveBeenCalledTimes(1);
+    expect(sendSyncSuccessMock).not.toHaveBeenCalled();
   });
 });

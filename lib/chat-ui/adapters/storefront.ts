@@ -3,7 +3,7 @@ import type { ChatIdentityAdapter } from './types';
 const STORAGE_KEY = 'smartdiscovery.visitor_id';
 
 export class StorefrontAdapter implements ChatIdentityAdapter {
-  readonly endpoint = '/api/proxy/chat';
+  readonly endpoint = '/apps/smartdiscovery/chat';
 
   async getAuthHeaders(): Promise<Record<string, string>> {
     return {};

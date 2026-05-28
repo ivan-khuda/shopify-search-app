@@ -1,4 +1,5 @@
 import { getActiveChatModel } from '@/services/chat/getActiveChatModel';
+import { resolveShopFromRequest } from '@/lib/shopify/server-resolve-shop';
 import { ChatShell } from './chat-shell';
 
 // Phase 4 Plan 6 (D-11): /chat is a Server Component.
@@ -7,14 +8,20 @@ import { ChatShell } from './chat-shell';
 // contract (banner is static — distinct from message-parts.tsx transient
 // tool-state affordances). The banner interpolates the model displayName
 // dynamically so Phase 7 is a body-only swap of getActiveChatModel.
+//
+// Phase 8.1 Plan 05 (W-2): shop is now resolved from the embedded session-token
+// Authorization header first, falling back to searchParams.shop for direct-navigation
+// refreshes where no Bearer token is present.
 
 export default async function ChatPage({
     searchParams,
 }: {
     searchParams: Promise<{ shop?: string }>;
 }) {
-    const { shop } = await searchParams;
-    const model = await getActiveChatModel(shop ?? '');
+    const { shop: shopFromQuery } = await searchParams;
+    const shopFromSession = await resolveShopFromRequest();
+    const shop = shopFromSession ?? shopFromQuery ?? '';
+    const model = await getActiveChatModel(shop);
     const displayName = model.displayName;
     const bannerAriaLabel = `Chat playground preview mode banner. Active model: ${displayName}.`;
 
@@ -29,7 +36,7 @@ export default async function ChatPage({
                 Preview mode — using your real catalog · Model:{' '}
                 <span className="text-foreground font-semibold">{model.displayName}</span>
             </div>
-            <ChatShell shop={shop ?? ''} />
+            <ChatShell shop={shop} />
         </div>
     );
 }
