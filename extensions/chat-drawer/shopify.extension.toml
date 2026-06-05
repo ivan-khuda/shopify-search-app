@@ -1,4 +1,5 @@
 api_version = "2026-04"
+uid = "5db51873-335a-b53f-1837-88a0bf3cf2da05702eef"
 
 [[extensions]]
 name = "SmartDiscovery AI Chat Drawer"

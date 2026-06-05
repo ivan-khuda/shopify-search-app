@@ -21,7 +21,7 @@
     {% if customer %}data-customer-id="{{ customer.id }}"{% endif %}
   ></smartdiscovery-app>
   {{ 'loader.css' | asset_url | stylesheet_tag }}
-  {{ 'loader.js' | asset_url | script_tag }}
+  <script src="{{ 'loader.js' | asset_url }}" async></script>
 {% endif %}
 
 {% schema %}

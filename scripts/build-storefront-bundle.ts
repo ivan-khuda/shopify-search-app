@@ -7,7 +7,7 @@
 //   - public/storefront-bundle.<sha256-8>.js — minified ESM, content-hashed
 //   - public/storefront-manifest.json — { bundle, version } pointer the loader reads
 //
-// Entry: extensions/chat-drawer/src/entry.tsx (created by Plan 13). Running
+// Entry: extensions-src/chat-drawer/entry.tsx (created by Plan 13). Running
 // this script before Plan 13 ships will fail with esbuild's
 // "Could not resolve" error — that is expected during Wave 1.
 //
@@ -37,7 +37,7 @@ async function main(): Promise<void> {
   }
 
   const result = await build({
-    entryPoints: ['extensions/chat-drawer/src/entry.tsx'],
+    entryPoints: ['extensions-src/chat-drawer/entry.tsx'],
     bundle: true,
     minify: true,
     format: 'esm',

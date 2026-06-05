@@ -11,7 +11,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
-import { PromptChips } from '@/extensions/chat-drawer/src/components/PromptChips';
+import { PromptChips } from '@/extensions-src/chat-drawer/components/PromptChips';
 
 // ── UI-SPEC §Copywriting Contract chip strings (BYTE-PRECISE) ────────────────
 // Chip 2 uses U+2019 RIGHT SINGLE QUOTATION MARK — not ASCII apostrophe

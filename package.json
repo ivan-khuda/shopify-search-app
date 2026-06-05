@@ -9,6 +9,7 @@
     "lint": "eslint",
     "test": "vitest run",
     "db:indexes": "bunx tsx scripts/apply-manual-indexes.ts",
+    "db:studio": "HOST=127.0.0.1 prisma studio --browser none",
     "prebuild": "bunx tsx scripts/build-storefront-bundle.ts",
     "build:storefront-bundle": "bunx tsx scripts/build-storefront-bundle.ts",
     "script:cleanup-conversations": "bunx tsx scripts/cleanup-conversations.ts"

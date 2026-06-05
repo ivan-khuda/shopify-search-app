@@ -25,7 +25,7 @@ describe('extensions/chat-drawer/ scaffold — STR-01', () => {
     expect(existsSync(resolve(ROOT, 'extensions/chat-drawer/assets/loader.css'))).toBe(true);
   });
 
-  it('extensions/chat-drawer/src/entry.tsx exists', () => {
-    expect(existsSync(resolve(ROOT, 'extensions/chat-drawer/src/entry.tsx'))).toBe(true);
+  it('extensions-src/chat-drawer/entry.tsx exists', () => {
+    expect(existsSync(resolve(ROOT, 'extensions-src/chat-drawer/entry.tsx'))).toBe(true);
   });
 });

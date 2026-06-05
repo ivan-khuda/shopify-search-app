@@ -165,6 +165,11 @@ model ShopifySession {
   collaborator  Boolean?  @default(false)
   emailVerified Boolean?  @default(false)
 
+  // Required by @shopify/shopify-app-session-storage-prisma v8 — its
+  // sessionToRow() always writes these two columns.
+  refreshToken        String?
+  refreshTokenExpires DateTime?
+
   @@index([shop])
   @@index([state])
   @@map("shopify_sessions")

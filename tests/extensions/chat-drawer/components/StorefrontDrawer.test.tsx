@@ -6,7 +6,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
-import { StorefrontDrawer } from '@/extensions/chat-drawer/src/components/StorefrontDrawer';
+import { StorefrontDrawer } from '@/extensions-src/chat-drawer/components/StorefrontDrawer';
 
 // Mock @/lib/chat-ui barrel so the composition tests have stable testid markers.
 // Also stubs DbBacked hooks to prevent constructor throws (Pitfall 3) and avoid
