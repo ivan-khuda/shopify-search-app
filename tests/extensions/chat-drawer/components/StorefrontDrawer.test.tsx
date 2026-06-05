@@ -3,7 +3,7 @@
  * Tests fail with "Cannot find module" until Wave 3 ships the component.
  */
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import { StorefrontDrawer } from '@/extensions-src/chat-drawer/components/StorefrontDrawer';
@@ -118,8 +118,8 @@ describe('StorefrontDrawer — UI-SPEC copywriting and interaction contract', ()
     const fab = screen.getByRole('button', { name: 'Open SmartDiscovery AI chat' });
     await user.click(fab);
 
-    // Chat tab is active by default
-    expect(screen.getByTestId('chat-pane')).toBeDefined();
+    // Chat tab is active by default. DrawerBody is React.lazy — await its resolution.
+    await waitFor(() => expect(screen.getByTestId('chat-pane')).toBeDefined());
   });
 
   it('composes HistoryPanel on the History tab when shop+visitorId are passed', async () => {
@@ -132,7 +132,7 @@ describe('StorefrontDrawer — UI-SPEC copywriting and interaction contract', ()
     const historyTab = screen.getByRole('tab', { name: 'History' });
     await user.click(historyTab);
 
-    expect(screen.getByTestId('history-panel')).toBeDefined();
+    await waitFor(() => expect(screen.getByTestId('history-panel')).toBeDefined());
   });
 
   it('composes SavedProductsPanel on the Saved tab when shop+visitorId are passed', async () => {
@@ -145,7 +145,7 @@ describe('StorefrontDrawer — UI-SPEC copywriting and interaction contract', ()
     const savedTab = screen.getByRole('tab', { name: 'Saved' });
     await user.click(savedTab);
 
-    expect(screen.getByTestId('saved-products-panel')).toBeDefined();
+    await waitFor(() => expect(screen.getByTestId('saved-products-panel')).toBeDefined());
   });
 
   it('renders placeholder copy (no DbBacked hook invocation) when rendered with no props', async () => {

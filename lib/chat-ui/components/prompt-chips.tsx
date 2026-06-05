@@ -4,7 +4,7 @@
  *
  * Strings locked by UI-SPEC §Copywriting Contract. Do NOT modify without a
  * UI-SPEC supplement (Phase 5 lock pattern). Chip 2 uses U+2019 RIGHT SINGLE
- * QUOTATION MARK ('); chip 4 uses ASCII apostrophe (').
+ * QUOTATION MARK (’); chip 4 uses ASCII apostrophe (').
  */
 import * as React from 'react';
 

@@ -48,3 +48,8 @@ next-env.d.ts
 public/storefront-bundle-*.js
 public/storefront-bundle.*.js
 public/storefront-manifest.json
+# split chunks emitted by scripts/build-storefront-bundle.ts (esbuild splitting)
+public/DrawerBody-*.js
+public/chunk-*.js
+public/code-block-*.js
+public/mermaid-*.js

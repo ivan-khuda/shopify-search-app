@@ -14,6 +14,7 @@ import {
 import { GlobeIcon } from "lucide-react";
 import { memo, useCallback, useMemo } from "react";
 import { ChatMessage } from './chat-message';
+import { PromptChips } from './prompt-chips';
 import type { ChatHistoryItem, ChatProduct } from '@/types/product';
 import type { ChatIdentityAdapter } from '../adapters/types';
 
@@ -86,6 +87,18 @@ export function ChatPane({ adapter, savedProductIds, onToggleSave, onHistoryAdd 
     );
     const { messages, sendMessage, status } = useChat({ transport });
 
+    const submitText = useCallback((query: string) => {
+        const trimmed = query.trim();
+        if (!trimmed) return;
+        onHistoryAdd({
+            id: `search-${Date.now()}`,
+            query: trimmed,
+            timestamp: new Date().toLocaleTimeString(),
+            productCount: 0,
+        });
+        sendMessage({ text: trimmed });
+    }, [onHistoryAdd, sendMessage]);
+
     const handleSubmit = useCallback((message: PromptInputMessage) => {
         const query = message.text.trim();
         const hasText = Boolean(query);
@@ -96,27 +109,22 @@ export function ChatPane({ adapter, savedProductIds, onToggleSave, onHistoryAdd 
         }
 
         if (hasText) {
-            onHistoryAdd({
-                id: `search-${Date.now()}`,
-                query,
-                timestamp: new Date().toLocaleTimeString(),
-                // productCount is no longer client-derivable at submit time; cards arrive via tool-result parts.
-                // Phase 5/6 may relocate history derivation to a useEffect that watches messages.
-                productCount: 0,
-            });
+            submitText(query);
+            return;
         }
 
         sendMessage({ text: query });
-    }, [onHistoryAdd, sendMessage]);
+    }, [submitText, sendMessage]);
 
     return (
         <div className="flex flex-col w-full max-w-3xl mx-auto stretch gap-6 pt-3">
             <div className='flex flex-col flex-1 gap-4 overflow-auto pr-4'>
                 {messages.length === 0 && (
-                    <div className="">
+                    <div className="flex flex-col gap-4">
                         <p>
                             Hello! I&apos;m your AI Shopping Assistant. Try a search like &quot;warm winter clothes&quot; or &quot;running shoes under $80&quot;.
                         </p>
+                        <PromptChips onSubmit={submitText} />
                     </div>
                 )}
                 {messages.map((message) => (

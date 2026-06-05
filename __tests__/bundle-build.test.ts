@@ -47,7 +47,7 @@ describe('bundle-build — D-13/D-14 prebuild pipeline', () => {
       // Assert the bundle file exists
       const publicDir = resolve(ROOT, 'public');
       const files = readdirSync(publicDir);
-      const bundleFiles = files.filter((f) => f.match(/^storefront-bundle-[a-f0-9]+\.js$/));
+      const bundleFiles = files.filter((f) => f.match(/^storefront-bundle-[A-Za-z0-9]+\.js$/));
       expect(bundleFiles.length).toBeGreaterThan(0);
     }
   );
@@ -79,7 +79,7 @@ describe('bundle-build — D-13/D-14 prebuild pipeline', () => {
 
       // Manifest shape: { bundle: '/storefront-bundle-X.js', version: string }
       expect(typeof manifest.bundle).toBe('string');
-      expect(manifest.bundle).toMatch(/^\/storefront-bundle-[a-f0-9]+\.js$/);
+      expect(manifest.bundle).toMatch(/^\/storefront-bundle-[A-Za-z0-9]+\.js$/);
       expect(typeof manifest.version).toBe('string');
       expect(manifest.version.length).toBeGreaterThan(0);
     }
@@ -104,7 +104,7 @@ describe('bundle-build — D-13/D-14 prebuild pipeline', () => {
         return;
       }
 
-      const bundleFiles = files.filter((f) => f.match(/^storefront-bundle-[a-f0-9]+\.js$/));
+      const bundleFiles = files.filter((f) => f.match(/^storefront-bundle-[A-Za-z0-9]+\.js$/));
 
       if (bundleFiles.length === 0) {
         // RED state: no bundle yet
@@ -112,6 +112,10 @@ describe('bundle-build — D-13/D-14 prebuild pipeline', () => {
         return;
       }
 
+      // Measure the ENTRY chunk only. Heavy panes (ChatPane/HistoryPanel/
+      // SavedProductsPanel + DbBacked stores) ship as split chunks loaded on
+      // first FAB click via React.lazy; the 250KB budget guards initial-paint
+      // bytes, not the total feature size.
       const latestBundle = bundleFiles.sort().pop()!;
       const bundlePath = join(publicDir, latestBundle);
       const bundleContent = readFileSync(bundlePath);

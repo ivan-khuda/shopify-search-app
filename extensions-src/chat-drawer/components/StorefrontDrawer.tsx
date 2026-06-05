@@ -2,10 +2,10 @@
 /**
  * StorefrontDrawer — storefront chat drawer shell (D-13, STR-01, STR-05).
  *
- * Renders a FAB-paired drawer. Composes ChatPane + HistoryPanel +
- * SavedProductsPanel from @/lib/chat-ui via StorefrontAdapter + DbBacked
- * stores when shop/visitor are provided. When rendered without props
- * (test render, design-mode preview), falls back to placeholder content.
+ * Renders a FAB-paired drawer. The heavy DrawerBody (ChatPane + panels + Db-backed
+ * stores from @/lib/chat-ui) is loaded via React.lazy on first drawer open so the
+ * storefront entry chunk stays under the D-14 bundle budget. Falls back to
+ * placeholder content for test renders / design-mode preview (no props).
  *
  * STR-07 / Pitfall 5: designMode check at FAB click time, not at mount.
  *
@@ -17,14 +17,8 @@
  *   - Escape closes the drawer; focus returns to FAB.
  */
 import * as React from 'react';
-import {
-  ChatPane,
-  HistoryPanel,
-  SavedProductsPanel,
-  useDbBackedHistoryStore,
-  useDbBackedSavedProductsStore,
-} from '@/lib/chat-ui';
-import { StorefrontAdapter } from '@/lib/chat-ui/adapters/storefront';
+
+const DrawerBody = React.lazy(() => import('./DrawerBody'));
 
 interface StorefrontDrawerProps {
   shop?: string;
@@ -33,47 +27,6 @@ interface StorefrontDrawerProps {
   accent?: string;
   position?: 'bottom_right' | 'bottom_left';
   initialOpen?: boolean;
-}
-
-interface DrawerBodyProps {
-  activeTab: 'chat' | 'history' | 'saved';
-  shop: string;
-  visitorId: string;
-  customerId: string | null;
-}
-
-/**
- * DrawerBody — internal component that owns hook calls.
- *
- * Extracted so that the outer StorefrontDrawer can conditionally mount
- * this component only when shop+visitorId are both truthy. This preserves
- * Rules of Hooks (no conditional hook calls in parent) and ensures
- * DbBackedHistoryStore / DbBackedSavedProductsStore are never instantiated
- * with an empty visitorId (Pitfall 3 — constructors throw on empty visitorId).
- */
-function DrawerBody({ activeTab, shop, visitorId, customerId }: DrawerBodyProps): React.ReactElement {
-  const adapter = React.useMemo(() => new StorefrontAdapter(), []);
-  const history = useDbBackedHistoryStore({ shop, visitorId, customerId });
-  const saved = useDbBackedSavedProductsStore({ shop, visitorId, customerId });
-  const savedProductIds = React.useMemo(
-    () => new Set(saved.items.map((p) => p.id)),
-    [saved.items],
-  );
-
-  if (activeTab === 'chat') {
-    return (
-      <ChatPane
-        adapter={adapter}
-        savedProductIds={savedProductIds}
-        onToggleSave={saved.toggle}
-        onHistoryAdd={history.add}
-      />
-    );
-  }
-  if (activeTab === 'history') {
-    return <HistoryPanel items={history.items} onClear={history.clear} />;
-  }
-  return <SavedProductsPanel products={saved.items} onToggleSave={saved.toggle} />;
 }
 
 export function StorefrontDrawer(props: StorefrontDrawerProps = {}): React.ReactElement {
@@ -85,7 +38,6 @@ export function StorefrontDrawer(props: StorefrontDrawerProps = {}): React.React
 
   const closeDrawer = React.useCallback(() => {
     setIsOpen(false);
-    // Return focus to FAB after the drawer unmounts.
     setTimeout(() => fabRef.current?.focus(), 0);
   }, []);
 
@@ -206,12 +158,14 @@ export function StorefrontDrawer(props: StorefrontDrawerProps = {}): React.React
           </div>
           <div role="tabpanel" style={{ flex: 1, padding: 16, overflow: 'auto' }}>
             {shop && visitorId ? (
-              <DrawerBody
-                activeTab={activeTab}
-                shop={shop}
-                visitorId={visitorId}
-                customerId={customerId ?? null}
-              />
+              <React.Suspense fallback={<p style={{ margin: 0, color: '#6b7280' }}>Loading…</p>}>
+                <DrawerBody
+                  activeTab={activeTab}
+                  shop={shop}
+                  visitorId={visitorId}
+                  customerId={customerId ?? null}
+                />
+              </React.Suspense>
             ) : (
               <>
                 {activeTab === 'chat' && <p style={{ margin: 0, color: '#6b7280' }}>Chat coming up…</p>}
