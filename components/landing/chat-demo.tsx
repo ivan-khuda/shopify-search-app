@@ -6,6 +6,7 @@ import { CATALOG } from './catalog';
 import type { LandingProduct } from './catalog';
 import { SDLogo } from './brand';
 import { useTypewriter } from './use-typewriter';
+import { cn } from '@/lib/utils';
 
 type Phase = 'idle' | 'typing' | 'searching' | 'products' | 'streaming' | 'done';
 
@@ -35,24 +36,32 @@ interface MiniProductProps {
 
 function MiniProduct({ p, accent, i }: MiniProductProps) {
   return (
-    <div style={{
-      display: 'flex', gap: 11, alignItems: 'center', padding: 8,
-      background: '#fff', border: '1px solid var(--border-sub)', borderRadius: 12,
-      animation: `sd-pop 0.4s cubic-bezier(.2,.7,.2,1) ${i * 0.09}s both`,
-      boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
-    }}>
-      <img src={p.image} alt={p.title} loading="lazy" style={{
-        width: 48, height: 48, borderRadius: 8, objectFit: 'cover', flexShrink: 0,
-        background: '#f0eee9',
-      }} />
-      <div style={{ minWidth: 0, flex: 1 }}>
-        <div style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--text-strong)',
-          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.title}</div>
-        <div style={{ fontSize: 11, color: 'var(--text-sub)', marginTop: 1 }}>{p.type}</div>
+    <div
+      className="flex gap-[11px] items-center p-2 bg-white border border-(--border-sub) rounded-[12px] shadow-[0_1px_2px_rgba(0,0,0,0.03)] [animation:sd-pop_0.4s_cubic-bezier(.2,.7,.2,1)_both]"
+      style={{ animationDelay: `${i * 0.09}s` }}
+    >
+      <img
+        src={p.image}
+        alt={p.title}
+        loading="lazy"
+        className="w-12 h-12 rounded-[8px] object-cover shrink-0 bg-[#f0eee9]"
+      />
+      <div className="min-w-0 flex-1">
+        <div className="text-[12.5px] font-semibold text-(--text-strong) whitespace-nowrap overflow-hidden text-ellipsis">
+          {p.title}
+        </div>
+        <div className="text-[11px] text-(--text-sub) mt-px">{p.type}</div>
       </div>
-      <div className="tnum" style={{ fontSize: 13, fontWeight: 650, color: 'var(--text-strong)' }}>${p.price}</div>
-      <svg width="16" height="16" viewBox="0 0 24 24" style={{ flexShrink: 0 }}
-        fill={i === 0 ? accent : 'none'} stroke={i === 0 ? accent : 'rgba(0,0,0,.28)'} strokeWidth="2">
+      <div className="tabular-nums text-[13px] font-[650] text-(--text-strong)">${p.price}</div>
+      <svg
+        width="16"
+        height="16"
+        viewBox="0 0 24 24"
+        className="shrink-0"
+        fill={i === 0 ? accent : 'none'}
+        stroke={i === 0 ? accent : 'rgba(0,0,0,.28)'}
+        strokeWidth="2"
+      >
         <path d="M12 21s-7-4.6-9.5-9C1 9 2.2 5.5 5.5 5.5c2 0 3.2 1.2 4 2.4.8-1.2 2-2.4 4-2.4C16.8 5.5 18 9 16.5 12 14 16.4 12 21 12 21z"/>
       </svg>
     </div>
@@ -120,48 +129,49 @@ export function ChatDemo({ accent = ACCENT, store = 'Field & Form' }: ChatDemoPr
   const showConvo = phase !== 'idle';
 
   return (
-    <div aria-hidden="true" style={{
-      display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0,
-      background: '#fff', borderRadius: 18, overflow: 'hidden',
-      border: '1px solid var(--border)',
-      boxShadow: '0 1px 1px rgba(0,0,0,0.04), 0 18px 50px -12px rgba(26,29,33,0.22)',
-    }}>
+    <div
+      aria-hidden="true"
+      className="flex flex-col h-full min-h-0 bg-white rounded-[18px] overflow-hidden border border-(--border) shadow-[0_1px_1px_rgba(0,0,0,0.04),0_18px_50px_-12px_rgba(26,29,33,0.22)]"
+    >
       {/* Drawer header */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '14px 16px',
-        borderBottom: '1px solid var(--border-sub)', flexShrink: 0 }}>
+      <div className="flex items-center gap-[11px] px-4 py-[14px] border-b border-(--border-sub) shrink-0">
         <SDLogo size={30} accent={accent} />
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 14, fontWeight: 650, color: 'var(--text-strong)' }}>Ask {store}</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11.5, color: 'var(--text-sub)' }}>
-            <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#008060',
-              boxShadow: '0 0 0 3px rgba(0,128,96,.16)' }}></span>
+        <div className="flex-1 min-w-0">
+          <div className="text-[14px] font-[650] text-(--text-strong)">Ask {store}</div>
+          <div className="flex items-center gap-[6px] text-[11.5px] text-(--text-sub)">
+            <span className="w-[7px] h-[7px] rounded-full bg-[#008060] shadow-[0_0_0_3px_rgba(0,128,96,0.16)]"></span>
             Online · powered by AI
           </div>
         </div>
-        <div style={{ display: 'flex', gap: 4 }}>
+        <div className="flex gap-1">
           {['Chat', 'Saved'].map((t, i) => (
-            <span key={t} style={{ fontSize: 12, fontWeight: 550, padding: '5px 10px', borderRadius: 8,
-              color: i === 0 ? accent : 'var(--text-sub)',
-              background: i === 0 ? rgba(accent, 0.1) : 'transparent' }}>{t}</span>
+            <span
+              key={t}
+              className="text-[12px] font-[550] px-[10px] py-[5px] rounded-[8px]"
+              style={{
+                color: i === 0 ? accent : 'var(--text-sub)',
+                background: i === 0 ? rgba(accent, 0.1) : 'transparent',
+              }}
+            >{t}</span>
           ))}
         </div>
       </div>
 
       {/* Conversation body */}
-      <div style={{ flex: 1, minHeight: 0, overflow: 'hidden', padding: '16px',
-        display: 'flex', flexDirection: 'column', gap: 12,
-        background: 'linear-gradient(180deg,#fcfcfd,#fafbfb)' }}>
+      <div className="flex-1 min-h-0 overflow-hidden p-4 flex flex-col gap-3 bg-[linear-gradient(180deg,#fcfcfd,#fafbfb)]">
 
         {!showConvo && (
-          <div style={{ margin: 'auto', textAlign: 'center', maxWidth: 280 }}>
-            <div style={{ fontSize: 15, fontWeight: 650, color: 'var(--text-strong)', marginBottom: 4 }}>
+          <div className="m-auto text-center max-w-[280px]">
+            <div className="text-[15px] font-[650] text-(--text-strong) mb-1">
               What are you looking for? 👋</div>
-            <div style={{ fontSize: 12.5, color: 'var(--text-sub)', marginBottom: 14 }}>
+            <div className="text-[12.5px] text-(--text-sub) mb-[14px]">
               Describe it in your own words.</div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7, justifyContent: 'center' }}>
+            <div className="flex flex-wrap gap-[7px] justify-center">
               {DEMO_SCRIPT.map(d => (
-                <span key={d.q} style={{ fontSize: 11.5, padding: '7px 11px', borderRadius: 999,
-                  border: '1px solid var(--border)', background: '#fff', color: 'var(--text)' }}>{d.q}</span>
+                <span
+                  key={d.q}
+                  className="text-[11.5px] px-[11px] py-[7px] rounded-full border border-(--border) bg-white text-(--text)"
+                >{d.q}</span>
               ))}
             </div>
           </div>
@@ -170,43 +180,47 @@ export function ChatDemo({ accent = ACCENT, store = 'Field & Form' }: ChatDemoPr
         {showConvo && (
           <>
             {/* User bubble */}
-            <div style={{ alignSelf: 'flex-end', maxWidth: '82%', padding: '9px 13px',
-              borderRadius: '14px 14px 4px 14px', background: accent, color: '#fff',
-              fontSize: 13, lineHeight: 1.45, animation: 'sd-pop 0.3s ease both' }}>
+            <div
+              className="self-end max-w-[82%] px-[13px] py-[9px] rounded-tl-[14px] rounded-tr-[14px] rounded-br-[4px] rounded-bl-[14px] text-white text-[13px] leading-[1.45] [animation:sd-pop_0.3s_ease_both]"
+              style={{ background: accent }}
+            >
               {phase === 'typing' ? (composer || '…') : s.q}
             </div>
 
             {/* Searching */}
             {phase === 'searching' && (
-              <div style={{ alignSelf: 'flex-start', display: 'flex', alignItems: 'center', gap: 9,
-                fontSize: 12.5, color: 'var(--text-sub)', animation: 'sd-pop 0.3s ease both' }}>
-                <span style={{ width: 15, height: 15, border: `2px solid ${rgba(accent, .25)}`,
-                  borderTopColor: accent, borderRadius: '50%', animation: 'sd-spin 0.7s linear infinite' }}></span>
+              <div className="self-start flex items-center gap-[9px] text-[12.5px] text-(--text-sub) [animation:sd-pop_0.3s_ease_both]">
+                <span
+                  className="w-[15px] h-[15px] rounded-full [animation:sd-spin_0.7s_linear_infinite]"
+                  style={{
+                    border: `2px solid ${rgba(accent, .25)}`,
+                    borderTopColor: accent,
+                  }}
+                ></span>
                 Searching your catalog…
               </div>
             )}
 
             {/* Products */}
             {(phase === 'products' || phase === 'streaming' || phase === 'done') && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <div className="flex flex-col gap-2">
                 {products.map((p, i) => <MiniProduct key={p.id} p={p} accent={accent} i={i} />)}
               </div>
             )}
 
             {/* Assistant reply */}
             {(phase === 'streaming' || phase === 'done') && (
-              <div style={{ alignSelf: 'flex-start', maxWidth: '88%', padding: '10px 13px',
-                borderRadius: '14px 14px 14px 4px', background: '#fff', border: '1px solid var(--border-sub)',
-                fontSize: 13, lineHeight: 1.5, color: 'var(--text-strong)',
-                animation: 'sd-pop 0.3s ease both' }}>
+              <div className="self-start max-w-[88%] px-[13px] py-[10px] rounded-tl-[14px] rounded-tr-[14px] rounded-br-[14px] rounded-bl-[4px] bg-white border border-(--border-sub) text-[13px] leading-[1.5] text-(--text-strong) [animation:sd-pop_0.3s_ease_both]">
                 {reply}
-                {phase === 'streaming' && <span style={{ display: 'inline-block', width: 2, height: 14,
-                  background: accent, marginLeft: 1, verticalAlign: '-2px',
-                  animation: 'sd-blink 1s step-end infinite' }}></span>}
+                {phase === 'streaming' && (
+                  <span
+                    className="inline-block w-[2px] h-[14px] ml-px align-[-2px] [animation:sd-blink_1s_step-end_infinite]"
+                    style={{ background: accent }}
+                  ></span>
+                )}
                 {phase === 'done' && (
-                  <div style={{ marginTop: 8, fontSize: 11, color: 'var(--text-sub)',
-                    display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#008060' }}></span>
+                  <div className="mt-2 text-[11px] text-(--text-sub) flex items-center gap-[6px]">
+                    <span className="w-[5px] h-[5px] rounded-full bg-[#008060]"></span>
                     {products.length} grounded results
                   </div>
                 )}
@@ -217,19 +231,31 @@ export function ChatDemo({ accent = ACCENT, store = 'Field & Form' }: ChatDemoPr
       </div>
 
       {/* Composer */}
-      <div style={{ padding: 12, borderTop: '1px solid var(--border-sub)', flexShrink: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 8px 8px 14px',
-          border: `1px solid ${phase === 'typing' ? accent : 'var(--border)'}`, borderRadius: 12,
-          background: '#fff', transition: 'border-color .2s',
-          boxShadow: phase === 'typing' ? `0 0 0 3px ${rgba(accent, .12)}` : 'none' }}>
-          <span style={{ flex: 1, fontSize: 13, color: phase === 'typing' && composer ? 'var(--text-strong)' : 'var(--text-sub)',
-            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+      <div className="p-3 border-t border-(--border-sub) shrink-0">
+        <div className={cn(
+          'flex items-center gap-2 pt-2 pr-2 pb-2 pl-[14px] rounded-[12px] bg-white [transition:border-color_.2s,box-shadow_.2s]',
+          phase === 'typing'
+            ? 'border border-(--accent) shadow-[0_0_0_3px_rgba(91,79,233,0.12)]'
+            : 'border border-(--border)',
+        )}>
+          <span className={cn(
+            'flex-1 text-[13px] whitespace-nowrap overflow-hidden text-ellipsis',
+            phase === 'typing' && composer ? 'text-(--text-strong)' : 'text-(--text-sub)',
+          )}>
             {phase === 'typing' ? composer || 'Ask anything…' : 'Ask anything…'}
-            {phase === 'typing' && <span style={{ borderLeft: `1.5px solid ${accent}`, marginLeft: 1,
-              animation: 'sd-blink 1s step-end infinite' }}></span>}
+            {phase === 'typing' && (
+              <span
+                className="ml-px [animation:sd-blink_1s_step-end_infinite]"
+                style={{ borderLeft: `1.5px solid ${accent}` }}
+              ></span>
+            )}
           </span>
-          <button type="button" tabIndex={-1} style={{ width: 32, height: 32, borderRadius: 9, border: 'none', background: accent,
-            display: 'grid', placeItems: 'center', flexShrink: 0 }}>
+          <button
+            type="button"
+            tabIndex={-1}
+            className="w-8 h-8 rounded-[9px] border-0 grid place-items-center shrink-0"
+            style={{ background: accent }}
+          >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2"
               strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
           </button>
