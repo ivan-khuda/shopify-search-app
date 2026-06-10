@@ -405,12 +405,14 @@ interface FAQItemProps {
 
 export function FAQItem({ q, a, accent = ACCENT }: FAQItemProps) {
   const [open, setOpen] = useState(false);
+  const id = 'faq-' + q.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
   return (
     <div style={{ borderBottom: '1px solid var(--border)' }}>
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
+        aria-controls={id}
         style={{
           width: '100%',
           display: 'flex',
@@ -456,8 +458,10 @@ export function FAQItem({ q, a, accent = ACCENT }: FAQItemProps) {
         </span>
       </button>
       <div
+        id={id}
+        role="region"
         style={{
-          maxHeight: open ? 240 : 0,
+          maxHeight: open ? 320 : 0,
           overflow: 'hidden',
           transition: 'max-height .3s ease',
         }}
@@ -687,7 +691,7 @@ export function Footer({ accent = ACCENT }: FooterProps) {
         </div>
         {cols.map(([h, items]) => (
           <div key={h}>
-            <div
+            <h3
               style={{
                 fontSize: 12,
                 fontWeight: 650,
@@ -695,10 +699,11 @@ export function Footer({ accent = ACCENT }: FooterProps) {
                 textTransform: 'uppercase',
                 color: 'rgba(255,255,255,.45)',
                 marginBottom: 14,
+                margin: 0,
               }}
             >
               {h}
-            </div>
+            </h3>
             <ul
               style={{
                 listStyle: 'none',
