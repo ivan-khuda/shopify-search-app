@@ -113,12 +113,14 @@ export function ChatDemo({ accent = ACCENT, store = 'Field & Form' }: ChatDemoPr
     });
     return clearAll;
     // eslint-disable-next-line react-hooks/exhaustive-deps
+    // Omitted deps: reduce (stale-ok, only read on first cycle after mount),
+    //   runComposer/runReply/resetComposer/resetReply (stable refs from useTypewriter).
   }, [scenario]);
 
   const showConvo = phase !== 'idle';
 
   return (
-    <div style={{
+    <div aria-hidden="true" style={{
       display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0,
       background: '#fff', borderRadius: 18, overflow: 'hidden',
       border: '1px solid var(--border)',
@@ -226,7 +228,7 @@ export function ChatDemo({ accent = ACCENT, store = 'Field & Form' }: ChatDemoPr
             {phase === 'typing' && <span style={{ borderLeft: `1.5px solid ${accent}`, marginLeft: 1,
               animation: 'sd-blink 1s step-end infinite' }}></span>}
           </span>
-          <button style={{ width: 32, height: 32, borderRadius: 9, border: 'none', background: accent,
+          <button type="button" tabIndex={-1} style={{ width: 32, height: 32, borderRadius: 9, border: 'none', background: accent,
             display: 'grid', placeItems: 'center', flexShrink: 0 }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2"
               strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
