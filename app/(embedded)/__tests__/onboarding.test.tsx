@@ -169,6 +169,42 @@ describe('OnboardingPage — Phase 2 progress UI', () => {
     vi.useRealTimers();
   });
 
+  it('renders fallback counter and 0% bar when running with totalCount null, step-2 active', async () => {
+    fetchMock
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ syncRunId: 'sr_nototal' }) })
+      .mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          state: 'running',
+          processedCount: 7,
+          totalCount: null,
+          errors: [],
+          startedAt: new Date().toISOString(),
+          finishedAt: null,
+        }),
+      });
+
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const { container } = render(<OnboardingPage />);
+    fireEvent.click(screen.getByTestId('start-sync'));
+
+    await waitFor(() => {
+      expect(container.querySelector('[data-testid="progress-bar"]')).not.toBeNull();
+    });
+
+    await vi.advanceTimersByTimeAsync(2100);
+
+    await waitFor(() => {
+      const bar = container.querySelector('[data-testid="progress-bar"]');
+      expect(bar?.getAttribute('value')).toBe('0');
+      expect(screen.getByText(/7 products synced so far/)).toBeInTheDocument();
+      expect(screen.getByTestId('step-2').getAttribute('data-active')).toBe('true');
+    });
+
+    vi.useRealTimers();
+  });
+
   it('renders done-state stat tiles + CTAs when state === succeeded (D-14)', async () => {
     fetchMock
       .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ syncRunId: 'sr_done' }) })

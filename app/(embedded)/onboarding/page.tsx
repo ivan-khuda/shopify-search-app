@@ -14,6 +14,34 @@ function stateLabel(s: SyncState | null): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
+// V1 creates exactly one embedding per synced product, so the Embeddings tile
+// intentionally shows the same number as Products — the status API exposes no
+// separate embedding count.
+function StatTile({
+  label,
+  value,
+  testId,
+}: {
+  label: string;
+  value: number;
+  testId: string;
+}) {
+  return (
+    <s-box
+      padding="base"
+      borderWidth="small"
+      borderStyle="solid"
+      borderColor="base"
+      borderRadius="base"
+      background="subdued"
+      data-testid={testId}
+    >
+      <s-text tone="subdued">{label}</s-text>
+      <s-heading>{String(value)}</s-heading>
+    </s-box>
+  );
+}
+
 // useSearchParams() forces a CSR bailout during prerender; Next requires a
 // Suspense boundary around it for `next build` to succeed on this route.
 export default function OnboardingPage() {
@@ -223,30 +251,16 @@ function OnboardingContent() {
                   the admin chat to see real results.
                 </s-paragraph>
                 <s-grid gridTemplateColumns="1fr 1fr" gap="base">
-                  <s-box
-                    padding="base"
-                    borderWidth="small"
-                    borderStyle="solid"
-                    borderColor="base"
-                    borderRadius="base"
-                    background="subdued"
-                    data-testid="stat-products"
-                  >
-                    <s-text tone="subdued">Products</s-text>
-                    <s-heading>{String(totalCount ?? processedCount)}</s-heading>
-                  </s-box>
-                  <s-box
-                    padding="base"
-                    borderWidth="small"
-                    borderStyle="solid"
-                    borderColor="base"
-                    borderRadius="base"
-                    background="subdued"
-                    data-testid="stat-embeddings"
-                  >
-                    <s-text tone="subdued">Embeddings</s-text>
-                    <s-heading>{String(totalCount ?? processedCount)}</s-heading>
-                  </s-box>
+                  <StatTile
+                    label="Products"
+                    value={totalCount ?? processedCount}
+                    testId="stat-products"
+                  />
+                  <StatTile
+                    label="Embeddings"
+                    value={totalCount ?? processedCount}
+                    testId="stat-embeddings"
+                  />
                 </s-grid>
                 <s-stack direction="inline" gap="base">
                   <s-button data-testid="open-chat" variant="primary" href="/chat">
