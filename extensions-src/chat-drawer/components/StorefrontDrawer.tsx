@@ -106,11 +106,18 @@ export function StorefrontDrawer(props: StorefrontDrawerProps = {}): React.React
           style={{
             position: 'fixed',
             top: 0,
-            right: 0,
+            // WR-07: slide out on the side the merchant configured (mirrors
+            // the FAB position logic) instead of hard-coding the right edge.
+            [position === 'bottom_right' ? 'right' : 'left']: 0,
             height: '100%',
-            width: 400,
+            // WR-07: cap to the viewport so sub-400px (mobile) screens don't
+            // overflow horizontally.
+            width: 'min(400px, 100vw)',
             background: '#fff',
-            boxShadow: '-10px 0 30px rgba(0, 0, 0, 0.08)',
+            boxShadow:
+              position === 'bottom_right'
+                ? '-10px 0 30px rgba(0, 0, 0, 0.08)'
+                : '10px 0 30px rgba(0, 0, 0, 0.08)',
             zIndex: 2001,
             display: 'flex',
             flexDirection: 'column',
