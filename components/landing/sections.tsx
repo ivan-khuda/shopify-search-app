@@ -15,20 +15,12 @@ interface SectionLabelProps {
 export function SectionLabel({ accent = ACCENT, children }: SectionLabelProps) {
   return (
     <div
-      style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: 8,
-        fontSize: 12,
-        fontWeight: 650,
-        letterSpacing: '.08em',
-        textTransform: 'uppercase',
-        color: accent,
-        marginBottom: 14,
-      }}
+      className="inline-flex items-center gap-[8px] text-[12px] font-[650] tracking-[.08em] uppercase mb-[14px]"
+      style={{ color: accent }}
     >
       <span
-        style={{ width: 22, height: 1.5, background: accent, borderRadius: 2 }}
+        className="w-[22px] h-[1.5px] rounded-[2px]"
+        style={{ background: accent }}
       ></span>
       {children}
     </div>
@@ -39,32 +31,15 @@ export function SectionLabel({ accent = ACCENT, children }: SectionLabelProps) {
 export function LogoStrip() {
   const names = ['Loom & Field', 'Greenhouse Co.', 'Heritage Wood', 'North Foundry', 'Field & Form'];
   return (
-    <div style={{ borderBottom: '1px solid var(--border-sub)', background: '#fff' }}>
-      <div
-        style={{
-          maxWidth: 1100,
-          margin: '0 auto',
-          padding: '26px 28px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          flexWrap: 'wrap',
-          gap: 'clamp(20px,4vw,52px)',
-        }}
-      >
-        <span style={{ fontSize: 12.5, color: 'var(--text-sub)', fontWeight: 500 }}>
+    <div className="border-b border-(--border-sub) bg-white">
+      <div className="max-w-[1100px] mx-auto px-[28px] py-[26px] flex items-center justify-center flex-wrap gap-[clamp(20px,4vw,52px)]">
+        <span className="text-[12.5px] text-(--text-sub) font-[500]">
           Trusted by independent Shopify brands
         </span>
         {names.map((n) => (
           <span
             key={n}
-            className="serif"
-            style={{
-              fontSize: 19,
-              color: 'var(--text-sub)',
-              opacity: 0.7,
-              letterSpacing: '-0.01em',
-            }}
+            className="font-(family-name:--font-dm-serif) font-normal text-[19px] text-(--text-sub) opacity-70 tracking-[-0.01em]"
           >
             {n}
           </span>
@@ -115,74 +90,36 @@ export function HowItWorks({ accent = ACCENT }: HowItWorksProps) {
     <section
       id="how"
       ref={ref}
-      style={{ background: '#fff', padding: 'clamp(64px,8vw,110px) 28px' }}
+      className="bg-white py-[clamp(64px,8vw,110px)] px-[28px]"
     >
-      <div style={{ maxWidth: 1100, margin: '0 auto', textAlign: 'center' }}>
+      <div className="max-w-[1100px] mx-auto text-center">
         <div className="reveal">
           <SectionLabel accent={accent}>How it works</SectionLabel>
         </div>
         <h2
-          className="reveal"
-          style={{
-            fontSize: 'clamp(28px,3.6vw,44px)',
-            letterSpacing: '-0.025em',
-            fontWeight: 700,
-            margin: 0,
-            color: 'var(--text-strong)',
-          }}
+          className="reveal text-[clamp(28px,3.6vw,44px)] tracking-[-0.025em] font-bold m-0 text-(--text-strong)"
         >
           Live on your store in an afternoon.
         </h2>
         <p
-          className="reveal"
-          style={{
-            fontSize: 17,
-            color: 'var(--text)',
-            maxWidth: 540,
-            margin: '14px auto 0',
-            lineHeight: 1.55,
-          }}
+          className="reveal text-[17px] text-(--text) max-w-[540px] mx-auto mt-[14px] leading-[1.55]"
         >
           No developers, no migration. SmartDiscovery sits on top of the store you already have.
         </p>
         <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(3,1fr)',
-            gap: 'clamp(16px,2vw,26px)',
-            marginTop: 'clamp(40px,5vw,64px)',
-            textAlign: 'left',
-          }}
-          className="how-grid"
+          className="grid grid-cols-3 max-[920px]:grid-cols-1 gap-[clamp(16px,2vw,26px)] mt-[clamp(40px,5vw,64px)] text-left"
         >
           {steps.map((s, i) => (
             <div
               key={s.n}
-              className="reveal"
-              style={{
-                animationDelay: `${i * 0.1}s`,
-                padding: 26,
-                borderRadius: 16,
-                border: '1px solid var(--border)',
-                background: 'var(--page)',
-                position: 'relative',
-              }}
+              className="reveal p-[26px] rounded-[16px] border border-(--border) bg-(--page) relative"
+              style={{ animationDelay: `${i * 0.1}s` }}
             >
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                }}
-              >
+              <div className="flex items-center justify-between">
                 <div
+                  className="w-[46px] h-[46px] rounded-[12px] grid place-items-center"
                   style={{
-                    width: 46,
-                    height: 46,
-                    borderRadius: 12,
                     background: rgba(accent, 0.12),
-                    display: 'grid',
-                    placeItems: 'center',
                     color: accent,
                   }}
                 >
@@ -201,34 +138,19 @@ export function HowItWorks({ accent = ACCENT }: HowItWorksProps) {
                   </svg>
                 </div>
                 <span
-                  className="tnum"
-                  style={{
-                    fontSize: 30,
-                    fontWeight: 700,
-                    color: rgba(accent, 0.22),
-                    letterSpacing: '-0.02em',
-                  }}
+                  className="tabular-nums text-[30px] font-bold tracking-[-0.02em]"
+                  style={{ color: rgba(accent, 0.22) }}
                 >
                   {s.n}
                 </span>
               </div>
               <h3
-                style={{
-                  fontSize: 19,
-                  fontWeight: 650,
-                  margin: '20px 0 8px',
-                  color: 'var(--text-strong)',
-                }}
+                className="text-[19px] font-[650] mt-[20px] mb-[8px] text-(--text-strong)"
               >
                 {s.t}
               </h3>
               <p
-                style={{
-                  fontSize: 14.5,
-                  lineHeight: 1.55,
-                  color: 'var(--text)',
-                  margin: 0,
-                }}
+                className="text-[14.5px] leading-[1.55] text-(--text) m-0"
               >
                 {s.d}
               </p>
@@ -249,41 +171,19 @@ interface ProductCardProps {
 export function ProductCard({ p, accent = ACCENT }: ProductCardProps) {
   return (
     <div
-      style={{
-        background: '#fff',
-        border: '1px solid var(--border)',
-        borderRadius: 14,
-        overflow: 'hidden',
-        display: 'flex',
-        flexDirection: 'column',
-      }}
+      className="bg-white border border-(--border) rounded-[14px] overflow-hidden flex flex-col"
     >
       <div
-        style={{
-          aspectRatio: '4/3',
-          overflow: 'hidden',
-          background: '#f0eee9',
-          position: 'relative',
-        }}
+        className="aspect-[4/3] overflow-hidden bg-[#f0eee9] relative"
       >
         <img
           src={p.image}
           alt={p.title}
           loading="lazy"
-          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+          className="w-full h-full object-cover"
         />
         <span
-          style={{
-            position: 'absolute',
-            top: 10,
-            right: 10,
-            width: 30,
-            height: 30,
-            borderRadius: '50%',
-            background: 'rgba(255,255,255,.9)',
-            display: 'grid',
-            placeItems: 'center',
-          }}
+          className="absolute top-[10px] right-[10px] size-[30px] rounded-full bg-white/90 grid place-items-center"
         >
           <svg
             width="15"
@@ -298,35 +198,26 @@ export function ProductCard({ p, accent = ACCENT }: ProductCardProps) {
           </svg>
         </span>
       </div>
-      <div style={{ padding: '13px 14px 15px' }}>
+      <div className="px-[14px] pt-[13px] pb-[15px]">
         <div
-          style={{
-            fontSize: 11,
-            fontWeight: 600,
-            letterSpacing: '.04em',
-            textTransform: 'uppercase',
-            color: 'var(--text-sub)',
-          }}
+          className="text-[11px] font-[600] tracking-[.04em] uppercase text-(--text-sub)"
         >
           {p.type}
         </div>
         <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'baseline',
-            gap: 8,
-            marginTop: 5,
-          }}
+          className="flex justify-between items-baseline gap-[8px] mt-[5px]"
         >
-          <span style={{ fontSize: 15, fontWeight: 650, color: 'var(--text-strong)' }}>
+          <span className="text-[15px] font-[650] text-(--text-strong)">
             {p.title}
           </span>
-          <span className="tnum" style={{ fontSize: 15, fontWeight: 650, color: accent }}>
+          <span
+            className="tabular-nums text-[15px] font-[650]"
+            style={{ color: accent }}
+          >
             ${p.price}
           </span>
         </div>
-        <p style={{ fontSize: 13, lineHeight: 1.5, color: 'var(--text)', margin: '7px 0 0' }}>
+        <p className="text-[13px] leading-[1.5] text-(--text) mt-[7px] mb-0">
           {p.description}
         </p>
       </div>
@@ -346,68 +237,31 @@ export function Showcase({ accent = ACCENT }: ShowcaseProps) {
   return (
     <section
       ref={ref}
-      style={{
-        background: 'var(--cream)',
-        padding: 'clamp(64px,8vw,110px) 28px',
-        borderTop: '1px solid var(--border-sub)',
-        borderBottom: '1px solid var(--border-sub)',
-      }}
+      className="bg-(--cream) py-[clamp(64px,8vw,110px)] px-[28px] border-t border-(--border-sub) border-b"
     >
-      <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-        <div style={{ textAlign: 'center', maxWidth: 640, margin: '0 auto' }}>
+      <div className="max-w-[1100px] mx-auto">
+        <div className="text-center max-w-[640px] mx-auto">
           <div className="reveal">
             <SectionLabel accent={accent}>Grounded, not guessed</SectionLabel>
           </div>
           <h2
-            className="reveal"
-            style={{
-              fontSize: 'clamp(28px,3.6vw,44px)',
-              letterSpacing: '-0.025em',
-              fontWeight: 700,
-              margin: 0,
-              color: 'var(--text-strong)',
-            }}
+            className="reveal text-[clamp(28px,3.6vw,44px)] tracking-[-0.025em] font-bold m-0 text-(--text-strong)"
           >
             Every answer is a real product from your store.
           </h2>
           <p
-            className="reveal"
-            style={{
-              fontSize: 17,
-              color: 'var(--text)',
-              margin: '14px auto 0',
-              lineHeight: 1.55,
-            }}
+            className="reveal text-[17px] text-(--text) mt-[14px] mx-auto leading-[1.55]"
           >
             Hybrid semantic + keyword search reads intent, color, material and price — then returns
             products that actually exist in your catalog. No hallucinated SKUs, ever.
           </p>
         </div>
         <div
-          className="reveal"
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 10,
-            margin: '34px auto 22px',
-            padding: '11px 16px 11px 11px',
-            background: '#fff',
-            borderRadius: 999,
-            border: '1px solid var(--border)',
-            boxShadow: '0 10px 30px -16px rgba(0,0,0,.25)',
-            width: 'fit-content',
-          }}
+          className="reveal inline-flex items-center gap-[10px] mt-[34px] mx-auto mb-[22px] py-[11px] pr-[16px] pl-[11px] bg-white rounded-[999px] border border-(--border) shadow-[0_10px_30px_-16px_rgba(0,0,0,.25)] w-fit"
         >
           <span
-            style={{
-              width: 30,
-              height: 30,
-              borderRadius: '50%',
-              background: accent,
-              display: 'grid',
-              placeItems: 'center',
-              flexShrink: 0,
-            }}
+            className="size-[30px] rounded-full grid place-items-center shrink-0"
+            style={{ background: accent }}
           >
             <svg
               width="15"
@@ -423,17 +277,12 @@ export function Showcase({ accent = ACCENT }: ShowcaseProps) {
               <path d="M21 21l-4-4" />
             </svg>
           </span>
-          <span style={{ fontSize: 15, color: 'var(--text-strong)', fontWeight: 500 }}>
+          <span className="text-[15px] text-(--text-strong) font-[500]">
             &quot;A low-maintenance plant for my office&quot;
           </span>
         </div>
         <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(3,1fr)',
-            gap: 'clamp(14px,1.6vw,20px)',
-          }}
-          className="show-grid"
+          className="grid grid-cols-3 max-[920px]:grid-cols-1 gap-[clamp(14px,1.6vw,20px)]"
         >
           {prods.map((p, i) => (
             <div key={p.id} className="reveal" style={{ animationDelay: `${i * 0.08}s` }}>
@@ -509,56 +358,33 @@ export function Features({ accent = ACCENT }: FeaturesProps) {
     <section
       id="features"
       ref={ref}
-      style={{ background: '#fff', padding: 'clamp(64px,8vw,110px) 28px' }}
+      className="bg-white py-[clamp(64px,8vw,110px)] px-[28px]"
     >
-      <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-        <div style={{ textAlign: 'center', maxWidth: 600, margin: '0 auto' }}>
+      <div className="max-w-[1100px] mx-auto">
+        <div className="text-center max-w-[600px] mx-auto">
           <div className="reveal">
             <SectionLabel accent={accent}>Built for merchants</SectionLabel>
           </div>
           <h2
-            className="reveal"
-            style={{
-              fontSize: 'clamp(28px,3.6vw,44px)',
-              letterSpacing: '-0.025em',
-              fontWeight: 700,
-              margin: 0,
-              color: 'var(--text-strong)',
-            }}
+            className="reveal text-[clamp(28px,3.6vw,44px)] tracking-[-0.025em] font-bold m-0 text-(--text-strong)"
           >
             Everything you need, nothing you don&apos;t.
           </h2>
         </div>
         <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(3,1fr)',
-            gap: 'clamp(14px,1.6vw,22px)',
-            marginTop: 'clamp(40px,5vw,60px)',
-          }}
-          className="feat-grid"
+          className="grid grid-cols-3 max-[920px]:grid-cols-1 gap-[clamp(14px,1.6vw,22px)] mt-[clamp(40px,5vw,60px)]"
         >
           {feats.map((f, i) => (
             <div
               key={f.t}
-              className="reveal"
-              style={{
-                animationDelay: `${(i % 3) * 0.08}s`,
-                padding: 24,
-                borderRadius: 16,
-                border: '1px solid var(--border)',
-              }}
+              className="reveal p-[24px] rounded-[16px] border border-(--border)"
+              style={{ animationDelay: `${(i % 3) * 0.08}s` }}
             >
               <div
+                className="w-[42px] h-[42px] rounded-[11px] grid place-items-center mb-[16px]"
                 style={{
-                  width: 42,
-                  height: 42,
-                  borderRadius: 11,
                   background: rgba(accent, 0.12),
-                  display: 'grid',
-                  placeItems: 'center',
                   color: accent,
-                  marginBottom: 16,
                 }}
               >
                 <svg
@@ -576,16 +402,11 @@ export function Features({ accent = ACCENT }: FeaturesProps) {
                 </svg>
               </div>
               <h3
-                style={{
-                  fontSize: 17,
-                  fontWeight: 650,
-                  margin: '0 0 7px',
-                  color: 'var(--text-strong)',
-                }}
+                className="text-[17px] font-[650] mt-0 mb-[7px] text-(--text-strong)"
               >
                 {f.t}
               </h3>
-              <p style={{ fontSize: 14, lineHeight: 1.55, color: 'var(--text)', margin: 0 }}>
+              <p className="text-[14px] leading-[1.55] text-(--text) m-0">
                 {f.d}
               </p>
             </div>
