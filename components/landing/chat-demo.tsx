@@ -102,7 +102,7 @@ export function ChatDemo({ accent = ACCENT, store = 'Field & Form' }: ChatDemoPr
               setPhase('streaming');
               runReply(s.a, reduce ? 4 : 18, () => {
                 setPhase('done');
-                wait(reduce ? 1200 : 7000, () => {
+                wait(reduce ? 1200 : 4200, () => {
                   setScenario(n => (n + 1) % DEMO_SCRIPT.length);
                 });
               });

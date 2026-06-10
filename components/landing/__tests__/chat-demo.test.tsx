@@ -23,7 +23,7 @@ describe('ChatDemo', () => {
 
   it('eventually shows product results for the first scenario', () => {
     render(<ChatDemo />);
-    act(() => { vi.advanceTimersByTime(15000); });
+    act(() => { vi.advanceTimersByTime(10000); });
     expect(screen.getByText('Snake Plant in Terracotta')).toBeInTheDocument();
   });
 });
