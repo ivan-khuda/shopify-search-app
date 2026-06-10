@@ -24,6 +24,7 @@
 .sd-landing .tnum { font-variant-numeric: tabular-nums; }
 .sd-landing .serif { font-family: var(--font-dm-serif), Georgia, serif; font-weight: 400; }
 
+/* Keyframes are document-global by nature; the sd- prefix is the collision guard. */
 @keyframes sd-spin { to { transform: rotate(360deg); } }
 @keyframes sd-blink { 0%, 50% { opacity: 1; } 51%, 100% { opacity: 0; } }
 @keyframes sd-bounce {

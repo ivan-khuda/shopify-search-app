@@ -1,14 +1,23 @@
-import type React from 'react';
 import { ACCENT, shade } from './tokens';
 
 interface SDLogoProps {
   size?: number;
   accent?: string;
+  'aria-label'?: string;
+  'aria-hidden'?: boolean | 'true' | 'false';
 }
 
-export function SDLogo({ size = 28, accent = ACCENT }: SDLogoProps) {
+export function SDLogo({
+  size = 28,
+  accent = ACCENT,
+  'aria-label': ariaLabel = 'SmartDiscovery AI',
+  'aria-hidden': ariaHidden,
+}: SDLogoProps) {
   return (
     <div
+      role="img"
+      aria-label={ariaHidden ? undefined : ariaLabel}
+      aria-hidden={ariaHidden}
       style={{
         width: size,
         height: size,

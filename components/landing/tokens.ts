@@ -1,7 +1,6 @@
 export const ACCENT = '#5B4FE9';
-export const ACCENT_DARK = '#4338ca';
 
-// Lighten/darken a hex color by percent (-100..100)
+// Blend toward white (+) or black (−) by fraction of the distance; −100 = black, +100 = white.
 export function shade(hex: string, percent: number): string {
   const h = hex.replace('#', '');
   const num = parseInt(

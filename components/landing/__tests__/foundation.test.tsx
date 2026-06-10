@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render } from '@testing-library/react';
 import { shade, rgba, ACCENT } from '../tokens';
 import { CATALOG } from '../catalog';
 import { SDLogo, ShopifyMark } from '../brand';
@@ -13,6 +13,12 @@ describe('tokens', () => {
   });
   it('rgba converts hex with alpha', () => {
     expect(rgba('#5B4FE9', 0.5)).toBe('rgba(91,79,233,0.5)');
+  });
+  it('shade handles 3-char hex — darkens #fff by 50%', () => {
+    expect(shade('#fff', -50)).toBe('#808080');
+  });
+  it('rgba handles 3-char hex — #fff at alpha 1', () => {
+    expect(rgba('#fff', 1)).toBe('rgba(255,255,255,1)');
   });
 });
 
