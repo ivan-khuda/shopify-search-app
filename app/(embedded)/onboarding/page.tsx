@@ -73,7 +73,7 @@ export default function OnboardingPage() {
     (async () => {
       try {
         const token = await shopify.idToken();
-        const res = await fetch(`/api/shopify/sync/status?syncRunId=${retryId}`, {
+        const res = await fetch(`/api/shopify/sync/status?syncRunId=${encodeURIComponent(retryId)}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (!cancelled && res.ok) {
