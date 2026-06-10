@@ -112,9 +112,9 @@ export function ChatDemo({ accent = ACCENT, store = 'Field & Form' }: ChatDemoPr
       });
     });
     return clearAll;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     // Omitted deps: reduce (stale-ok, only read on first cycle after mount),
     //   runComposer/runReply/resetComposer/resetReply (stable refs from useTypewriter).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scenario]);
 
   const showConvo = phase !== 'idle';
