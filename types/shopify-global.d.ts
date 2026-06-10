@@ -54,6 +54,14 @@ declare global {
         's-choice': PolarisIntrinsicProps;
         'ui-save-bar': PolarisIntrinsicProps;
         's-text-field': PolarisIntrinsicProps;
+        // Onboarding redesign (2026-06-10): layout primitives for step rail,
+        // sync card, stat tiles, and info cards.
+        's-box': PolarisIntrinsicProps;
+        's-grid': PolarisIntrinsicProps;
+        's-grid-item': PolarisIntrinsicProps;
+        's-stack': PolarisIntrinsicProps;
+        's-paragraph': PolarisIntrinsicProps;
+        's-spinner': PolarisIntrinsicProps;
       }
     }
   }
