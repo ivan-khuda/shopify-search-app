@@ -23,7 +23,9 @@ describe('Nav', () => {
     render(<Nav />);
     expect(screen.getByText(/SmartDiscovery/)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'How it works' })).toHaveAttribute('href', '#how');
+    expect(screen.getByRole('link', { name: 'Features' })).toHaveAttribute('href', '#features');
     expect(screen.getByRole('link', { name: 'Pricing' })).toHaveAttribute('href', '#pricing');
     expect(screen.getByRole('link', { name: 'FAQ' })).toHaveAttribute('href', '#faq');
+    expect(screen.getByRole('link', { name: 'Sign in' })).toHaveAttribute('href', '/api/auth');
   });
 });

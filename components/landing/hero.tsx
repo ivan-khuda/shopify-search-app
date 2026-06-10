@@ -141,6 +141,7 @@ export function TrustLine({ onDark }: TrustLineProps) {
               strokeWidth="2.4"
               strokeLinecap="round"
               strokeLinejoin="round"
+              aria-hidden="true"
             >
               <path d="M20 6L9 17l-5-5" />
             </svg>

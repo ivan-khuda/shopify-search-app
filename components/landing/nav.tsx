@@ -12,7 +12,7 @@ export function Nav({ accent = ACCENT }: NavProps) {
   const [solid, setSolid] = useState(false);
   useEffect(() => {
     const onScroll = () => setSolid(window.scrollY > 24);
-    window.addEventListener('scroll', onScroll);
+    window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
@@ -94,7 +94,7 @@ export function Nav({ accent = ACCENT }: NavProps) {
           }}
         >
           <a
-            href="#"
+            href="/api/auth"
             style={{
               fontSize: 14,
               fontWeight: 600,
