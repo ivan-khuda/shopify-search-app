@@ -37,6 +37,9 @@ yarn-error.log*
 # vercel
 .vercel
 
+# Shopify local dev config (ephemeral ngrok tunnel URLs — never commit)
+shopify.app.dev.toml
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
