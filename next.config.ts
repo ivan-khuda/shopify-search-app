@@ -4,6 +4,9 @@ import type { NextConfig } from "next";
 const prismaNpmReexport = path.join(process.cwd(), "lib/prisma-npm-reexport.ts");
 
 const nextConfig: NextConfig = {
+  images: {
+    remotePatterns: [{ protocol: 'https', hostname: 'images.unsplash.com' }],
+  },
   webpack: (config) => {
     config.resolve.alias = {
       ...config.resolve.alias,
