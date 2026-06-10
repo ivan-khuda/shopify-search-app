@@ -2,6 +2,8 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { StepRail, type SyncStage } from './step-rail';
+import { InfoCards } from './info-cards';
 
 type SyncState = 'queued' | 'running' | 'succeeded' | 'partial' | 'failed';
 
@@ -131,14 +133,45 @@ function OnboardingContent() {
     ? Math.round((processedCount / totalCount) * 100)
     : 0;
 
+  const stage: SyncStage =
+    syncState === 'succeeded' ? 2 : syncRunId !== null ? 1 : 0;
+
+  const isRunning =
+    syncRunId !== null && (syncState === null || syncState === 'queued' || syncState === 'running');
+
+  const syncHeading =
+    syncState === 'succeeded'
+      ? 'Catalog synced and indexed'
+      : syncState === 'partial'
+        ? 'Sync finished with errors'
+        : syncState === 'failed'
+          ? 'Sync failed'
+          : isRunning
+            ? 'Syncing your catalog'
+            : 'Sync your product catalog';
+
   return (
     <s-page heading="Welcome to SmartDiscovery AI">
-      <s-section heading="How it works">
-        <s-unordered-list>
-          <s-list-item>We sync your product catalog automatically</s-list-item>
-          <s-list-item>Our AI uses it to answer customer search queries</s-list-item>
-          <s-list-item>You&apos;ll receive an email when the first sync completes</s-list-item>
-        </s-unordered-list>
+      <s-paragraph>
+        Three steps and your storefront can answer natural-language questions
+        about your catalog. We&apos;ll sync your products, generate embeddings,
+        and turn on the chat drawer.
+      </s-paragraph>
+
+      <StepRail stage={stage} />
+
+      <s-section heading={syncHeading}>
+        {syncRunId === null && (
+          <s-paragraph>
+            We&apos;ll pull every active product, generate embeddings, and create
+            the search index. Takes a few minutes for most shops.
+          </s-paragraph>
+        )}
+        {isRunning && (
+          <s-paragraph>
+            You can close this tab — we&apos;ll email you the moment it finishes.
+          </s-paragraph>
+        )}
 
         {retryRun?.state === 'failed' && syncRunId === null ? (
           <s-banner tone="critical">
@@ -151,39 +184,78 @@ function OnboardingContent() {
         ) : null}
 
         {syncRunId === null ? (
-          <s-button
-            data-testid="start-sync"
-            variant="primary"
-            onClick={handleStartSync}
-            {...(syncing ? { loading: '' } : {})}
-          >
-            Start sync
-          </s-button>
+          <s-stack direction="inline" gap="base" alignItems="center">
+            <s-button
+              data-testid="start-sync"
+              variant="primary"
+              onClick={handleStartSync}
+              {...(syncing ? { loading: '' } : {})}
+            >
+              Start sync
+            </s-button>
+            <s-text tone="subdued">
+              You can keep using your store while sync runs in the background.
+            </s-text>
+          </s-stack>
         ) : (
           <>
-            <s-progress-bar
-              data-testid="progress-bar"
-              value={String(progressValue)}
-            />
-            <s-text>
-              {totalCount
-                ? `${processedCount} / ${totalCount} products (${progressValue}%)`
-                : `${processedCount} products synced so far`}
-            </s-text>
-            <s-badge data-testid="state-badge">{stateLabel(syncState)}</s-badge>
+            {isRunning && (
+              <>
+                <s-progress-bar
+                  data-testid="progress-bar"
+                  value={String(progressValue)}
+                />
+                <s-stack direction="inline" gap="base" alignItems="center">
+                  <s-text>
+                    {totalCount
+                      ? `${processedCount} of ${totalCount} products (${progressValue}%)`
+                      : `${processedCount} products synced so far`}
+                  </s-text>
+                  <s-badge data-testid="state-badge">{stateLabel(syncState)}</s-badge>
+                </s-stack>
+              </>
+            )}
 
             {syncState === 'succeeded' && (
               <>
-                <s-banner tone="success">
-                  Your store is ready — {processedCount} products synced
-                </s-banner>
-                <s-button
-                  data-testid="open-chat"
-                  variant="primary"
-                  href="/chat"
-                >
-                  Open admin chat
-                </s-button>
+                <s-paragraph>
+                  {totalCount ?? processedCount} products are now searchable. Try
+                  the admin chat to see real results.
+                </s-paragraph>
+                <s-grid gridTemplateColumns="1fr 1fr" gap="base">
+                  <s-box
+                    padding="base"
+                    borderWidth="small"
+                    borderStyle="solid"
+                    borderColor="base"
+                    borderRadius="base"
+                    background="subdued"
+                    data-testid="stat-products"
+                  >
+                    <s-text tone="subdued">Products</s-text>
+                    <s-heading>{String(totalCount ?? processedCount)}</s-heading>
+                  </s-box>
+                  <s-box
+                    padding="base"
+                    borderWidth="small"
+                    borderStyle="solid"
+                    borderColor="base"
+                    borderRadius="base"
+                    background="subdued"
+                    data-testid="stat-embeddings"
+                  >
+                    <s-text tone="subdued">Embeddings</s-text>
+                    <s-heading>{String(totalCount ?? processedCount)}</s-heading>
+                  </s-box>
+                </s-grid>
+                <s-stack direction="inline" gap="base">
+                  <s-button data-testid="open-chat" variant="primary" href="/chat">
+                    Open admin chat
+                  </s-button>
+                  <s-button data-testid="configure-model" href="/settings">
+                    Configure model
+                  </s-button>
+                </s-stack>
               </>
             )}
 
@@ -210,20 +282,7 @@ function OnboardingContent() {
         )}
       </s-section>
 
-      <s-section heading="What's synced">
-        <s-unordered-list>
-          <s-list-item>Product titles, descriptions, tags</s-list-item>
-          <s-list-item>Variants and pricing</s-list-item>
-          <s-list-item>Images</s-list-item>
-        </s-unordered-list>
-      </s-section>
-
-      <s-section heading="What's next">
-        <s-unordered-list>
-          <s-list-item>After sync: use the Search tab to test queries</s-list-item>
-          <s-list-item>Billing will be introduced in a future update</s-list-item>
-        </s-unordered-list>
-      </s-section>
+      <InfoCards />
     </s-page>
   );
 }

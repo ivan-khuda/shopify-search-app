@@ -49,16 +49,31 @@ describe('OnboardingPage', () => {
     expect(page?.getAttribute('heading')).toBe('Welcome to SmartDiscovery AI');
   });
 
-  it('renders the "How it works" section', () => {
+  it('renders the idle sync card with Start sync and background hint', () => {
     const { container } = render(<OnboardingPage />);
-    expect(container.querySelector('s-section[heading="How it works"]')).not.toBeNull();
-    expect(screen.getByText(/sync your product catalog/i)).toBeInTheDocument();
+    expect(
+      container.querySelector('s-section[heading="Sync your product catalog"]')
+    ).not.toBeNull();
+    expect(screen.getByTestId('start-sync')).toBeInTheDocument();
+    expect(
+      screen.getByText(/keep using your store while sync runs in the background/i)
+    ).toBeInTheDocument();
   });
 
-  it('renders the "What\'s synced" section', () => {
-    const { container } = render(<OnboardingPage />);
-    expect(container.querySelector('s-section[heading="What\'s synced"]')).not.toBeNull();
-    expect(screen.getByText(/product titles/i)).toBeInTheDocument();
+  it('renders the intro paragraph and the step rail in idle state', () => {
+    render(<OnboardingPage />);
+    expect(
+      screen.getByText(/storefront can answer natural-language questions/i)
+    ).toBeInTheDocument();
+    expect(screen.getByTestId('step-rail')).toBeInTheDocument();
+    expect(screen.getByTestId('step-2').getAttribute('data-active')).toBe('false');
+  });
+
+  it('renders the two-up info cards', () => {
+    render(<OnboardingPage />);
+    expect(screen.getByTestId('info-synced')).toBeInTheDocument();
+    expect(screen.getByTestId('info-next')).toBeInTheDocument();
+    expect(screen.getByText(/variants, options, prices/i)).toBeInTheDocument();
   });
 
   it('POSTs to /api/shopify/sync with a Bearer session token when Start sync is clicked', async () => {
@@ -147,14 +162,14 @@ describe('OnboardingPage — Phase 2 progress UI', () => {
     await waitFor(() => {
       const bar = container.querySelector('[data-testid="progress-bar"]');
       expect(bar?.getAttribute('value')).toBe('20'); // 50/250 = 20%
-      expect(screen.getByText(/50 \/ 250 products/)).toBeInTheDocument();
+      expect(screen.getByText(/50 of 250 products/)).toBeInTheDocument();
       expect(screen.getByTestId('state-badge').textContent).toBe('Running');
     });
 
     vi.useRealTimers();
   });
 
-  it('renders <s-banner tone="success"> + "Open admin chat" CTA when state === succeeded (D-14)', async () => {
+  it('renders done-state stat tiles + CTAs when state === succeeded (D-14)', async () => {
     fetchMock
       .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ syncRunId: 'sr_done' }) })
       .mockResolvedValue({
@@ -174,11 +189,17 @@ describe('OnboardingPage — Phase 2 progress UI', () => {
     fireEvent.click(screen.getByTestId('start-sync'));
 
     await waitFor(() => {
-      const banner = container.querySelector('s-banner[tone="success"]');
-      expect(banner).not.toBeNull();
-      expect(banner?.textContent).toMatch(/3247 products synced/);
+      expect(
+        container.querySelector('s-section[heading="Catalog synced and indexed"]')
+      ).not.toBeNull();
+      expect(screen.getByTestId('stat-products').textContent).toMatch(/3247/);
+      expect(screen.getByTestId('stat-embeddings').textContent).toMatch(/3247/);
       const openChat = screen.getByTestId('open-chat');
       expect(openChat.getAttribute('href')).toBe('/chat');
+      const configure = screen.getByTestId('configure-model');
+      expect(configure.getAttribute('href')).toBe('/settings');
+      // Step rail: Enable drawer becomes the active step after success
+      expect(screen.getByTestId('step-3').getAttribute('data-active')).toBe('true');
     }, { timeout: 5000 });
   });
 
