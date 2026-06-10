@@ -6,9 +6,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ```bash
 bun dev          # Start Next.js dev server
-bun build        # Production build
+bun run build    # Production build (bare `bun build` invokes bun's native bundler, not Next)
 bun lint         # ESLint
-bun test         # Run all tests (vitest)
+bun run test     # Run all tests (vitest) — bare `bun test` runs bun's native test runner and fails
 ```
 
 Run a single test file:
@@ -29,6 +29,8 @@ bun db:indexes               # Apply manual pgvector + GIN indexes (REQUIRED aft
 ## Architecture
 
 This is a **Next.js 16 App Router** project — a Shopify-embedded AI product search assistant ("SmartDiscovery AI"). The package manager is **bun**.
+
+**Styling:** Tailwind CSS 4 (via `@tailwindcss/postcss`) with shadcn/ui-style primitives in `components/ui/`. Use Tailwind utility classes for app UI. The marketing landing page (`components/landing/`) uses Tailwind utilities with arbitrary values to stay pixel-faithful to its design handoff (`docs/design/landing/`); its design tokens live as CSS vars in `components/landing/landing.css`.
 
 ### AI Chat Layer
 
@@ -453,25 +455,12 @@ If everything else fails, this end-to-end flow (install → sync → ask in draw
 No project skills found. Add skills to any of: `.claude/skills/`, `.agents/skills/`, `.cursor/skills/`, `.github/skills/`, or `.codex/skills/` with a `SKILL.md` index file.
 <!-- GSD:skills-end -->
 
-<!-- GSD:workflow-start source:GSD defaults -->
+## Workflow: Superpowers
 
-## GSD Workflow Enforcement
+This project uses the superpowers plugin workflow (GSD was retired 2026-06-10; its planning history is archived at `docs/archive/planning/`).
 
-Before using Edit, Write, or other file-changing tools, start work through a GSD command so planning artifacts and execution context stay in sync.
-
-Use these entry points:
-
-- `/gsd:quick` for small fixes, doc updates, and ad-hoc tasks
-- `/gsd:debug` for investigation and bug fixing
-- `/gsd:execute-phase` for planned phase work
-
-Do not make direct repo edits outside a GSD workflow unless the user explicitly asks to bypass it.
-<!-- GSD:workflow-end -->
-
-<!-- GSD:profile-start -->
-
-## Developer Profile
-
-> Profile not yet configured. Run `/gsd:profile-user` to generate your developer profile.
-> This section is managed by `generate-claude-profile` -- do not edit manually.
-<!-- GSD:profile-end -->
+- Creative/feature work starts with `superpowers:brainstorming`, then `superpowers:writing-plans`.
+- Implementation plans live in `docs/superpowers/plans/YYYY-MM-DD-<feature-name>.md`.
+- Execute plans with `superpowers:subagent-driven-development` (preferred) or `superpowers:executing-plans`.
+- Bugs go through `superpowers:systematic-debugging`; features/bugfixes follow `superpowers:test-driven-development`.
+- Verify before claiming done (`superpowers:verification-before-completion`); request review before merging (`superpowers:requesting-code-review`).

@@ -12,7 +12,7 @@
  * No console.* logging.
  */
 import { NextResponse } from 'next/server';
-import { verifyAppProxyHmac, AppProxyAuthError } from '@/lib/shopify/app-proxy-auth';
+import { verifyAppProxyHmac, AppProxyAuthError, resolveVerifiedVisitorId } from '@/lib/shopify/app-proxy-auth';
 import { rateLimit } from '@/lib/rate-limit/memory';
 import { prisma } from '@/lib/db/client';
 
@@ -62,12 +62,17 @@ export async function GET(req: Request, ctx: RouteContext): Promise<Response> {
 
   const { id } = await ctx.params;
   const url = new URL(req.url);
-  const visitorId = url.searchParams.get('visitor_id') ?? '';
+  const rawVisitorId = url.searchParams.get('visitor_id');
   const signedCustomerId = query.get('logged_in_customer_id');
 
-  if (!visitorId) {
-    return NextResponse.json({ error: 'missing_visitor_id' }, { status: 400 });
+  // CR-03: verify server-signed visitor token before rate-limit or DB
+  const visitorGate = resolveVerifiedVisitorId(rawVisitorId);
+  if (!visitorGate.ok) {
+    return NextResponse.json({ error: visitorGate.code }, {
+      status: visitorGate.code === 'missing_visitor_id' ? 400 : 401,
+    });
   }
+  const visitorId = visitorGate.visitorId;
 
   const rl = rateLimit(visitorId, 'read');
   if (!rl.ok) return rateLimitedResponse(rl.retryAfterSeconds);
@@ -99,7 +104,7 @@ export async function PATCH(req: Request, ctx: RouteContext): Promise<Response> 
 
   const { id } = await ctx.params;
   const url = new URL(req.url);
-  const queryVisitorId = url.searchParams.get('visitor_id') ?? '';
+  const queryVisitorId = url.searchParams.get('visitor_id');
   const signedCustomerId = query.get('logged_in_customer_id');
 
   const body = (await req.json()) as {
@@ -107,10 +112,16 @@ export async function PATCH(req: Request, ctx: RouteContext): Promise<Response> 
     turn?: unknown;
     newMessages?: unknown[];
   };
-  const visitorId = body.visitor_id || queryVisitorId;
-  if (!visitorId) {
-    return NextResponse.json({ error: 'missing_visitor_id' }, { status: 400 });
+  const rawVisitorId = body.visitor_id || queryVisitorId;
+
+  // CR-03: verify server-signed visitor token before rate-limit or DB
+  const visitorGate = resolveVerifiedVisitorId(rawVisitorId);
+  if (!visitorGate.ok) {
+    return NextResponse.json({ error: visitorGate.code }, {
+      status: visitorGate.code === 'missing_visitor_id' ? 400 : 401,
+    });
   }
+  const visitorId = visitorGate.visitorId;
 
   const rl = rateLimit(visitorId, 'read');
   if (!rl.ok) return rateLimitedResponse(rl.retryAfterSeconds);

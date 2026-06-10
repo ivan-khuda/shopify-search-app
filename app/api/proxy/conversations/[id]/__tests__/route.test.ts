@@ -1,6 +1,6 @@
 /**
- * RED scaffold for IDN-04 — conversations single-row resume and append.
- * Tests fail with "Cannot find module" until Wave 2 ships implementation.
+ * Tests for IDN-04 — conversations single-row resume and append.
+ * Updated for CR-03: tests send server-signed visitor tokens.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createHmac } from 'node:crypto';
@@ -27,10 +27,13 @@ vi.mock('@/lib/db/client', () => ({
 import { GET, PATCH } from '@/app/api/proxy/conversations/[id]/route';
 import { shopifyClient } from '@/lib/shopify/client';
 import { prisma } from '@/lib/db/client';
+import { signVisitorId } from '@/lib/identity/visitor-signature';
 
 const SECRET = 'test-secret';
 const SHOP = 'mystore.myshopify.com';
-const VISITOR_ID = 'visitor-uuid-001';
+const VISITOR_UUID = 'visitor-uuid-001-aaaa-bbbbccccdddd';
+// CR-03: VISITOR_ID is the signed token; VISITOR_UUID is what gets stored in DB
+let VISITOR_ID: string;
 const CONV_ID = 'conv-abc-123';
 
 function signParams(params: Record<string, string>): string {
@@ -63,6 +66,8 @@ function makeRequest(
 
 beforeEach(() => {
   process.env.SHOPIFY_API_SECRET = SECRET;
+  // CR-03: mint signed token after secret is set
+  VISITOR_ID = signVisitorId(VISITOR_UUID);
   vi.clearAllMocks();
   vi.mocked(shopifyClient.utils.validateHmac).mockResolvedValue(true);
 });
@@ -72,7 +77,7 @@ describe('GET /api/proxy/conversations/[id]', () => {
     const mockConv = {
       id: CONV_ID,
       shop: SHOP,
-      visitorId: VISITOR_ID,
+      visitorId: VISITOR_UUID,
       title: 'Test chat',
       messages: [
         { role: 'user', content: 'Hello' },
@@ -95,7 +100,7 @@ describe('GET /api/proxy/conversations/[id]', () => {
     const mockConv = {
       id: CONV_ID,
       shop: 'other.myshopify.com', // different shop
-      visitorId: VISITOR_ID,
+      visitorId: VISITOR_UUID,
       messages: [],
     };
     vi.mocked(prisma.conversation.findUnique).mockResolvedValue(mockConv as never);
@@ -135,7 +140,7 @@ describe('PATCH /api/proxy/conversations/[id]', () => {
     vi.mocked(prisma.conversation.findUnique).mockResolvedValue({
       id: CONV_ID,
       shop: SHOP,
-      visitorId: VISITOR_ID,
+      visitorId: VISITOR_UUID,
       messages: [],
     } as never);
     vi.mocked(prisma.$executeRaw).mockResolvedValue(1);
@@ -152,7 +157,7 @@ describe('PATCH /api/proxy/conversations/[id]', () => {
     vi.mocked(prisma.conversation.findUnique).mockResolvedValue({
       id: CONV_ID,
       shop: 'other.myshopify.com',
-      visitorId: VISITOR_ID,
+      visitorId: VISITOR_UUID,
       messages: [],
     } as never);
 
@@ -169,5 +174,24 @@ describe('PATCH /api/proxy/conversations/[id]', () => {
     const response = await PATCH(req, { params: Promise.resolve({ id: 'nonexistent' }) });
 
     expect(response.status).toBe(404);
+  });
+});
+
+describe('CR-03: invalid_visitor_signature rejection', () => {
+  it('GET returns 401 invalid_visitor_signature for a bare unsigned visitor_id before DB', async () => {
+    // makeRequest injects visitor_id from searchParams — bypass by manually crafting
+    const params = { shop: SHOP, visitor_id: VISITOR_UUID };
+    const { createHmac } = await import('node:crypto');
+    const msg = Object.keys(params).sort().map((k) => `${k}=${params[k as keyof typeof params]}`).join('');
+    const signature = createHmac('sha256', SECRET).update(msg).digest('hex');
+    const url = new URL(`http://${SHOP}/apps/smartdiscovery/conversations/${CONV_ID}`);
+    for (const [k, v] of Object.entries({ ...params, signature })) url.searchParams.set(k, v);
+    const req = new Request(url.toString());
+    const response = await GET(req, { params: Promise.resolve({ id: CONV_ID }) });
+
+    expect(response.status).toBe(401);
+    const body = await response.json() as { error: string };
+    expect(body.error).toBe('invalid_visitor_signature');
+    expect(prisma.conversation.findUnique).not.toHaveBeenCalled();
   });
 });

@@ -604,7 +604,7 @@ git commit -m "feat: verify session token on /api/shopify/sync"
 
 - [ ] **Step 1: Full test run**
 
-Run: `bun test`
+Run: `bun run test`
 Expected: PASS for all suites. If a prior test breaks (e.g. references to Polaris React from a forgotten file), fix in this task before proceeding.
 
 - [ ] **Step 2: Typecheck**
@@ -619,7 +619,7 @@ Expected: PASS, or only pre-existing warnings unrelated to this change.
 
 - [ ] **Step 4: Production build**
 
-Run: `bun build`
+Run: `bun run build`
 Expected: PASS. This verifies the embedded routes still compile without `@shopify/polaris`.
 
 - [ ] **Step 5: If anything failed, fix and commit**

@@ -36,6 +36,35 @@ Object.defineProperty(window, 'sessionStorage', {
   value: new MemoryStorage(),
 });
 
+// IntersectionObserver is not available in jsdom — polyfill for below-fold section tests
+if (typeof window.IntersectionObserver === 'undefined') {
+  class IntersectionObserverMock {
+    constructor(
+      private cb: IntersectionObserverCallback,
+      private opts?: IntersectionObserverInit,
+    ) {}
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+    readonly root: Element | null = null;
+    readonly rootMargin: string = '';
+    readonly thresholds: ReadonlyArray<number> = [];
+    takeRecords(): IntersectionObserverEntry[] {
+      return [];
+    }
+  }
+  Object.defineProperty(window, 'IntersectionObserver', {
+    configurable: true,
+    writable: true,
+    value: IntersectionObserverMock,
+  });
+  Object.defineProperty(global, 'IntersectionObserver', {
+    configurable: true,
+    writable: true,
+    value: IntersectionObserverMock,
+  });
+}
+
 // Polaris requires window.matchMedia which jsdom doesn't implement
 Object.defineProperty(window, 'matchMedia', {
   writable: true,

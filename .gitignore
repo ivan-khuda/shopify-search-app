@@ -37,6 +37,9 @@ yarn-error.log*
 # vercel
 .vercel
 
+# Shopify local dev config (ephemeral ngrok tunnel URLs — never commit)
+shopify.app.dev.toml
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
@@ -48,3 +51,8 @@ next-env.d.ts
 public/storefront-bundle-*.js
 public/storefront-bundle.*.js
 public/storefront-manifest.json
+# split chunks emitted by scripts/build-storefront-bundle.ts (esbuild splitting)
+public/DrawerBody-*.js
+public/chunk-*.js
+public/code-block-*.js
+public/mermaid-*.js

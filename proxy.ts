@@ -29,5 +29,5 @@ function redirectToAuth(request: NextRequest, shop?: string): NextResponse {
 }
 
 export const config = {
-  matcher: ['/onboarding/:path*', '/chat/:path*'],
+  matcher: ['/onboarding/:path*', '/chat/:path*', '/settings/:path*'],
 };

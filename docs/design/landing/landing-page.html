@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SmartDiscovery AI — Conversational product discovery for Shopify</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;650;700&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    :root {
+      --accent: #5B4FE9;
+      --accent-d: #4338ca;
+      --ink: #1A1A1A;
+      --text-strong: #202223;
+      --text: #5c5f62;
+      --text-sub: #6d7175;
+      --border: #e1e3e5;
+      --border-sub: #ededed;
+      --page: #f6f6f7;
+      --cream: #f7f4ef;
+      --surface: #ffffff;
+    }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0; padding: 0;
+      font-family: "Inter", -apple-system, "Segoe UI", Roboto, sans-serif;
+      color: var(--text-strong); background: var(--surface);
+      -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
+      font-feature-settings: "cv11", "ss01";
+    }
+    button { font-family: inherit; cursor: pointer; }
+    a { color: inherit; text-decoration: none; }
+    .tnum { font-variant-numeric: tabular-nums; }
+    .serif { font-family: "DM Serif Display", Georgia, serif; font-weight: 400; }
+
+    @keyframes sd-spin { to { transform: rotate(360deg); } }
+    @keyframes sd-blink { 0%, 50% { opacity: 1; } 51%, 100% { opacity: 0; } }
+    @keyframes sd-bounce {
+      0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
+      40% { transform: translateY(-4px); opacity: 1; }
+    }
+    @keyframes sd-pop {
+      from { transform: scale(0.92) translateY(8px); opacity: 0; }
+      to { transform: scale(1) translateY(0); opacity: 1; }
+    }
+    @keyframes sd-float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+    /* Entrance reveal — transition-based so the visible end-state always
+       resolves even if the iframe is throttled and animation frames stall. */
+    .reveal { opacity: 0; transform: translateY(16px);
+      transition: opacity .6s cubic-bezier(.2,.7,.2,1), transform .6s cubic-bezier(.2,.7,.2,1); }
+    .reveal.in { opacity: 1; transform: none; }
+
+    ::-webkit-scrollbar { width: 11px; height: 11px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.16); border-radius: 6px;
+      border: 3px solid transparent; background-clip: content-box; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.3);
+      border: 3px solid transparent; background-clip: content-box; }
+
+    @media (prefers-reduced-motion: reduce) {
+      .reveal { opacity: 1 !important; transform: none !important; transition: none !important; }
+      html { scroll-behavior: auto; }
+    }
+  </style>
+
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script src="src/data.js"></script>
+  <script type="text/babel" src="src/brand.jsx"></script>
+  <script type="text/babel" src="tweaks-panel.jsx"></script>
+  <script type="text/babel" src="landing/chat-demo.jsx"></script>
+  <script type="text/babel" src="landing/heroes.jsx"></script>
+  <script type="text/babel" src="landing/sections.jsx"></script>
+  <script type="text/babel" src="landing/landing-app.jsx"></script>
+</body>
+</html>

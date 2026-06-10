@@ -22,8 +22,8 @@
  * v6 lock (Pitfall 1): tool uses inputSchema; response is
  * toUIMessageStreamResponse — toAIStreamResponse (v5) must not appear.
  *
- * Hard cap (Phase 8): D-21 step 4 is a stub. Once CAP-01/02/03 ship, the
- * DB-backed RequestCounter check goes here.
+ * Hard cap (Phase 8): D-21 step 4 enforces CAP-02/03 via tryConsumeRequest
+ * after HMAC + customer-id + rate-limit gates, before conversation lifecycle.
  */
 import {
   convertToModelMessages,
@@ -34,12 +34,14 @@ import {
 } from 'ai';
 import dedent from 'dedent';
 import { z } from 'zod';
-import { withAppProxyHmac } from '@/lib/shopify/app-proxy-auth';
+import { withAppProxyHmac, resolveVerifiedVisitorId } from '@/lib/shopify/app-proxy-auth';
 import { rateLimit } from '@/lib/rate-limit/memory';
 import { mergeVisitorIntoCustomer } from '@/lib/identity/merge';
 import { prisma } from '@/lib/db/client';
 import { getActiveChatModel } from '@/services/chat/getActiveChatModel';
 import { hybridSearch } from '@/services/search/SearchService';
+import { tryConsumeRequest } from '@/services/chat/CapService';
+import { capReachedResponse } from '@/lib/chat/cap-reached-response';
 
 function assertCustomerMatch(
   bodyCustomerId: string | undefined,
@@ -74,9 +76,16 @@ export const POST = withAppProxyHmac(async ({ shop, query, req }) => {
     conversation_id?: string;
   };
 
-  if (!body.visitor_id) {
-    return Response.json({ error: 'missing_visitor_id' }, { status: 400 });
+  // CR-03: verify server-signed visitor token BEFORE rate-limit or DB access.
+  // The client stores and sends the full signed token; we verify and extract
+  // the bare uuid for all downstream keying (rate-limit, conversation, merge).
+  const visitorGate = resolveVerifiedVisitorId(body.visitor_id);
+  if (!visitorGate.ok) {
+    return Response.json({ error: visitorGate.code }, {
+      status: visitorGate.code === 'missing_visitor_id' ? 400 : 401,
+    });
   }
+  const visitorId = visitorGate.visitorId;
 
   const signedCustomerId = query.get('logged_in_customer_id');
   const match = assertCustomerMatch(body.customer_id, signedCustomerId);
@@ -84,7 +93,7 @@ export const POST = withAppProxyHmac(async ({ shop, query, req }) => {
     return Response.json({ error: match }, { status: 403 });
   }
 
-  const rl = rateLimit(body.visitor_id, 'chat');
+  const rl = rateLimit(visitorId, 'chat');
   if (!rl.ok) {
     return Response.json(
       { error: 'rate_limited' },
@@ -92,12 +101,26 @@ export const POST = withAppProxyHmac(async ({ shop, query, req }) => {
     );
   }
 
-  // D-21 step 4: hard-cap stub (Phase 8 fills in via DB-backed RequestCounter).
+  // D-21 step 4 / D-14: hard cap (CAP-02/03). Last gate before AI Gateway.
+  const consume = await tryConsumeRequest(shop);
+  if (!consume.allowed) return capReachedResponse();
 
   // D-21 steps 6 + 7: conversation lifecycle + merge.
   let conversationId: string;
   if (body.conversation_id) {
-    conversationId = body.conversation_id;
+    // WR-11(b): validate conversation ownership — scope to the requesting
+    // visitor, not just the shop, so a same-shop client who learns another
+    // visitor's conversation cuid cannot write turns into it. The merge flow
+    // (mergeVisitorIntoCustomer) preserves visitorId on re-keyed rows, so
+    // this check stays valid for customer-promoted conversations.
+    const owned = await prisma.conversation.findFirst({
+      where: { id: body.conversation_id, shop, visitorId: visitorId },
+      select: { id: true },
+    });
+    if (!owned) {
+      return Response.json({ error: 'conversation_not_found' }, { status: 404 });
+    }
+    conversationId = owned.id;
   } else {
     const lastUser = [...body.messages].reverse().find((m) => m.role === 'user');
     const rawText = lastUser ? extractUserText(lastUser) : '';
@@ -106,7 +129,7 @@ export const POST = withAppProxyHmac(async ({ shop, query, req }) => {
     const created = await prisma.conversation.create({
       data: {
         shop,
-        visitorId: body.visitor_id,
+        visitorId: visitorId,
         customerId: body.customer_id ?? null,
         title,
         messages: [],
@@ -116,7 +139,7 @@ export const POST = withAppProxyHmac(async ({ shop, query, req }) => {
   }
 
   if (body.customer_id) {
-    await mergeVisitorIntoCustomer(shop, body.visitor_id, body.customer_id);
+    await mergeVisitorIntoCustomer(shop, visitorId, body.customer_id);
   }
 
   const model = await getActiveChatModel(shop);
@@ -163,13 +186,16 @@ export const POST = withAppProxyHmac(async ({ shop, query, req }) => {
       if (Array.isArray(respMessages)) {
         newTurns.push(...respMessages);
       }
-      await prisma.conversation.update({
-        where: { id: conversationId, shop } as never,
-        data: {
-          messages: newTurns as never,
-          lastMessageAt: new Date(),
-        },
-      });
+      // WR-11(a): APPEND the new turns via a single atomic JSONB
+      // concatenation (`messages || newTurns`). The previous
+      // prisma.conversation.update REPLACED the Json column with only the
+      // latest exchange, truncating every multi-turn conversation's history.
+      await prisma.$executeRaw`
+        UPDATE "conversations"
+        SET "messages" = "messages" || ${JSON.stringify(newTurns)}::jsonb,
+            "lastMessageAt" = NOW()
+        WHERE id = ${conversationId} AND shop = ${shop}
+      `;
     },
   });
 

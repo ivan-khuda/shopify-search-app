@@ -5,7 +5,7 @@
  * on first click. Vanilla JS only — no TypeScript, no React, no library
  * imports. Stays well under the 100KB Liquid asset cap (Pitfall 8).
  *
- * Bundle URL is resolved at click time via /apps/smartdiscovery/storefront-manifest.json
+ * Bundle URL is resolved at click time via /apps/smartdiscovery/_meta/bundle-url
  * — the App Proxy boundary owns app-host knowledge so the loader does not
  * need to know the app's external host at deploy time.
  */
@@ -42,9 +42,19 @@
     loaded = true;
     document.body.classList.add('sd-skeleton-open');
 
-    fetch('/apps/smartdiscovery/storefront-manifest.json', { method: 'GET', cache: 'no-store' })
-      .then(function (r) { return r.json(); })
-      .then(function (m) { return import(m.bundle); })
+    fetch('/apps/smartdiscovery/_meta/bundle-url', { method: 'GET', cache: 'no-store' })
+      .then(function (r) {
+        // WR-04: surface non-2xx (429/500) responses to the .catch instead
+        // of letting them die as a JSON parse error.
+        if (!r.ok) throw new Error('bundle-url request failed: ' + r.status);
+        return r.json();
+      })
+      .then(function (m) {
+        // CR-01 defense: require an absolute URL. new URL() throws on a
+        // relative/scheme-less value, routing it to the .catch below instead
+        // of letting import() resolve it against the shop's domain.
+        return import(new URL(m.bundle).href);
+      })
       .then(function () {
         if (window.smartdiscovery && typeof window.smartdiscovery.mount === 'function') {
           window.smartdiscovery.mount({

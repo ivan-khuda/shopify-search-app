@@ -17,15 +17,24 @@ const {
   rateLimitMock,
   conversationUpdateMock,
   conversationCreateMock,
+  conversationFindFirstMock,
+  executeRawMock,
   hybridSearchMock,
   getActiveChatModelMock,
+  // Phase 8 (plan 08-01) additions
+  tryConsumeRequestMock,
+  capReachedResponseMock,
 } = vi.hoisted(() => ({
   validateHmacMock: vi.fn(),
   rateLimitMock: vi.fn().mockReturnValue({ ok: true }),
   conversationUpdateMock: vi.fn(),
   conversationCreateMock: vi.fn(),
+  conversationFindFirstMock: vi.fn(),
+  executeRawMock: vi.fn(),
   hybridSearchMock: vi.fn().mockResolvedValue([]),
   getActiveChatModelMock: vi.fn().mockReturnValue({ id: 'google/gemini-2.5-flash' }),
+  tryConsumeRequestMock: vi.fn().mockResolvedValue({ allowed: true }),
+  capReachedResponseMock: vi.fn(),
 }));
 
 vi.mock('@/lib/shopify/client', () => ({
@@ -43,7 +52,9 @@ vi.mock('@/lib/db/client', () => ({
     conversation: {
       update: conversationUpdateMock,
       create: conversationCreateMock,
+      findFirst: conversationFindFirstMock,
     },
+    $executeRaw: executeRawMock,
   },
 }));
 
@@ -53,6 +64,18 @@ vi.mock('@/services/search/SearchService', () => ({
 
 vi.mock('@/services/chat/getActiveChatModel', () => ({
   getActiveChatModel: getActiveChatModelMock,
+}));
+
+// Phase 8 (plan 08-01) — CapService + cap-reached-response stubs.
+// Both modules ship in Plan 08-08 / 08-09. The storefront route delta
+// (Plan 08-09) injects tryConsumeRequest after App Proxy HMAC validation.
+vi.mock('@/services/chat/CapService', () => ({
+  tryConsumeRequest: tryConsumeRequestMock,
+}));
+
+vi.mock('@/lib/chat/cap-reached-response', () => ({
+  capReachedResponse: capReachedResponseMock,
+  CAP_REACHED_MESSAGE: "You've reached this month's message limit. It resets on the 1st of next month. Reach out to support to raise your cap.",
 }));
 
 vi.mock('ai', async (importOriginal) => {
@@ -77,10 +100,15 @@ vi.mock('ai', async (importOriginal) => {
 });
 
 import { POST } from '@/app/api/proxy/chat/route';
+import { signVisitorId } from '@/lib/identity/visitor-signature';
 
 const SECRET = 'test-secret';
 const SHOP = 'mystore.myshopify.com';
-const VISITOR_ID = 'visitor-uuid-001';
+// CR-03: VISITOR_ID is the bare uuid; SIGNED_VISITOR_ID is the server-signed
+// token the client actually sends. Tests that check route behavior use the
+// signed token; tests that assert the DB key use the bare uuid.
+const VISITOR_UUID = 'visitor-uuid-001-aaaa-bbbbccccdddd';
+let VISITOR_ID: string; // set in beforeEach after stubEnv is active
 const CUSTOMER_ID = '5570080145486';
 
 function signParams(params: Record<string, string>): string {
@@ -112,11 +140,22 @@ function makeRequest(
 
 beforeEach(() => {
   process.env.SHOPIFY_API_SECRET = SECRET;
+  // CR-03: signed token must be produced AFTER secret is set in env
+  VISITOR_ID = signVisitorId(VISITOR_UUID);
   vi.clearAllMocks();
   validateHmacMock.mockResolvedValue(true);
   rateLimitMock.mockReturnValue({ ok: true });
   conversationUpdateMock.mockResolvedValue({});
   conversationCreateMock.mockResolvedValue({ id: 'conv-new' });
+  // WR-11(b): the route validates conversation ownership (id + shop +
+  // visitorId) before reusing a client-supplied conversation_id.
+  conversationFindFirstMock.mockResolvedValue({ id: 'conv-existing', messages: [] });
+  executeRawMock.mockResolvedValue(1);
+  // Phase 8 default — cap-allowed so existing tests are unaffected.
+  tryConsumeRequestMock.mockResolvedValue({ allowed: true });
+  capReachedResponseMock.mockImplementation(() =>
+    new Response('cap-reached-body', { status: 200, headers: { 'Content-Type': 'text/event-stream' } }),
+  );
 });
 
 describe('POST /api/proxy/chat — STR-04 auth', () => {
@@ -191,6 +230,22 @@ describe('POST /api/proxy/chat — STR-04 auth', () => {
     expect(body.error).toBe('customer_id_mismatch');
   });
 
+  it('CR-03: returns 401 invalid_visitor_signature for a tampered/unsigned visitor_id (before rate-limit or DB)', async () => {
+    const bareUuid = 'bare-unsigned-uuid-no-sig';
+    const req = makeRequest({ visitor_id: bareUuid }, {
+      visitor_id: bareUuid, // bare uuid — no server signature
+      messages: [],
+    });
+    const response = await POST(req);
+    expect(response.status).toBe(401);
+    const body = await response.json() as { error: string };
+    expect(body.error).toBe('invalid_visitor_signature');
+    // Must NOT hit rate-limit or DB before rejecting
+    expect(rateLimitMock).not.toHaveBeenCalled();
+    expect(conversationFindFirstMock).not.toHaveBeenCalled();
+    expect(conversationCreateMock).not.toHaveBeenCalled();
+  });
+
   it('returns 429 with Retry-After header when rate limit is exceeded', async () => {
     rateLimitMock.mockReturnValue({ ok: false, retryAfterSeconds: 60 });
 
@@ -221,7 +276,7 @@ describe('POST /api/proxy/chat — happy path', () => {
 });
 
 describe('POST /api/proxy/chat — D-19 onFinish DB write', () => {
-  it('calls prisma.conversation.update with lastMessageAt Date after stream completes', async () => {
+  it('appends new turns via atomic JSONB concatenation ($executeRaw) after stream completes (WR-11a)', async () => {
     const req = makeRequest({ visitor_id: VISITOR_ID }, {
       visitor_id: VISITOR_ID,
       conversation_id: 'conv-existing',
@@ -230,15 +285,44 @@ describe('POST /api/proxy/chat — D-19 onFinish DB write', () => {
 
     await POST(req);
 
-    // onFinish must write the conversation update atomically
-    expect(conversationUpdateMock).toHaveBeenCalledWith(
+    // onFinish must APPEND (messages || newTurns), never replace the column
+    expect(executeRawMock).toHaveBeenCalledTimes(1);
+    const [strings, ...values] = executeRawMock.mock.calls[0] as [TemplateStringsArray, ...unknown[]];
+    const sql = strings.join('?');
+    expect(sql).toMatch(/"messages"\s*=\s*"messages"\s*\|\|/);
+    expect(sql).toMatch(/"lastMessageAt"\s*=\s*NOW\(\)/);
+    // Bound params: serialized newTurns JSON, conversation id, shop
+    expect(values).toContain('conv-existing');
+    expect(values).toContain(SHOP);
+    const jsonParam = values.find((v) => typeof v === 'string' && (v as string).startsWith('['));
+    expect(jsonParam).toBeDefined();
+    expect(JSON.parse(jsonParam as string)).toEqual(
+      expect.arrayContaining([expect.objectContaining({ role: 'user' })])
+    );
+  });
+
+  it('WR-11(b): validates conversation ownership (id + shop + visitorId) and 404s on foreign conversation_id', async () => {
+    conversationFindFirstMock.mockResolvedValueOnce(null);
+
+    const req = makeRequest({ visitor_id: VISITOR_ID }, {
+      visitor_id: VISITOR_ID,
+      conversation_id: 'conv-someone-elses',
+      messages: [{ role: 'user', parts: [{ type: 'text', text: 'Find me running shoes' }] }],
+    });
+
+    const response = await POST(req);
+
+    expect(conversationFindFirstMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: expect.objectContaining({ shop: SHOP }),
-        data: expect.objectContaining({
-          lastMessageAt: expect.any(Date),
+        where: expect.objectContaining({
+          id: 'conv-someone-elses',
+          shop: SHOP,
+          visitorId: VISITOR_UUID, // CR-03: route keys on verified uuid, not signed token
         }),
       })
     );
+    expect(response.status).toBe(404);
+    expect(executeRawMock).not.toHaveBeenCalled();
   });
 
   it('does NOT call hybridSearch with raw URL shop param (shop derived from HMAC, not raw query)', async () => {
@@ -255,5 +339,76 @@ describe('POST /api/proxy/chat — D-19 onFinish DB write', () => {
       const shopArg = hybridSearchMock.mock.calls[0][0] as string;
       expect(shopArg).toBe(SHOP);
     }
+  });
+});
+
+/**
+ * Phase 8 Wave 0 RED scaffold — anchors CAP-02 / CAP-03 / D-13 / D-14
+ * for the storefront route. The cap check fires AFTER HMAC + rate-limit
+ * + customer-id-match (those gates short-circuit first), then BEFORE the
+ * AI Gateway call. Implementation lands in Plan 08-09.
+ */
+describe('POST /api/proxy/chat — Phase 8 hard cap (CAP-02, CAP-03, D-13, D-14)', () => {
+  it('calls tryConsumeRequest with shop derived from HMAC ctx (NOT body/raw query)', async () => {
+    const req = makeRequest({ visitor_id: VISITOR_ID }, {
+      visitor_id: VISITOR_ID,
+      conversation_id: 'conv-existing',
+      messages: [{ role: 'user', parts: [{ type: 'text', text: 'Show me blue shoes' }] }],
+    });
+    await POST(req);
+    expect(tryConsumeRequestMock).toHaveBeenCalledTimes(1);
+    expect(tryConsumeRequestMock).toHaveBeenCalledWith(SHOP);
+  });
+
+  it('allowed: true → reaches the streaming response (normal flow)', async () => {
+    tryConsumeRequestMock.mockResolvedValueOnce({ allowed: true });
+    const req = makeRequest({ visitor_id: VISITOR_ID }, {
+      visitor_id: VISITOR_ID,
+      conversation_id: 'conv-existing',
+      messages: [{ role: 'user', parts: [{ type: 'text', text: 'Show me blue shoes' }] }],
+    });
+    const response = await POST(req);
+    expect(capReachedResponseMock).not.toHaveBeenCalled();
+    expect(response.status).toBe(200);
+  });
+
+  it('allowed: false → returns capReachedResponse() instead of the normal stream', async () => {
+    tryConsumeRequestMock.mockResolvedValueOnce({ allowed: false });
+    const capBody = new Response('cap-reached-body', {
+      status: 200,
+      headers: { 'Content-Type': 'text/event-stream' },
+    });
+    capReachedResponseMock.mockReturnValueOnce(capBody);
+
+    const req = makeRequest({ visitor_id: VISITOR_ID }, {
+      visitor_id: VISITOR_ID,
+      conversation_id: 'conv-existing',
+      messages: [{ role: 'user', parts: [{ type: 'text', text: 'Show me blue shoes' }] }],
+    });
+    const response = await POST(req);
+
+    expect(capReachedResponseMock).toHaveBeenCalledTimes(1);
+    expect(hybridSearchMock).not.toHaveBeenCalled();
+    expect(response).toBe(capBody);
+    expect(response.status).toBe(200); // CAP-03: HTTP 200
+  });
+
+  it('cap check fires AFTER auth/rate-limit/customer-id-match gates (gate ordering)', async () => {
+    // If HMAC fails first, the cap check must NOT run.
+    validateHmacMock.mockResolvedValueOnce(false);
+    const params = { shop: SHOP, visitor_id: VISITOR_ID };
+    const signature = signParams(params);
+    const url = new URL(`http://${SHOP}/apps/smartdiscovery/chat`);
+    for (const [k, v] of Object.entries({ ...params, signature })) {
+      url.searchParams.set(k, v);
+    }
+    const req = new Request(url.toString(), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ visitor_id: VISITOR_ID, messages: [] }),
+    });
+    const response = await POST(req);
+    expect(response.status).toBe(401);
+    expect(tryConsumeRequestMock).not.toHaveBeenCalled();
   });
 });

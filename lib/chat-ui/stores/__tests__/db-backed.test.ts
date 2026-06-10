@@ -1,7 +1,8 @@
 /**
- * RED scaffold for D-02 — DbBackedHistoryStore + DbBackedSavedProductsStore.
- * Tests fail with "Cannot find module '@/lib/chat-ui/stores/db-backed'" until
- * Wave 2 ships implementation.
+ * Tests for D-02 — DbBackedHistoryStore + DbBackedSavedProductsStore.
+ * Updated for CR-03: stores receive and send a signed-token-shaped visitorId.
+ * The store is purely a transport layer; it sends whatever visitorId it
+ * was constructed with verbatim — no re-signing or verification here.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { ChatHistoryItem, ChatProduct } from '@/types/product';
@@ -12,7 +13,10 @@ import {
 } from '@/lib/chat-ui/stores/db-backed';
 
 const SHOP = 'mystore.myshopify.com';
-const VISITOR_ID = 'visitor-uuid-001';
+// CR-03: visitorId is now a server-signed token in production.
+// The store is transport-only — test with a signed-token-shaped string
+// so assertions on sent visitor_id values match the production contract.
+const VISITOR_ID = 'aaaabbbb-cccc-dddd-eeee-ffffffffffff.abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890';
 
 const mockHistoryItem: ChatHistoryItem = {
   id: 'conv-001',

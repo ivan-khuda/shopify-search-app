@@ -43,6 +43,17 @@ declare global {
         's-text': PolarisIntrinsicProps;
         's-badge': PolarisIntrinsicProps;
         's-banner': PolarisIntrinsicProps;
+        // Phase 7: Polaris table family + choice list + save bar for /settings (Plan 07-08)
+        's-table': PolarisIntrinsicProps;
+        's-table-header-row': PolarisIntrinsicProps;
+        's-table-header': PolarisIntrinsicProps;
+        's-table-body': PolarisIntrinsicProps;
+        's-table-row': PolarisIntrinsicProps;
+        's-table-cell': PolarisIntrinsicProps;
+        's-choice-list': PolarisIntrinsicProps;
+        's-choice': PolarisIntrinsicProps;
+        'ui-save-bar': PolarisIntrinsicProps;
+        's-text-field': PolarisIntrinsicProps;
       }
     }
   }

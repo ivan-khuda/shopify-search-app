@@ -1,0 +1,859 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SmartDiscovery · Models · acme-store.myshopify.com</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Manrope:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;700&display=swap"
+    rel="stylesheet"
+  />
+  <style>
+    :root {
+      --paper: #f3ebde;
+      --paper-warm: #ebe0cd;
+      --paper-deep: #e3d5bd;
+      --ink: #1a1411;
+      --ink-mid: #5a4f47;
+      --ink-faint: #8e8174;
+      --accent: #b8412a;
+      --accent-deep: #8c2f1f;
+      --rule: rgba(26, 20, 17, 0.16);
+      --rule-strong: rgba(26, 20, 17, 0.32);
+      --serif: "Instrument Serif", "EB Garamond", Georgia, serif;
+      --sans: "Manrope", -apple-system, BlinkMacSystemFont, sans-serif;
+      --mono: "JetBrains Mono", "SF Mono", Menlo, monospace;
+    }
+
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html,
+    body {
+      background: var(--paper);
+      color: var(--ink);
+      min-height: 100vh;
+    }
+
+    body {
+      font-family: var(--sans);
+      font-weight: 400;
+      line-height: 1.55;
+      font-size: 15px;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      overflow-x: hidden;
+    }
+
+    /* Atmosphere */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 1;
+      background:
+        radial-gradient(circle at 18% 22%, rgba(168, 130, 78, 0.14) 0, transparent 55%),
+        radial-gradient(circle at 82% 78%, rgba(120, 60, 40, 0.10) 0, transparent 60%),
+        radial-gradient(circle at 50% 110%, rgba(184, 65, 42, 0.06) 0, transparent 50%);
+      mix-blend-mode: multiply;
+    }
+
+    /* Paper grain */
+    body::after {
+      content: "";
+      position: fixed;
+      inset: -10%;
+      pointer-events: none;
+      z-index: 2;
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='280' height='280'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.10, 0 0 0 0 0.08, 0 0 0 0 0.07, 0 0 0 0.16 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+      opacity: 0.5;
+    }
+
+    .wrap {
+      position: relative;
+      z-index: 3;
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 0 56px;
+    }
+
+    /* ─── Top bar ─────────────────────────────────────────── */
+    .topbar {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 32px;
+      align-items: baseline;
+      padding: 26px 0 22px;
+      border-bottom: 1px solid var(--rule);
+      font-family: var(--mono);
+      font-size: 10.5px;
+      font-weight: 400;
+      text-transform: uppercase;
+      letter-spacing: 0.22em;
+      color: var(--ink-mid);
+    }
+    .topbar .mark {
+      color: var(--ink);
+      font-weight: 500;
+      letter-spacing: 0.28em;
+    }
+    .topbar .crumbs {
+      letter-spacing: 0.18em;
+    }
+    .topbar .crumbs em {
+      font-style: normal;
+      color: var(--ink);
+    }
+    .topbar .right span + span::before {
+      content: "·";
+      margin: 0 12px;
+      color: var(--ink-faint);
+    }
+
+    /* ─── Hero ────────────────────────────────────────────── */
+    .hero {
+      display: grid;
+      grid-template-columns: 1fr 280px;
+      gap: 56px;
+      padding: 96px 0 88px;
+      border-bottom: 1px solid var(--rule);
+      position: relative;
+    }
+    .hero .section-tag {
+      position: absolute;
+      top: 32px;
+      left: 0;
+      font-family: var(--mono);
+      font-size: 10.5px;
+      letter-spacing: 0.32em;
+      text-transform: uppercase;
+      color: var(--ink-faint);
+    }
+    .hero .section-tag::before {
+      content: "§ ";
+      color: var(--accent);
+    }
+    .hero h1 {
+      font-family: var(--serif);
+      font-weight: 400;
+      font-style: italic;
+      font-size: clamp(64px, 9.5vw, 138px);
+      line-height: 0.92;
+      letter-spacing: -0.025em;
+      color: var(--ink);
+      max-width: 9ch;
+    }
+    .hero h1 .br {
+      display: block;
+    }
+    .hero h1 .accent {
+      color: var(--accent);
+      position: relative;
+    }
+    .hero h1 .accent::after {
+      content: "";
+      display: inline-block;
+      width: 0.18em;
+      height: 0.18em;
+      border-radius: 50%;
+      background: var(--accent);
+      margin-left: 0.12em;
+      transform: translateY(-0.65em);
+    }
+
+    .hero .lede {
+      align-self: end;
+      font-family: var(--serif);
+      font-size: 18px;
+      line-height: 1.55;
+      color: var(--ink-mid);
+      max-width: 32ch;
+    }
+    .hero .lede em {
+      color: var(--ink);
+    }
+    .hero .lede .signoff {
+      display: block;
+      margin-top: 24px;
+      font-family: var(--mono);
+      font-style: normal;
+      font-size: 10.5px;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: var(--ink-faint);
+    }
+
+    /* ─── Active band ─────────────────────────────────────── */
+    .active-band {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 64px;
+      padding: 48px 0;
+      border-bottom: 1px solid var(--rule);
+    }
+
+    .stamp {
+      font-family: var(--mono);
+      font-size: 10.5px;
+      font-weight: 500;
+      letter-spacing: 0.32em;
+      text-transform: uppercase;
+      color: var(--accent);
+      padding: 10px 14px;
+      border: 1.5px solid var(--accent);
+      background: rgba(245, 235, 215, 0.4);
+      transform: rotate(-3deg);
+      box-shadow:
+        inset 0 0 0 1px rgba(245, 235, 215, 0.4),
+        2px 3px 0 rgba(184, 65, 42, 0.12);
+      position: relative;
+    }
+    .stamp::before {
+      content: "✻";
+      margin-right: 8px;
+      font-size: 11px;
+    }
+
+    .active-band .name {
+      font-family: var(--serif);
+      font-style: italic;
+      font-size: 56px;
+      line-height: 1;
+      letter-spacing: -0.015em;
+    }
+    .active-band .name .sub {
+      display: block;
+      font-family: var(--mono);
+      font-style: normal;
+      font-size: 11px;
+      color: var(--ink-mid);
+      margin-top: 18px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      line-height: 1.6;
+    }
+    .active-band .name .sub span + span::before {
+      content: " — ";
+      color: var(--ink-faint);
+    }
+
+    .active-band .since {
+      font-family: var(--mono);
+      font-size: 10.5px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--ink-faint);
+      text-align: right;
+      line-height: 2;
+    }
+    .active-band .since strong {
+      color: var(--ink);
+      font-weight: 500;
+    }
+
+    /* ─── Catalog ─────────────────────────────────────────── */
+    .catalog-label {
+      display: grid;
+      grid-template-columns: 96px 1fr auto 160px;
+      gap: 32px;
+      padding: 64px 0 16px;
+      font-family: var(--mono);
+      font-size: 10.5px;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: var(--ink-faint);
+    }
+    .catalog-label > span:last-child {
+      text-align: center;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 96px 1fr auto 160px;
+      align-items: center;
+      gap: 32px;
+      padding: 40px 0 38px;
+      border-bottom: 1px solid var(--rule);
+      position: relative;
+      transition: padding-left 0.45s cubic-bezier(0.2, 0.7, 0.2, 1);
+      cursor: default;
+    }
+    .row:hover {
+      padding-left: 20px;
+    }
+    .row:hover .arrow {
+      opacity: 1;
+      transform: translate(0, -50%);
+    }
+    .row .arrow {
+      position: absolute;
+      left: -36px;
+      top: 50%;
+      transform: translate(-12px, -50%);
+      font-family: var(--serif);
+      font-style: italic;
+      font-size: 48px;
+      color: var(--accent);
+      opacity: 0;
+      transition: opacity 0.35s, transform 0.45s cubic-bezier(0.2, 0.7, 0.2, 1);
+      pointer-events: none;
+      line-height: 0;
+    }
+
+    .row .col-index {
+      font-family: var(--mono);
+      font-size: 10.5px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--ink-faint);
+      line-height: 1.8;
+    }
+    .row .col-index strong {
+      color: var(--ink);
+      font-weight: 500;
+      font-size: 13px;
+      display: block;
+      letter-spacing: 0.28em;
+    }
+
+    .row .col-name {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .row .col-name .ttl {
+      font-family: var(--serif);
+      font-style: italic;
+      font-size: 52px;
+      line-height: 1;
+      letter-spacing: -0.015em;
+      color: var(--ink);
+      transition: color 0.3s, letter-spacing 0.4s cubic-bezier(0.2, 0.7, 0.2, 1);
+    }
+    .row:hover .col-name .ttl {
+      color: var(--accent);
+      letter-spacing: -0.01em;
+    }
+    .row .col-name .ttl em {
+      font-style: italic;
+      color: var(--ink-mid);
+      font-size: 0.72em;
+    }
+    .row .col-name .meta {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--ink-mid);
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+    }
+    .row .col-name .meta span + span::before {
+      content: " · ";
+      color: var(--ink-faint);
+      margin: 0 4px;
+    }
+    .row .col-name .blurb {
+      font-family: var(--serif);
+      font-size: 17px;
+      line-height: 1.5;
+      color: var(--ink-mid);
+      max-width: 44ch;
+      margin-top: 4px;
+    }
+
+    .row .col-specs {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--ink-mid);
+      text-align: right;
+      line-height: 2;
+      letter-spacing: 0.04em;
+      white-space: nowrap;
+    }
+    .row .col-specs .price {
+      color: var(--ink);
+      font-weight: 500;
+    }
+    .row .col-specs .price-row {
+      display: block;
+    }
+    .row .col-specs .ctx {
+      color: var(--accent);
+      font-weight: 500;
+    }
+
+    .row .col-action {
+      display: flex;
+      justify-content: center;
+    }
+    .btn-select {
+      background: transparent;
+      border: 1px solid var(--ink);
+      color: var(--ink);
+      font-family: var(--mono);
+      font-size: 10.5px;
+      font-weight: 500;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      padding: 16px 22px;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s, transform 0.2s;
+      width: 100%;
+      position: relative;
+    }
+    .btn-select::after {
+      content: "→";
+      margin-left: 10px;
+      font-family: var(--serif);
+      font-style: italic;
+      font-size: 14px;
+      transition: transform 0.3s;
+    }
+    .btn-select:hover {
+      background: var(--ink);
+      color: var(--paper);
+    }
+    .btn-select:hover::after {
+      transform: translateX(3px);
+    }
+
+    .row[data-active="true"] {
+      background: linear-gradient(
+        90deg,
+        rgba(184, 65, 42, 0) 0%,
+        rgba(184, 65, 42, 0.04) 35%,
+        rgba(184, 65, 42, 0.04) 65%,
+        rgba(184, 65, 42, 0) 100%
+      );
+    }
+    .row[data-active="true"] .col-name .ttl {
+      color: var(--accent);
+    }
+    .row[data-active="true"] .col-action {
+      pointer-events: none;
+    }
+    .row[data-active="true"] .col-action .btn-select {
+      display: none;
+    }
+    .row[data-active="true"] .col-action .stamp {
+      display: inline-block;
+      font-size: 9.5px;
+      padding: 9px 12px;
+      letter-spacing: 0.34em;
+    }
+
+    /* ─── Colophon ───────────────────────────────────────── */
+    .colophon {
+      padding: 88px 0 64px;
+      margin-top: 56px;
+      border-top: 2px solid var(--ink);
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1fr;
+      gap: 56px;
+      font-family: var(--mono);
+      font-size: 10.5px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--ink-mid);
+      line-height: 2.2;
+    }
+    .colophon h6 {
+      color: var(--ink);
+      font-weight: 500;
+      margin-bottom: 14px;
+      font-size: 10.5px;
+      letter-spacing: 0.28em;
+    }
+    .colophon .imprint .mast {
+      font-family: var(--serif);
+      font-style: italic;
+      font-size: 32px;
+      line-height: 1;
+      color: var(--ink);
+      letter-spacing: -0.01em;
+      text-transform: none;
+      margin-bottom: 16px;
+    }
+    .colophon .imprint p {
+      font-family: var(--serif);
+      font-style: normal;
+      font-size: 13px;
+      line-height: 1.55;
+      color: var(--ink-mid);
+      letter-spacing: 0;
+      text-transform: none;
+      max-width: 38ch;
+    }
+
+    /* ─── Toast (interaction feedback) ───────────────────── */
+    .toast {
+      position: fixed;
+      bottom: 36px;
+      left: 50%;
+      transform: translateX(-50%) translateY(120%);
+      z-index: 100;
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.24em;
+      text-transform: uppercase;
+      color: var(--paper);
+      background: var(--ink);
+      padding: 16px 28px;
+      transition: transform 0.4s cubic-bezier(0.2, 0.7, 0.2, 1);
+      box-shadow: 0 8px 24px rgba(26, 20, 17, 0.2);
+    }
+    .toast::before {
+      content: "✻";
+      color: var(--accent);
+      margin-right: 12px;
+    }
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+    }
+
+    /* ─── Animations ─────────────────────────────────────── */
+    @keyframes rise {
+      from {
+        opacity: 0;
+        transform: translateY(28px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    @keyframes seal {
+      0% {
+        opacity: 0;
+        transform: rotate(8deg) scale(1.4);
+      }
+      60% {
+        opacity: 1;
+        transform: rotate(-4deg) scale(0.96);
+      }
+      100% {
+        opacity: 1;
+        transform: rotate(-3deg) scale(1);
+      }
+    }
+
+    .topbar { animation: rise 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+    .hero h1 { animation: rise 1.1s 0.1s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+    .hero .lede { animation: rise 1.1s 0.25s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+    .hero .section-tag { animation: rise 0.8s 0.4s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+    .active-band .stamp { animation: seal 0.8s 0.55s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+    .active-band .name { animation: rise 0.9s 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+    .active-band .since { animation: rise 0.9s 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+    .catalog-label { animation: rise 0.7s 0.8s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+    .row:nth-of-type(1) { animation: rise 0.7s 0.85s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+    .row:nth-of-type(2) { animation: rise 0.7s 0.92s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+    .row:nth-of-type(3) { animation: rise 0.7s 0.99s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+    .row:nth-of-type(4) { animation: rise 0.7s 1.06s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+    .row:nth-of-type(5) { animation: rise 0.7s 1.13s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+    .colophon { animation: rise 0.9s 1.3s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+
+    @media (max-width: 880px) {
+      .wrap { padding: 0 24px; }
+      .hero { grid-template-columns: 1fr; padding: 64px 0; }
+      .hero .lede { max-width: 100%; }
+      .active-band { grid-template-columns: 1fr; gap: 24px; padding: 32px 0; }
+      .active-band .since { text-align: left; }
+      .catalog-label { display: none; }
+      .row { grid-template-columns: 1fr; gap: 16px; padding: 32px 0; }
+      .row .col-specs { text-align: left; }
+      .row .col-action { justify-content: flex-start; }
+      .row .arrow { display: none; }
+      .colophon { grid-template-columns: 1fr; gap: 32px; padding: 56px 0; }
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <header class="topbar" role="banner">
+      <span class="mark">SmartDiscovery</span>
+      <span class="crumbs">Settings <em>›</em> Models <em>›</em> Pick active</span>
+      <span class="right">
+        <span>acme-store.myshopify.com</span>
+        <span>est. 2026</span>
+        <span>vol. 1 · 0.0.7</span>
+      </span>
+    </header>
+
+    <section class="hero" aria-labelledby="hero-title">
+      <span class="section-tag">Pt. 01 — On voice</span>
+      <h1 id="hero-title">
+        <span class="br">Pick the</span>
+        <span class="br"><span class="accent">model</span></span>
+        <span class="br">your storefront</span>
+        <span class="br">speaks through.</span>
+      </h1>
+      <p class="lede">
+        Every reply your visitors read passes through the model you set here.
+        Trade <em>latency</em> against <em>nuance</em>; trade <em>cost</em> against
+        <em>depth</em>. The catalogue below lists every option your Vercel AI
+        Gateway exposes, rendered against the shape of your catalogue.
+        <span class="signoff">— The colophon, p. 14</span>
+      </p>
+    </section>
+
+    <section class="active-band" aria-label="Currently active model">
+      <span class="stamp">In service</span>
+      <div class="name">
+        Sonnet 4.6
+        <span class="sub">
+          <span>Anthropic</span>
+          <span>200K context</span>
+          <span>$3 in / $15 out per Mtok</span>
+        </span>
+      </div>
+      <div class="since">
+        Active since
+        <strong>2026-05-19</strong>
+        14,212 calls this month
+        of <strong>20,000</strong>
+      </div>
+    </section>
+
+    <header class="catalog-label" aria-hidden="true">
+      <span>Cat. №</span>
+      <span>Title</span>
+      <span>Rate &amp; window</span>
+      <span>Action</span>
+    </header>
+
+    <div role="list" id="catalog">
+      <article class="row" role="listitem" data-id="haiku-4.5">
+        <i class="arrow" aria-hidden="true">→</i>
+        <div class="col-index">
+          № <strong>01</strong>
+          Express<br />tier
+        </div>
+        <div class="col-name">
+          <div class="ttl">Haiku 4.5 <em>— fast</em></div>
+          <div class="meta">
+            <span>Anthropic</span><span>id: haiku-4.5</span><span>p50 ≈ 320ms</span>
+          </div>
+          <p class="blurb">
+            Sub-second replies. Best when catalogue browsing dominates and chats
+            stay under three turns. Loses some nuance on long product descriptions.
+          </p>
+        </div>
+        <div class="col-specs">
+          <span class="price-row"><span class="price">$1.00</span> / Mtok in</span>
+          <span class="price-row"><span class="price">$5.00</span> / Mtok out</span>
+          <span class="price-row"><span class="ctx">200K</span> ctx window</span>
+        </div>
+        <div class="col-action">
+          <button class="btn-select" type="button">Select</button>
+        </div>
+      </article>
+
+      <article class="row" role="listitem" data-id="sonnet-4.5">
+        <i class="arrow" aria-hidden="true">→</i>
+        <div class="col-index">
+          № <strong>02</strong>
+          Workhorse<br />tier
+        </div>
+        <div class="col-name">
+          <div class="ttl">Sonnet 4.5 <em>— steady</em></div>
+          <div class="meta">
+            <span>Anthropic</span><span>id: sonnet-4.5</span><span>p50 ≈ 1.4s</span>
+          </div>
+          <p class="blurb">
+            The previous default. Well-calibrated, reliable, slightly less fluent
+            than 4.6 on copy generation. Keep on hand for cost-sensitive backfills.
+          </p>
+        </div>
+        <div class="col-specs">
+          <span class="price-row"><span class="price">$3.00</span> / Mtok in</span>
+          <span class="price-row"><span class="price">$15.00</span> / Mtok out</span>
+          <span class="price-row"><span class="ctx">200K</span> ctx window</span>
+        </div>
+        <div class="col-action">
+          <button class="btn-select" type="button">Select</button>
+        </div>
+      </article>
+
+      <article class="row" role="listitem" data-id="sonnet-4.6" data-active="true">
+        <i class="arrow" aria-hidden="true">→</i>
+        <div class="col-index">
+          № <strong>03</strong>
+          Workhorse<br />tier
+        </div>
+        <div class="col-name">
+          <div class="ttl">Sonnet 4.6 <em>— in service</em></div>
+          <div class="meta">
+            <span>Anthropic</span><span>id: sonnet-4.6</span><span>p50 ≈ 1.6s</span>
+          </div>
+          <p class="blurb">
+            Current pick for this shop. Balanced reasoning and copy fluency; the
+            sensible choice for general catalogues mixing query intents.
+          </p>
+        </div>
+        <div class="col-specs">
+          <span class="price-row"><span class="price">$3.00</span> / Mtok in</span>
+          <span class="price-row"><span class="price">$15.00</span> / Mtok out</span>
+          <span class="price-row"><span class="ctx">200K</span> ctx window</span>
+        </div>
+        <div class="col-action">
+          <span class="stamp">In service</span>
+          <button class="btn-select" type="button">Select</button>
+        </div>
+      </article>
+
+      <article class="row" role="listitem" data-id="opus-4.7">
+        <i class="arrow" aria-hidden="true">→</i>
+        <div class="col-index">
+          № <strong>04</strong>
+          Premium<br />tier
+        </div>
+        <div class="col-name">
+          <div class="ttl">Opus 4.7 <em>— premium</em></div>
+          <div class="meta">
+            <span>Anthropic</span><span>id: opus-4.7</span><span>p50 ≈ 3.8s</span>
+          </div>
+          <p class="blurb">
+            Long-context reasoning. Synthesises across many products at once.
+            Best for high-AOV stores where a slower, better answer earns the wait.
+          </p>
+        </div>
+        <div class="col-specs">
+          <span class="price-row"><span class="price">$15.00</span> / Mtok in</span>
+          <span class="price-row"><span class="price">$75.00</span> / Mtok out</span>
+          <span class="price-row"><span class="ctx">500K</span> ctx window</span>
+        </div>
+        <div class="col-action">
+          <button class="btn-select" type="button">Select</button>
+        </div>
+      </article>
+
+      <article class="row" role="listitem" data-id="gemini-2.5-flash">
+        <i class="arrow" aria-hidden="true">→</i>
+        <div class="col-index">
+          № <strong>05</strong>
+          Multimodal<br />tier
+        </div>
+        <div class="col-name">
+          <div class="ttl">Gemini 2.5 Flash <em>— multimodal</em></div>
+          <div class="meta">
+            <span>Google</span><span>id: gemini-2.5-flash</span><span>p50 ≈ 0.9s</span>
+          </div>
+          <p class="blurb">
+            Vision + text. Picks up image attachments. Useful when you plan to
+            support &ldquo;find me one of these&rdquo; queries with a photo.
+          </p>
+        </div>
+        <div class="col-specs">
+          <span class="price-row"><span class="price">$0.30</span> / Mtok in</span>
+          <span class="price-row"><span class="price">$2.50</span> / Mtok out</span>
+          <span class="price-row"><span class="ctx">1M</span> ctx window</span>
+        </div>
+        <div class="col-action">
+          <button class="btn-select" type="button">Select</button>
+        </div>
+      </article>
+    </div>
+
+    <footer class="colophon">
+      <div class="imprint">
+        <div class="mast">A note on choosing.</div>
+        <p>
+          You can switch at any time. The active model takes effect on the next
+          request from any surface — admin playground or storefront drawer. Past
+          conversations stay attached to whichever model generated them.
+        </p>
+      </div>
+      <div>
+        <h6>Pricing</h6>
+        Per million tokens<br />
+        Charged via Gateway<br />
+        Settled in USD
+      </div>
+      <div>
+        <h6>Cap</h6>
+        20,000 / month<br />
+        Resets 1st 00:00 UTC<br />
+        Cap applies to all models
+      </div>
+      <div>
+        <h6>Telemetry</h6>
+        Last fetched<br />
+        2026-05-29 09:11 UTC<br />
+        from gateway-v3
+      </div>
+    </footer>
+  </main>
+
+  <div class="toast" role="status" aria-live="polite" id="toast">
+    <span id="toast-text">Active model updated</span>
+  </div>
+
+  <script>
+    (function () {
+      const catalog = document.getElementById("catalog");
+      const toast = document.getElementById("toast");
+      const toastText = document.getElementById("toast-text");
+      const activeBandName = document.querySelector(".active-band .name");
+
+      const meta = {
+        "haiku-4.5":         { name: "Haiku 4.5",         sub: ["Anthropic", "200K context", "$1 in / $5 out per Mtok"] },
+        "sonnet-4.5":        { name: "Sonnet 4.5",        sub: ["Anthropic", "200K context", "$3 in / $15 out per Mtok"] },
+        "sonnet-4.6":        { name: "Sonnet 4.6",        sub: ["Anthropic", "200K context", "$3 in / $15 out per Mtok"] },
+        "opus-4.7":          { name: "Opus 4.7",          sub: ["Anthropic", "500K context", "$15 in / $75 out per Mtok"] },
+        "gemini-2.5-flash":  { name: "Gemini 2.5 Flash",  sub: ["Google",    "1M context",   "$0.30 in / $2.50 out per Mtok"] }
+      };
+
+      function flashToast(text) {
+        toastText.textContent = text;
+        toast.classList.add("show");
+        clearTimeout(flashToast._t);
+        flashToast._t = setTimeout(() => toast.classList.remove("show"), 2400);
+      }
+
+      function setActive(id) {
+        const rows = catalog.querySelectorAll(".row");
+        rows.forEach((r) => {
+          const isMe = r.dataset.id === id;
+          if (isMe) {
+            r.dataset.active = "true";
+          } else {
+            delete r.dataset.active;
+          }
+        });
+        const m = meta[id];
+        if (m) {
+          activeBandName.innerHTML =
+            m.name +
+            '<span class="sub">' +
+            m.sub.map((s) => "<span>" + s + "</span>").join("") +
+            "</span>";
+          // Re-trigger the seal animation on the active stamp for delight.
+          const stamp = document.querySelector(".active-band .stamp");
+          if (stamp) {
+            stamp.style.animation = "none";
+            void stamp.offsetWidth;
+            stamp.style.animation = "seal 0.8s cubic-bezier(0.2,0.7,0.2,1) both";
+          }
+        }
+        flashToast("Active · " + m.name);
+      }
+
+      catalog.addEventListener("click", (e) => {
+        const btn = e.target.closest(".btn-select");
+        if (!btn) return;
+        const row = btn.closest(".row");
+        if (!row || row.dataset.active === "true") return;
+        setActive(row.dataset.id);
+      });
+    })();
+  </script>
+</body>
+</html>

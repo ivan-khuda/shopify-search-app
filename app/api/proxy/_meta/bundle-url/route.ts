@@ -36,7 +36,12 @@ export const GET = withAppProxyHmac(async ({ shop }) => {
     return NextResponse.json({ error: 'bundle_not_built' }, { status: 500 });
   }
 
-  const host = process.env.HOST;
+  // HOST is scheme-less by convention (@shopify/shopify-api hostName expects
+  // e.g. "my-app.vercel.app"). Normalize defensively — strip any scheme and
+  // trailing slash, then prepend https:// so the loader always receives an
+  // absolute URL. A scheme-less value would be treated as a RELATIVE url by
+  // the storefront's dynamic import() and 404 against the shop domain (CR-01).
+  const host = process.env.HOST?.replace(/^https?:\/\//, '').replace(/\/$/, '');
   if (!host) {
     return NextResponse.json({ error: 'host_not_configured' }, { status: 500 });
   }
@@ -45,7 +50,7 @@ export const GET = withAppProxyHmac(async ({ shop }) => {
     bundle: string;
     version: string;
   };
-  const bundle = host.replace(/\/$/, '') + manifest.bundle;
+  const bundle = `https://${host}${manifest.bundle}`;
 
   return NextResponse.json(
     { bundle, version: manifest.version },

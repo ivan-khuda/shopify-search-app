@@ -1,10 +1,13 @@
 // Phase 4 RED scaffold for ADM-06 / D-04, D-05, D-10. Implementation target: app/api/chat/route.ts (rewritten in plan 04-03).
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-const { streamTextMock, hybridSearchMock, getActiveChatModelMock } = vi.hoisted(() => ({
+const { streamTextMock, hybridSearchMock, getActiveChatModelMock, tryConsumeRequestMock, capReachedResponseMock } = vi.hoisted(() => ({
   streamTextMock: vi.fn(),
   hybridSearchMock: vi.fn(),
   getActiveChatModelMock: vi.fn(),
+  // Phase 8 (plan 08-01) additions
+  tryConsumeRequestMock: vi.fn(),
+  capReachedResponseMock: vi.fn(),
 }));
 
 vi.mock('@/lib/shopify/client', () => ({
@@ -38,6 +41,18 @@ vi.mock('@/services/chat/getActiveChatModel', () => ({
   getActiveChatModel: getActiveChatModelMock,
 }));
 
+// Phase 8 (plan 08-01) — CapService + cap-reached-response stubs.
+// Both modules ship in Plan 08-08 / 08-09. Until then, the route does not
+// import them; vi.mock with a factory virtual-registers the symbols.
+vi.mock('@/services/chat/CapService', () => ({
+  tryConsumeRequest: tryConsumeRequestMock,
+}));
+
+vi.mock('@/lib/chat/cap-reached-response', () => ({
+  capReachedResponse: capReachedResponseMock,
+  CAP_REACHED_MESSAGE: "You've reached this month's message limit. It resets on the 1st of next month. Reach out to support to raise your cap.",
+}));
+
 import { POST } from '@/app/api/chat/route';
 import { shopifyClient } from '@/lib/shopify/client';
 import { sessionStorage } from '@/lib/shopify/session-storage';
@@ -68,6 +83,12 @@ beforeEach(() => {
   });
 
   hybridSearchMock.mockResolvedValue([]);
+
+  // Phase 8 default — cap-allowed so existing tests don't bypass the streamText path.
+  tryConsumeRequestMock.mockResolvedValue({ allowed: true });
+  capReachedResponseMock.mockImplementation(() =>
+    new Response('cap-reached-body', { status: 200, headers: { 'Content-Type': 'text/event-stream' } }),
+  );
 
   (shopifyClient.session.decodeSessionToken as ReturnType<typeof vi.fn>).mockResolvedValue({
     dest: 'https://example-shop.myshopify.com',
@@ -200,5 +221,52 @@ describe('POST /api/chat', () => {
   it('returns the streamText().toUIMessageStreamResponse() result as the handler response', async () => {
     const res = await POST(makeRequest({ Authorization: 'Bearer good' }));
     expect(res).toBe(mockStreamResponse);
+  });
+});
+
+/**
+ * Phase 8 Wave 0 RED scaffold — anchors CAP-02 / CAP-03 / D-13 / D-14.
+ *
+ * The route does not yet call tryConsumeRequest — it lands in Plan 08-09.
+ * Until then, every assertion below fails because tryConsumeRequestMock is
+ * never invoked (and the route reaches streamText regardless of cap state).
+ */
+describe('POST /api/chat — Phase 8 hard cap (CAP-02, CAP-03, D-13, D-14)', () => {
+  it('calls tryConsumeRequest with shop derived from withShopifySession ctx (NOT body/query)', async () => {
+    await POST(makeRequest({ Authorization: 'Bearer good' }));
+    expect(tryConsumeRequestMock).toHaveBeenCalledTimes(1);
+    expect(tryConsumeRequestMock).toHaveBeenCalledWith('example-shop.myshopify.com');
+  });
+
+  it('allowed: true → reaches streamText (normal flow)', async () => {
+    tryConsumeRequestMock.mockResolvedValueOnce({ allowed: true });
+    const res = await POST(makeRequest({ Authorization: 'Bearer good' }));
+    expect(streamTextMock).toHaveBeenCalledTimes(1);
+    expect(capReachedResponseMock).not.toHaveBeenCalled();
+    expect(res).toBe(mockStreamResponse);
+  });
+
+  it('allowed: false → returns capReachedResponse() and does NOT call streamText', async () => {
+    tryConsumeRequestMock.mockResolvedValueOnce({ allowed: false });
+    const capBody = new Response('cap-reached-body', {
+      status: 200,
+      headers: { 'Content-Type': 'text/event-stream' },
+    });
+    capReachedResponseMock.mockReturnValueOnce(capBody);
+
+    const res = await POST(makeRequest({ Authorization: 'Bearer good' }));
+
+    expect(capReachedResponseMock).toHaveBeenCalledTimes(1);
+    expect(streamTextMock).not.toHaveBeenCalled();
+    expect(res).toBe(capBody);
+    expect(res.status).toBe(200); // CAP-03: HTTP 200, not 4xx
+  });
+
+  it('cap check runs BEFORE streamText (D-14: first action after auth, before AI Gateway)', async () => {
+    tryConsumeRequestMock.mockResolvedValueOnce({ allowed: false });
+    capReachedResponseMock.mockReturnValueOnce(new Response('x', { status: 200 }));
+    await POST(makeRequest({ Authorization: 'Bearer good' }));
+    expect(tryConsumeRequestMock).toHaveBeenCalled();
+    expect(streamTextMock).not.toHaveBeenCalled();
   });
 });

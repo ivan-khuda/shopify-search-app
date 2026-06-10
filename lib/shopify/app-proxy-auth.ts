@@ -18,16 +18,23 @@
  * The `shop` value is derived ONLY from the validated `query` object.
  * Raw `req.url.searchParams.get('shop')` and `body.shop` must NEVER be used
  * downstream (CR-01 mitigation).
+ *
+ * CR-03: resolveVerifiedVisitorId() is the single gate every proxy route
+ * calls after HMAC to verify the signed visitor token before any rate-limit
+ * or DB access. Invalid/unsigned/legacy tokens return 'invalid_visitor_signature'
+ * → 401 so the client re-mints via /_meta/visitor.
  */
 import { NextResponse } from 'next/server';
 import { shopifyClient } from '@/lib/shopify/client';
+import { verifyVisitorId } from '@/lib/identity/visitor-signature';
 
 export type AppProxyAuthErrorCode =
   | 'missing_signature'
   | 'invalid_signature'
   | 'missing_shop'
   | 'invalid_shop_domain'
-  | 'customer_id_mismatch';
+  | 'customer_id_mismatch'
+  | 'invalid_visitor_signature';
 
 const STATUS_BY_CODE: Record<AppProxyAuthErrorCode, 401 | 403> = {
   missing_signature: 401,
@@ -35,6 +42,7 @@ const STATUS_BY_CODE: Record<AppProxyAuthErrorCode, 401 | 403> = {
   missing_shop: 401,
   invalid_shop_domain: 401,
   customer_id_mismatch: 403,
+  invalid_visitor_signature: 401,
 };
 
 export class AppProxyAuthError extends Error {
@@ -80,6 +88,36 @@ export async function verifyAppProxyHmac(
   }
 
   return { shop, query };
+}
+
+/**
+ * CR-03: Verify the signed visitor token after HMAC auth.
+ *
+ * Every proxy route calls this AFTER verifyAppProxyHmac, BEFORE rateLimit/DB.
+ * The client stores and sends the full signed token `${uuid}.${sig}` as
+ * `visitor_id`. This helper verifies it and returns the extracted bare uuid
+ * for use as the rate-limit key, conversation visitorId, saved-product
+ * visitorId, and mergeVisitorIntoCustomer argument. The signature is a
+ * transport-auth concern; only the uuid is persisted in the DB.
+ *
+ * Returns:
+ *   { ok: true, visitorId: uuid } — token verified; visitorId is the bare uuid
+ *   { ok: false, code: 'missing_visitor_id' } — no token supplied
+ *   { ok: false, code: 'invalid_visitor_signature' } — tampered/unsigned/legacy
+ */
+export function resolveVerifiedVisitorId(
+  rawVisitorId: string | null | undefined
+):
+  | { ok: true; visitorId: string }
+  | { ok: false; code: 'missing_visitor_id' | 'invalid_visitor_signature' } {
+  if (!rawVisitorId) {
+    return { ok: false, code: 'missing_visitor_id' };
+  }
+  const result = verifyVisitorId(rawVisitorId);
+  if (!result.valid) {
+    return { ok: false, code: 'invalid_visitor_signature' };
+  }
+  return { ok: true, visitorId: result.visitorId };
 }
 
 export function withAppProxyHmac(

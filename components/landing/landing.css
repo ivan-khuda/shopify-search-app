@@ -1,0 +1,47 @@
+.sd-landing {
+  --accent: #5B4FE9;
+  /* Precomputed shade(ACCENT, n) literals — formula: shade('#5B4FE9', n) from tokens.ts */
+  --accent-d6: #564adb;  /* shade(#5B4FE9, -6) */
+  --accent-d44: #332c82; /* shade(#5B4FE9, -44) */
+  --accent-l40: #9d95f2; /* shade(#5B4FE9, +40) */
+  --ink: #1A1A1A;
+  --text-strong: #202223;
+  --text: #5c5f62;
+  --text-sub: #6d7175;
+  --border: #e1e3e5;
+  --border-sub: #ededed;
+  --page: #f6f6f7;
+  --cream: #f7f4ef;
+  --surface: #ffffff;
+  margin: 0;
+  font-family: var(--font-inter), -apple-system, "Segoe UI", Roboto, sans-serif;
+  color: var(--text-strong);
+  background: var(--surface);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: "cv11", "ss01";
+}
+.sd-landing *, .sd-landing *::before, .sd-landing *::after { box-sizing: border-box; }
+.sd-landing button { font-family: inherit; cursor: pointer; }
+.sd-landing a { color: inherit; text-decoration: none; }
+.sd-landing a:focus-visible,
+.sd-landing button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+/* Keyframes are document-global by nature; the sd- prefix is the collision guard. */
+@keyframes sd-spin { to { transform: rotate(360deg); } }
+@keyframes sd-blink { 0%, 50% { opacity: 1; } 51%, 100% { opacity: 0; } }
+@keyframes sd-pop {
+  from { transform: scale(0.92) translateY(8px); opacity: 0; }
+  to { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+.sd-landing .reveal { opacity: 0; transform: translateY(16px);
+  transition: opacity .6s cubic-bezier(.2,.7,.2,1), transform .6s cubic-bezier(.2,.7,.2,1); }
+.sd-landing .reveal.in { opacity: 1; transform: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .sd-landing .reveal { opacity: 1 !important; transform: none !important; transition: none !important; }
+}
