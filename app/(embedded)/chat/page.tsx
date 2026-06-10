@@ -20,7 +20,15 @@ export default async function ChatPage({
 }) {
     const { shop: shopFromQuery } = await searchParams;
     const shopFromSession = await resolveShopFromRequest();
-    const shop = shopFromSession ?? shopFromQuery ?? '';
+    // WR-01: searchParams.shop is attacker-controllable on direct navigation.
+    // Mirror the `.myshopify.com` hostname validation that the session-token
+    // path applies (lib/shopify/server-resolve-shop.ts) before letting the
+    // query value drive shop-scoped reads (model banner, ChatShell lookups).
+    const validatedQueryShop =
+        shopFromQuery && /^[a-zA-Z0-9][a-zA-Z0-9-]*\.myshopify\.com$/.test(shopFromQuery)
+            ? shopFromQuery
+            : undefined;
+    const shop = shopFromSession ?? validatedQueryShop ?? '';
     const model = await getActiveChatModel(shop);
     const displayName = model.displayName;
     const bannerAriaLabel = `Chat playground preview mode banner. Active model: ${displayName}.`;
