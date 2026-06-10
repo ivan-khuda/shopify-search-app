@@ -153,7 +153,7 @@ export function HeroConversation({ accent = ACCENT }: HeroConversationProps) {
             {SUBHEAD}
           </p>
           <div className="flex flex-wrap gap-[12px] mt-[30px] mb-[22px]">
-            <CTAButton accent={accent} kind="primary" large href="/api/auth">
+            <CTAButton accent={accent} kind="primary" large href="/install">
               Add to Shopify — free
             </CTAButton>
             <CTAButton accent={accent} kind="ghost" large>

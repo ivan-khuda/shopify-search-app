@@ -8,7 +8,7 @@ describe('HeroConversation', () => {
     render(<HeroConversation />);
     expect(screen.getByText('Your shoppers describe it.')).toBeInTheDocument();
     expect(screen.getByText('Your store finds it.')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /Add to Shopify — free/ })).toHaveAttribute('href', '/api/auth');
+    expect(screen.getByRole('link', { name: /Add to Shopify — free/ })).toHaveAttribute('href', '/install');
     expect(screen.getByText('Installs in minutes')).toBeInTheDocument();
     expect(screen.getByText('No theme edits')).toBeInTheDocument();
   });
@@ -26,6 +26,6 @@ describe('Nav', () => {
     expect(screen.getByRole('link', { name: 'Features' })).toHaveAttribute('href', '#features');
     expect(screen.getByRole('link', { name: 'Pricing' })).toHaveAttribute('href', '#pricing');
     expect(screen.getByRole('link', { name: 'FAQ' })).toHaveAttribute('href', '#faq');
-    expect(screen.getByRole('link', { name: 'Sign in' })).toHaveAttribute('href', '/api/auth');
+    expect(screen.getByRole('link', { name: 'Sign in' })).toHaveAttribute('href', '/install');
   });
 });

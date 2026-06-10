@@ -195,7 +195,7 @@ export function Pricing({ accent = ACCENT }: PricingProps) {
                 {t.d}
               </p>
               <a
-                href="/api/auth"
+                href="/install"
                 className={cn(
                   'block w-full py-[12px] px-[12px] rounded-[11px] font-semibold text-[14.5px] text-center no-underline cursor-pointer box-border',
                   t.highlight
@@ -388,7 +388,7 @@ export function FinalCTA({ accent = ACCENT }: FinalCTAProps) {
             &ldquo;added to cart.&rdquo;
           </p>
           <div className="flex justify-center flex-wrap gap-[12px] mt-[30px]">
-            <CTAButton accent="#fff" kind="shopify" large href="/api/auth">
+            <CTAButton accent="#fff" kind="shopify" large href="/install">
               <span className="text-[#1a1d21]">Add to Shopify — free</span>
             </CTAButton>
             <CTAButton accent={accent} kind="ghost" large onDark>

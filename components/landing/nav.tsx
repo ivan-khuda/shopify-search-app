@@ -55,12 +55,12 @@ export function Nav({ accent = ACCENT }: NavProps) {
         </nav>
         <div className="ml-auto flex items-center gap-[10px]">
           <a
-            href="/api/auth"
+            href="/install"
             className="text-[14px] font-semibold text-(--text-strong) max-[560px]:hidden"
           >
             Sign in
           </a>
-          <CTAButton accent={accent} kind="primary" href="/api/auth">
+          <CTAButton accent={accent} kind="primary" href="/install">
             Add to Shopify
           </CTAButton>
         </div>
