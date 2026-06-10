@@ -1,6 +1,11 @@
 .sd-landing {
   --accent: #5B4FE9;
   --accent-d: #4338ca;
+  /* Precomputed shade(ACCENT, n) literals — formula: shade('#5B4FE9', n) from tokens.ts */
+  --accent-d6: #564adb;  /* shade(#5B4FE9, -6) */
+  --accent-d18: #4b41bf; /* shade(#5B4FE9, -18) */
+  --accent-d44: #332c82; /* shade(#5B4FE9, -44) */
+  --accent-l40: #9d95f2; /* shade(#5B4FE9, +40) */
   --ink: #1A1A1A;
   --text-strong: #202223;
   --text: #5c5f62;

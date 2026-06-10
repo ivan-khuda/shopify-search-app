@@ -18,16 +18,13 @@ export function SDLogo({
       role="img"
       aria-label={ariaHidden ? undefined : ariaLabel}
       aria-hidden={ariaHidden}
+      className="inline-flex items-center justify-center shrink-0"
       style={{
         width: size,
         height: size,
         borderRadius: size * 0.28,
         background: `linear-gradient(135deg, ${accent} 0%, ${shade(accent, -18)} 100%)`,
-        display: 'inline-flex',
-        alignItems: 'center',
-        justifyContent: 'center',
         boxShadow: `0 1px 0 rgba(255,255,255,0.4) inset, 0 4px 12px ${accent}33`,
-        flexShrink: 0,
       }}
     >
       <svg
