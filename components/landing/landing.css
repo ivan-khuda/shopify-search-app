@@ -1,9 +1,7 @@
 .sd-landing {
   --accent: #5B4FE9;
-  --accent-d: #4338ca;
   /* Precomputed shade(ACCENT, n) literals — formula: shade('#5B4FE9', n) from tokens.ts */
   --accent-d6: #564adb;  /* shade(#5B4FE9, -6) */
-  --accent-d18: #4b41bf; /* shade(#5B4FE9, -18) */
   --accent-d44: #332c82; /* shade(#5B4FE9, -44) */
   --accent-l40: #9d95f2; /* shade(#5B4FE9, +40) */
   --ink: #1A1A1A;
@@ -35,17 +33,9 @@
 /* Keyframes are document-global by nature; the sd- prefix is the collision guard. */
 @keyframes sd-spin { to { transform: rotate(360deg); } }
 @keyframes sd-blink { 0%, 50% { opacity: 1; } 51%, 100% { opacity: 0; } }
-@keyframes sd-bounce {
-  0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
-  40% { transform: translateY(-4px); opacity: 1; }
-}
 @keyframes sd-pop {
   from { transform: scale(0.92) translateY(8px); opacity: 0; }
   to { transform: scale(1) translateY(0); opacity: 1; }
-}
-@keyframes sd-float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-10px); }
 }
 
 .sd-landing .reveal { opacity: 0; transform: translateY(16px);
