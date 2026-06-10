@@ -30,6 +30,8 @@ bun db:indexes               # Apply manual pgvector + GIN indexes (REQUIRED aft
 
 This is a **Next.js 16 App Router** project — a Shopify-embedded AI product search assistant ("SmartDiscovery AI"). The package manager is **bun**.
 
+**Styling:** Tailwind CSS 4 (via `@tailwindcss/postcss`) with shadcn/ui-style primitives in `components/ui/`. Use Tailwind utility classes for app UI. Exception: the marketing landing page (`components/landing/`) intentionally uses inline styles + `landing.css` to stay pixel-faithful to its design handoff — don't convert it to Tailwind.
+
 ### AI Chat Layer
 
 - **`app/api/chat/route.ts`** — streaming chat endpoint using Vercel AI SDK (`ai` package) + Google Gemini (`gemini-2.5-flash`). Falls back to a static response when `GOOGLE_GENERATIVE_AI_API_KEY` is missing.
