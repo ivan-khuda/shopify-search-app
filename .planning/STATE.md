@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-05-22)
 Phase: Milestone v1.0 complete
 Plan: —
 Status: Awaiting next milestone
-Last activity: 2026-05-27 — Milestone v1.0 completed and archived
+Last activity: 2026-06-10 - Completed quick task 260610-nm9: Fix CR-03 — server-minted HMAC-signed visitor identity
 
 ## Performance Metrics
 
@@ -109,6 +109,12 @@ None yet.
 - Phase 3: Verify `SET hnsw.iterative_scan` works with Prisma Accelerate connection pooler
 - Phase 6: CSS z-index strategy across Dawn/Sense/Craft themes needs investigation
 - Phase 6: `@shopify/shopify-api` is at 12.3.0; v13 breaking changes not yet audited
+
+### Quick Tasks Completed
+
+| # | Description | Date | Commit | Directory |
+|---|-------------|------|--------|-----------|
+| 260610-nm9 | Fix CR-03 — server-minted HMAC-signed visitor identity on storefront App Proxy routes | 2026-06-10 | 1184d92 | [260610-nm9-cr03-signed-cookie-visitor-identity](./quick/260610-nm9-cr03-signed-cookie-visitor-identity/) |
 
 ## Deferred Items
 
