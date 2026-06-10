@@ -19,6 +19,13 @@ const rootDir = fileURLToPath(new URL('./', import.meta.url));
 // The shim re-exports the relevant runtime symbols from @prisma/client/runtime
 // /client (PrismaClientKnownRequestError etc.) under a Prisma namespace, which
 // is all the session-storage package actually needs at runtime.
+//
+// Placement: this runs at config-eval time (top-level module scope) because
+// Vitest's fork-pool workers natively require() the session-storage package
+// before any globalSetup or setupFiles hook executes — the file must exist on
+// disk before any worker boots. The server.deps.inline block below (which
+// processes the package through the Vite pipeline) does NOT intercept this
+// native CJS require; only the on-disk shim can satisfy it.
 // ---------------------------------------------------------------------------
 const shimDir = path.join(rootDir, 'node_modules/.prisma/client');
 const shimFile = path.join(shimDir, 'default.js');
@@ -65,10 +72,16 @@ export default defineConfig({
     ],
     server: {
       deps: {
-        // This CJS package does require('@prisma/client') internally. Vitest
-        // externalizes node_modules deps by default, and resolve.alias only
-        // applies inside the Vite pipeline — inline it so the alias below
-        // rewrites its internal require.
+        // Inlining processes this CJS package through the Vite pipeline so
+        // the resolve.alias regex below can intercept the `@prisma/client`
+        // specifier that Vite sees in the package's source. Without inlining,
+        // Vitest externalizes node_modules and the alias never runs.
+        //
+        // IMPORTANT: inlining does NOT intercept the package's native CJS
+        // require('@prisma/client') call that Node evaluates at worker boot.
+        // That require is satisfied by the on-disk node_modules/.prisma/client/
+        // default.js shim written at the top of this file. Both mechanisms are
+        // required — deleting either one reintroduces the MODULE_NOT_FOUND crash.
         inline: ['@shopify/shopify-app-session-storage-prisma'],
       },
     },
