@@ -24,6 +24,10 @@ interface MountOpts {
 let reactRoot: Root | null = null;
 let lastOpts: MountOpts | null = null;
 let visitorId: string | null = null;
+// WR-03: imperative toggle registered by the mounted StorefrontDrawer so
+// `toggle()` can flip the drawer's real open state (re-rendering with a
+// different `initialOpen` is a no-op once mounted).
+let drawerToggle: (() => void) | null = null;
 
 function resolveVisitorId(): string {
   if (visitorId) return visitorId;
@@ -48,6 +52,9 @@ function renderDrawer(opts: MountOpts, initialOpen: boolean): void {
       accent={opts.accent}
       position={opts.position}
       initialOpen={initialOpen}
+      registerToggle={(fn) => {
+        drawerToggle = fn;
+      }}
     />
   );
 }
@@ -72,10 +79,14 @@ function mount(opts: MountOpts): void {
 }
 
 function toggle(): void {
+  // Preferred path: flip the mounted drawer's real open state.
+  if (drawerToggle) {
+    drawerToggle();
+    return;
+  }
+  // Fallback (drawer never registered, e.g. first render still in flight):
+  // re-render requesting an open drawer.
   if (!lastOpts) return;
-  // Re-render with initialOpen toggled — the drawer's internal state
-  // re-seeds from initialOpen on remount. For V1 this is acceptable; a
-  // controlled-props variant can ship later if needed.
   renderDrawer(lastOpts, true);
 }
 

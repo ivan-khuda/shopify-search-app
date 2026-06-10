@@ -27,10 +27,17 @@ interface StorefrontDrawerProps {
   accent?: string;
   position?: 'bottom_right' | 'bottom_left';
   initialOpen?: boolean;
+  /**
+   * WR-03: registers an imperative toggle so the bundle entry (entry.tsx)
+   * can re-open the drawer from the loader FAB after the user closes it.
+   * `initialOpen` only seeds the first render — re-rendering with a different
+   * value has no effect on a mounted component.
+   */
+  registerToggle?: (toggle: () => void) => void;
 }
 
 export function StorefrontDrawer(props: StorefrontDrawerProps = {}): React.ReactElement {
-  const { shop, visitorId, customerId, accent = '#008060', position = 'bottom_right', initialOpen = false } = props;
+  const { shop, visitorId, customerId, accent = '#008060', position = 'bottom_right', initialOpen = false, registerToggle } = props;
   const [isOpen, setIsOpen] = React.useState(initialOpen);
   const [activeTab, setActiveTab] = React.useState<'chat' | 'history' | 'saved'>('chat');
   const fabRef = React.useRef<HTMLButtonElement>(null);
@@ -40,6 +47,10 @@ export function StorefrontDrawer(props: StorefrontDrawerProps = {}): React.React
     setIsOpen(false);
     setTimeout(() => fabRef.current?.focus(), 0);
   }, []);
+
+  React.useEffect(() => {
+    registerToggle?.(() => setIsOpen((prev) => !prev));
+  }, [registerToggle]);
 
   const handleFabClick = React.useCallback(() => {
     if (
