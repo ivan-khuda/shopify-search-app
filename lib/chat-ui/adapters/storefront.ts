@@ -1,30 +1,19 @@
+/**
+ * Storefront chat identity adapter (Phase 5, Phase 6 D-09, CR-03).
+ *
+ * CR-03 / IN-03: visitor identity is now fetched from the server-signed
+ * bootstrap (resolveSignedVisitorId) rather than minted client-side with
+ * crypto.randomUUID(). This module is the single consumer of visitor identity
+ * on the client — it delegates entirely to the shared bootstrap module.
+ * The duplicate identity logic that previously existed in entry.tsx and here
+ * is now collapsed into lib/chat-ui/identity/visitor-bootstrap.ts (IN-03).
+ *
+ * IDN-02: customer_id injected from window.Shopify.customer when the shopper
+ * is logged into the storefront (coerced to string for BigInt precision,
+ * Pitfall 7). No console.* logging.
+ */
 import type { ChatIdentityAdapter } from './types';
-
-const STORAGE_KEY = 'smartdiscovery.visitor_id';
-
-// WR-10: localStorage access throws SecurityError when site data is blocked
-// (Safari "Block all cookies", some embedded webviews, certain private modes).
-// Storefront code runs on uncontrolled browser configurations — degrade to a
-// per-page-load in-memory visitor id instead of breaking every chat send.
-// The in-memory id is consulted ONLY when storage is blocked; when storage
-// works, localStorage stays the single source of truth.
-let inMemoryVisitorId: string | null = null;
-
-function readStoredVisitorId(key: string): { blocked: boolean; value: string | null } {
-  try {
-    return { blocked: false, value: window.localStorage.getItem(key) };
-  } catch {
-    return { blocked: true, value: null };
-  }
-}
-
-function safeStorageSet(key: string, value: string): void {
-  try {
-    window.localStorage.setItem(key, value);
-  } catch {
-    // Storage blocked — the in-memory fallback keeps the id stable for this page load.
-  }
-}
+import { resolveSignedVisitorId } from '@/lib/chat-ui/identity/visitor-bootstrap';
 
 export class StorefrontAdapter implements ChatIdentityAdapter {
   readonly endpoint = '/apps/smartdiscovery/chat';
@@ -35,28 +24,24 @@ export class StorefrontAdapter implements ChatIdentityAdapter {
 
   async getRequestBody(): Promise<Record<string, unknown>> {
     if (typeof window === 'undefined') return {};
-    const stored = readStoredVisitorId(STORAGE_KEY);
-    let visitorId: string;
-    if (stored.value) {
-      visitorId = stored.value;
-    } else if (stored.blocked && inMemoryVisitorId) {
-      visitorId = inMemoryVisitorId;
-    } else {
-      visitorId = crypto.randomUUID();
-      safeStorageSet(STORAGE_KEY, visitorId);
-    }
-    inMemoryVisitorId = visitorId;
-    const body: Record<string, unknown> = { visitor_id: visitorId };
-    // Phase 6 D-09 / IDN-02: include customer_id when shopper is logged into the
-    // storefront. window.Shopify.customer is set by theme liquid; .id is a
-    // numeric BigInt — coerce to string explicitly to preserve precision
-    // through JSON.parse (Pitfall 7).
+
+    // CR-03: server-minted, HMAC-signed visitor token. The bootstrap module
+    // handles caching (in-memory + localStorage) and WR-10 blocked-storage
+    // fallback. This adapter never calls crypto.randomUUID() for identity.
+    const visitor_id = await resolveSignedVisitorId();
+    const body: Record<string, unknown> = { visitor_id };
+
+    // Phase 6 D-09 / IDN-02: include customer_id when shopper is logged in.
+    // window.Shopify.customer is set by theme liquid; .id is a numeric BigInt
+    // — coerce to string explicitly to preserve precision through JSON.parse
+    // (Pitfall 7).
     const shopifyCustomer = (window as unknown as {
       Shopify?: { customer?: { id?: string | number | null } };
     }).Shopify?.customer;
     if (shopifyCustomer && shopifyCustomer.id != null) {
       body.customer_id = String(shopifyCustomer.id);
     }
+
     return body;
   }
 }

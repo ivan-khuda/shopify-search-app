@@ -10,7 +10,7 @@
  * No console.* logging anywhere — PROJECT.md hard constraint.
  */
 import { NextResponse } from 'next/server';
-import { withAppProxyHmac } from '@/lib/shopify/app-proxy-auth';
+import { withAppProxyHmac, resolveVerifiedVisitorId } from '@/lib/shopify/app-proxy-auth';
 import { rateLimit } from '@/lib/rate-limit/memory';
 import { prisma } from '@/lib/db/client';
 
@@ -33,13 +33,18 @@ function rateLimitedResponse(retryAfterSeconds: number): Response {
 
 export const GET = withAppProxyHmac(async ({ shop, query, req }) => {
   const url = new URL(req.url);
-  const visitorId = url.searchParams.get('visitor_id');
+  const rawVisitorId = url.searchParams.get('visitor_id');
   const cursor = url.searchParams.get('cursor');
   const signedCustomerId = query.get('logged_in_customer_id');
 
-  if (!visitorId) {
-    return NextResponse.json({ error: 'missing_visitor_id' }, { status: 400 });
+  // CR-03: verify server-signed visitor token before rate-limit or DB
+  const visitorGate = resolveVerifiedVisitorId(rawVisitorId);
+  if (!visitorGate.ok) {
+    return NextResponse.json({ error: visitorGate.code }, {
+      status: visitorGate.code === 'missing_visitor_id' ? 400 : 401,
+    });
   }
+  const visitorId = visitorGate.visitorId;
 
   const rl = rateLimit(visitorId, 'read');
   if (!rl.ok) return rateLimitedResponse(rl.retryAfterSeconds);
@@ -73,10 +78,16 @@ export const POST = withAppProxyHmac(async ({ shop, query, req }) => {
     firstMessage?: { text?: string };
   };
 
-  const visitorId = body.visitor_id || queryVisitorId;
-  if (!visitorId) {
-    return NextResponse.json({ error: 'missing_visitor_id' }, { status: 400 });
+  const rawVisitorId = body.visitor_id || queryVisitorId;
+
+  // CR-03: verify server-signed visitor token before rate-limit or DB
+  const visitorGate = resolveVerifiedVisitorId(rawVisitorId);
+  if (!visitorGate.ok) {
+    return NextResponse.json({ error: visitorGate.code }, {
+      status: visitorGate.code === 'missing_visitor_id' ? 400 : 401,
+    });
   }
+  const visitorId = visitorGate.visitorId;
 
   const rl = rateLimit(visitorId, 'read');
   if (!rl.ok) return rateLimitedResponse(rl.retryAfterSeconds);
@@ -100,12 +111,17 @@ export const POST = withAppProxyHmac(async ({ shop, query, req }) => {
 
 export const DELETE = withAppProxyHmac(async ({ shop, query, req }) => {
   const url = new URL(req.url);
-  const visitorId = url.searchParams.get('visitor_id');
+  const rawVisitorId = url.searchParams.get('visitor_id');
   const signedCustomerId = query.get('logged_in_customer_id');
 
-  if (!visitorId) {
-    return NextResponse.json({ error: 'missing_visitor_id' }, { status: 400 });
+  // CR-03: verify server-signed visitor token before rate-limit or DB
+  const visitorGate = resolveVerifiedVisitorId(rawVisitorId);
+  if (!visitorGate.ok) {
+    return NextResponse.json({ error: visitorGate.code }, {
+      status: visitorGate.code === 'missing_visitor_id' ? 400 : 401,
+    });
   }
+  const visitorId = visitorGate.visitorId;
 
   const rl = rateLimit(visitorId, 'read');
   if (!rl.ok) return rateLimitedResponse(rl.retryAfterSeconds);

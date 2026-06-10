@@ -100,10 +100,15 @@ vi.mock('ai', async (importOriginal) => {
 });
 
 import { POST } from '@/app/api/proxy/chat/route';
+import { signVisitorId } from '@/lib/identity/visitor-signature';
 
 const SECRET = 'test-secret';
 const SHOP = 'mystore.myshopify.com';
-const VISITOR_ID = 'visitor-uuid-001';
+// CR-03: VISITOR_ID is the bare uuid; SIGNED_VISITOR_ID is the server-signed
+// token the client actually sends. Tests that check route behavior use the
+// signed token; tests that assert the DB key use the bare uuid.
+const VISITOR_UUID = 'visitor-uuid-001-aaaa-bbbbccccdddd';
+let VISITOR_ID: string; // set in beforeEach after stubEnv is active
 const CUSTOMER_ID = '5570080145486';
 
 function signParams(params: Record<string, string>): string {
@@ -135,6 +140,8 @@ function makeRequest(
 
 beforeEach(() => {
   process.env.SHOPIFY_API_SECRET = SECRET;
+  // CR-03: signed token must be produced AFTER secret is set in env
+  VISITOR_ID = signVisitorId(VISITOR_UUID);
   vi.clearAllMocks();
   validateHmacMock.mockResolvedValue(true);
   rateLimitMock.mockReturnValue({ ok: true });
@@ -223,6 +230,22 @@ describe('POST /api/proxy/chat — STR-04 auth', () => {
     expect(body.error).toBe('customer_id_mismatch');
   });
 
+  it('CR-03: returns 401 invalid_visitor_signature for a tampered/unsigned visitor_id (before rate-limit or DB)', async () => {
+    const bareUuid = 'bare-unsigned-uuid-no-sig';
+    const req = makeRequest({ visitor_id: bareUuid }, {
+      visitor_id: bareUuid, // bare uuid — no server signature
+      messages: [],
+    });
+    const response = await POST(req);
+    expect(response.status).toBe(401);
+    const body = await response.json() as { error: string };
+    expect(body.error).toBe('invalid_visitor_signature');
+    // Must NOT hit rate-limit or DB before rejecting
+    expect(rateLimitMock).not.toHaveBeenCalled();
+    expect(conversationFindFirstMock).not.toHaveBeenCalled();
+    expect(conversationCreateMock).not.toHaveBeenCalled();
+  });
+
   it('returns 429 with Retry-After header when rate limit is exceeded', async () => {
     rateLimitMock.mockReturnValue({ ok: false, retryAfterSeconds: 60 });
 
@@ -294,7 +317,7 @@ describe('POST /api/proxy/chat — D-19 onFinish DB write', () => {
         where: expect.objectContaining({
           id: 'conv-someone-elses',
           shop: SHOP,
-          visitorId: VISITOR_ID,
+          visitorId: VISITOR_UUID, // CR-03: route keys on verified uuid, not signed token
         }),
       })
     );

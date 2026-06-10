@@ -34,7 +34,7 @@ import {
 } from 'ai';
 import dedent from 'dedent';
 import { z } from 'zod';
-import { withAppProxyHmac } from '@/lib/shopify/app-proxy-auth';
+import { withAppProxyHmac, resolveVerifiedVisitorId } from '@/lib/shopify/app-proxy-auth';
 import { rateLimit } from '@/lib/rate-limit/memory';
 import { mergeVisitorIntoCustomer } from '@/lib/identity/merge';
 import { prisma } from '@/lib/db/client';
@@ -76,9 +76,16 @@ export const POST = withAppProxyHmac(async ({ shop, query, req }) => {
     conversation_id?: string;
   };
 
-  if (!body.visitor_id) {
-    return Response.json({ error: 'missing_visitor_id' }, { status: 400 });
+  // CR-03: verify server-signed visitor token BEFORE rate-limit or DB access.
+  // The client stores and sends the full signed token; we verify and extract
+  // the bare uuid for all downstream keying (rate-limit, conversation, merge).
+  const visitorGate = resolveVerifiedVisitorId(body.visitor_id);
+  if (!visitorGate.ok) {
+    return Response.json({ error: visitorGate.code }, {
+      status: visitorGate.code === 'missing_visitor_id' ? 400 : 401,
+    });
   }
+  const visitorId = visitorGate.visitorId;
 
   const signedCustomerId = query.get('logged_in_customer_id');
   const match = assertCustomerMatch(body.customer_id, signedCustomerId);
@@ -86,7 +93,7 @@ export const POST = withAppProxyHmac(async ({ shop, query, req }) => {
     return Response.json({ error: match }, { status: 403 });
   }
 
-  const rl = rateLimit(body.visitor_id, 'chat');
+  const rl = rateLimit(visitorId, 'chat');
   if (!rl.ok) {
     return Response.json(
       { error: 'rate_limited' },
@@ -107,7 +114,7 @@ export const POST = withAppProxyHmac(async ({ shop, query, req }) => {
     // (mergeVisitorIntoCustomer) preserves visitorId on re-keyed rows, so
     // this check stays valid for customer-promoted conversations.
     const owned = await prisma.conversation.findFirst({
-      where: { id: body.conversation_id, shop, visitorId: body.visitor_id },
+      where: { id: body.conversation_id, shop, visitorId: visitorId },
       select: { id: true },
     });
     if (!owned) {
@@ -122,7 +129,7 @@ export const POST = withAppProxyHmac(async ({ shop, query, req }) => {
     const created = await prisma.conversation.create({
       data: {
         shop,
-        visitorId: body.visitor_id,
+        visitorId: visitorId,
         customerId: body.customer_id ?? null,
         title,
         messages: [],
@@ -132,7 +139,7 @@ export const POST = withAppProxyHmac(async ({ shop, query, req }) => {
   }
 
   if (body.customer_id) {
-    await mergeVisitorIntoCustomer(shop, body.visitor_id, body.customer_id);
+    await mergeVisitorIntoCustomer(shop, visitorId, body.customer_id);
   }
 
   const model = await getActiveChatModel(shop);

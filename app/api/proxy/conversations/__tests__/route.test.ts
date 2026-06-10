@@ -1,6 +1,6 @@
 /**
- * RED scaffold for IDN-03/IDN-04 — conversations list, create, bulk delete.
- * Tests fail with "Cannot find module" until Wave 2 ships implementation.
+ * Tests for IDN-03/IDN-04 — conversations list, create, bulk delete.
+ * Updated for CR-03: tests send server-signed visitor tokens.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createHmac } from 'node:crypto';
@@ -33,10 +33,13 @@ import { GET, POST, DELETE } from '@/app/api/proxy/conversations/route';
 import { shopifyClient } from '@/lib/shopify/client';
 import { prisma } from '@/lib/db/client';
 import { rateLimit } from '@/lib/rate-limit/memory';
+import { signVisitorId } from '@/lib/identity/visitor-signature';
 
 const SECRET = 'test-secret';
 const SHOP = 'mystore.myshopify.com';
-const VISITOR_ID = 'visitor-uuid-001';
+const VISITOR_UUID = 'visitor-uuid-001-aaaa-bbbbccccdddd';
+// CR-03: VISITOR_ID is the signed token sent by the client
+let VISITOR_ID: string;
 
 function signParams(params: Record<string, string>): string {
   const message = Object.keys(params)
@@ -67,6 +70,8 @@ function makeRequest(
 
 beforeEach(() => {
   process.env.SHOPIFY_API_SECRET = SECRET;
+  // CR-03: mint signed token after secret is set
+  VISITOR_ID = signVisitorId(VISITOR_UUID);
   vi.clearAllMocks();
   vi.mocked(shopifyClient.utils.validateHmac).mockResolvedValue(true);
   vi.mocked(rateLimit).mockReturnValue({ ok: true });
@@ -173,5 +178,38 @@ describe('DELETE /api/proxy/conversations', () => {
     const req = makeRequest('DELETE', {}); // no visitor_id
     const response = await DELETE(req);
     expect(response.status).toBe(400);
+  });
+});
+
+describe('CR-03: invalid_visitor_signature rejection (all verbs)', () => {
+  it('GET returns 401 invalid_visitor_signature for a bare unsigned visitor_id', async () => {
+    const req = makeRequest('GET', { visitor_id: 'bare-unsigned-uuid' });
+    const response = await GET(req);
+    expect(response.status).toBe(401);
+    const body = await response.json() as { error: string };
+    expect(body.error).toBe('invalid_visitor_signature');
+    expect(rateLimit).not.toHaveBeenCalled();
+    expect(prisma.conversation.findMany).not.toHaveBeenCalled();
+  });
+
+  it('POST returns 401 invalid_visitor_signature for a tampered visitor_id', async () => {
+    const req = makeRequest('POST', { visitor_id: VISITOR_UUID }, {
+      visitor_id: VISITOR_UUID, // bare uuid — not signed
+      firstMessage: { text: 'hello' },
+    });
+    const response = await POST(req);
+    expect(response.status).toBe(401);
+    const body = await response.json() as { error: string };
+    expect(body.error).toBe('invalid_visitor_signature');
+    expect(prisma.conversation.create).not.toHaveBeenCalled();
+  });
+
+  it('DELETE returns 401 invalid_visitor_signature for a bare unsigned visitor_id', async () => {
+    const req = makeRequest('DELETE', { visitor_id: VISITOR_UUID });
+    const response = await DELETE(req);
+    expect(response.status).toBe(401);
+    const body = await response.json() as { error: string };
+    expect(body.error).toBe('invalid_visitor_signature');
+    expect(prisma.conversation.deleteMany).not.toHaveBeenCalled();
   });
 });

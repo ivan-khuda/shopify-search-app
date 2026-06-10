@@ -12,7 +12,7 @@
  * No console.* logging.
  */
 import { NextResponse } from 'next/server';
-import { withAppProxyHmac } from '@/lib/shopify/app-proxy-auth';
+import { withAppProxyHmac, resolveVerifiedVisitorId } from '@/lib/shopify/app-proxy-auth';
 import { rateLimit } from '@/lib/rate-limit/memory';
 import { prisma } from '@/lib/db/client';
 
@@ -31,12 +31,17 @@ function ownerFilter(visitorId: string, signedCustomerId: string | null) {
 
 export const GET = withAppProxyHmac(async ({ shop, query, req }) => {
   const url = new URL(req.url);
-  const visitorId = url.searchParams.get('visitor_id');
+  const rawVisitorId = url.searchParams.get('visitor_id');
   const signedCustomerId = query.get('logged_in_customer_id');
 
-  if (!visitorId) {
-    return NextResponse.json({ error: 'missing_visitor_id' }, { status: 400 });
+  // CR-03: verify server-signed visitor token before rate-limit or DB
+  const visitorGate = resolveVerifiedVisitorId(rawVisitorId);
+  if (!visitorGate.ok) {
+    return NextResponse.json({ error: visitorGate.code }, {
+      status: visitorGate.code === 'missing_visitor_id' ? 400 : 401,
+    });
   }
+  const visitorId = visitorGate.visitorId;
 
   const rl = rateLimit(visitorId, 'read');
   if (!rl.ok) return rateLimitedResponse(rl.retryAfterSeconds);
@@ -58,9 +63,20 @@ export const POST = withAppProxyHmac(async ({ shop, query, req }) => {
     product_id?: string;
   };
 
-  const visitorId = body.visitor_id;
   const productId = body.product_id;
-  if (!visitorId || !productId) {
+
+  // CR-03: verify server-signed visitor token before rate-limit or DB
+  const visitorGate = resolveVerifiedVisitorId(body.visitor_id);
+  if (!visitorGate.ok) {
+    // Distinguish missing_visitor_id from missing_required_fields (both are 400)
+    if (visitorGate.code === 'missing_visitor_id') {
+      return NextResponse.json({ error: 'missing_required_fields' }, { status: 400 });
+    }
+    return NextResponse.json({ error: visitorGate.code }, { status: 401 });
+  }
+  const visitorId = visitorGate.visitorId;
+
+  if (!productId) {
     return NextResponse.json({ error: 'missing_required_fields' }, { status: 400 });
   }
 

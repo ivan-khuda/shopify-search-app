@@ -1,7 +1,5 @@
 /**
- * RED scaffold for STR-04 + IDN-02.
- * Tests import from modules that do not yet exist — they will fail with
- * "Cannot find module" until Wave 2 ships the implementation.
+ * Tests for STR-04 + IDN-02 App Proxy HMAC auth + CR-03 visitor-signature gate.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createHmac } from 'node:crypto';
@@ -19,7 +17,9 @@ import {
   verifyAppProxyHmac,
   withAppProxyHmac,
   AppProxyAuthError,
+  resolveVerifiedVisitorId,
 } from '@/lib/shopify/app-proxy-auth';
+import { signVisitorId } from '@/lib/identity/visitor-signature';
 import { shopifyClient } from '@/lib/shopify/client';
 
 // ── HMAC signing helper (no & delimiter — D-21 App Proxy specifics) ─────────
@@ -168,5 +168,49 @@ describe('verifyAppProxyHmac', () => {
     const body = await response.json() as { error: string };
     expect(body.error).toBe('customer_id_mismatch');
     expect(handler).not.toHaveBeenCalled();
+  });
+});
+
+// ── resolveVerifiedVisitorId (CR-03) ─────────────────────────────────────────
+
+describe('resolveVerifiedVisitorId', () => {
+  it('returns { ok: true, visitorId: uuid } for a server-signed token', () => {
+    const uuid = 'aabbccdd-0011-2233-4455-667788990011';
+    const token = signVisitorId(uuid);
+    const result = resolveVerifiedVisitorId(token);
+    expect(result).toEqual({ ok: true, visitorId: uuid });
+  });
+
+  it('returns { ok: false, code: "missing_visitor_id" } when rawVisitorId is null', () => {
+    expect(resolveVerifiedVisitorId(null)).toEqual({
+      ok: false,
+      code: 'missing_visitor_id',
+    });
+  });
+
+  it('returns { ok: false, code: "missing_visitor_id" } when rawVisitorId is empty string', () => {
+    expect(resolveVerifiedVisitorId('')).toEqual({
+      ok: false,
+      code: 'missing_visitor_id',
+    });
+  });
+
+  it('returns { ok: false, code: "invalid_visitor_signature" } for a bare legacy UUID', () => {
+    const bare = 'aabbccdd-0011-2233-4455-667788990011';
+    expect(resolveVerifiedVisitorId(bare)).toEqual({
+      ok: false,
+      code: 'invalid_visitor_signature',
+    });
+  });
+
+  it('returns { ok: false, code: "invalid_visitor_signature" } for a tampered signature', () => {
+    const uuid = 'aabbccdd-0011-2233-4455-667788990011';
+    const token = signVisitorId(uuid);
+    const tampered = `${uuid}.deadbeefdeadbeefdeadbeefdeadbeef`;
+    expect(resolveVerifiedVisitorId(tampered)).toEqual({
+      ok: false,
+      code: 'invalid_visitor_signature',
+    });
+    void token; // ensure original was signed
   });
 });

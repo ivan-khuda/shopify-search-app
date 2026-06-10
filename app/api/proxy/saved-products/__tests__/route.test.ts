@@ -1,6 +1,6 @@
 /**
- * RED scaffold for IDN-05 — saved products toggle + IDN-02 customer_id cross-check.
- * Tests fail with "Cannot find module" until Wave 2 ships implementation.
+ * Tests for IDN-05 — saved products toggle + IDN-02 customer_id cross-check.
+ * Updated for CR-03: tests send server-signed visitor tokens.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createHmac } from 'node:crypto';
@@ -27,10 +27,13 @@ vi.mock('@/lib/db/client', () => ({
 import { GET, POST } from '@/app/api/proxy/saved-products/route';
 import { shopifyClient } from '@/lib/shopify/client';
 import { prisma } from '@/lib/db/client';
+import { signVisitorId } from '@/lib/identity/visitor-signature';
 
 const SECRET = 'test-secret';
 const SHOP = 'mystore.myshopify.com';
-const VISITOR_ID = 'visitor-uuid-001';
+const VISITOR_UUID = 'visitor-uuid-001-aaaa-bbbbccccdddd';
+// CR-03: VISITOR_ID is the signed token sent by the client
+let VISITOR_ID: string;
 const CUSTOMER_ID = '5570080145486';
 const PRODUCT_ID = 'gid://shopify/Product/42';
 
@@ -63,6 +66,8 @@ function makeRequest(
 
 beforeEach(() => {
   process.env.SHOPIFY_API_SECRET = SECRET;
+  // CR-03: mint signed token after secret is set
+  VISITOR_ID = signVisitorId(VISITOR_UUID);
   vi.clearAllMocks();
   vi.mocked(shopifyClient.utils.validateHmac).mockResolvedValue(true);
 });
@@ -183,5 +188,28 @@ describe('POST /api/proxy/saved-products', () => {
 
     const response = await POST(req);
     expect(response.status).toBe(200);
+  });
+});
+
+describe('CR-03: invalid_visitor_signature rejection', () => {
+  it('GET returns 401 invalid_visitor_signature for a bare unsigned visitor_id', async () => {
+    const req = makeRequest('GET', { visitor_id: VISITOR_UUID }); // bare, not signed
+    const response = await GET(req);
+    expect(response.status).toBe(401);
+    const body = await response.json() as { error: string };
+    expect(body.error).toBe('invalid_visitor_signature');
+    expect(prisma.savedProduct.findMany).not.toHaveBeenCalled();
+  });
+
+  it('POST returns 401 invalid_visitor_signature for a tampered visitor_id', async () => {
+    const req = makeRequest('POST', { visitor_id: VISITOR_UUID }, {
+      visitor_id: VISITOR_UUID, // bare uuid — no server signature
+      product_id: PRODUCT_ID,
+    });
+    const response = await POST(req);
+    expect(response.status).toBe(401);
+    const body = await response.json() as { error: string };
+    expect(body.error).toBe('invalid_visitor_signature');
+    expect(prisma.$executeRaw).not.toHaveBeenCalled();
   });
 });
