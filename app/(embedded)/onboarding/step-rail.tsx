@@ -30,7 +30,7 @@ export function StepRail({ stage }: { stage: SyncStage }) {
   ];
 
   return (
-    <s-grid gridTemplateColumns="1fr 1fr 1fr" gap="base">
+    <s-grid gridTemplateColumns="1fr 1fr 1fr" gap="base" data-testid="step-rail">
       {steps.map((step, i) => (
         <s-box
           key={step.label}

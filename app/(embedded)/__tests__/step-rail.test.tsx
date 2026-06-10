@@ -5,7 +5,8 @@ import { StepRail } from '../onboarding/step-rail';
 describe('StepRail', () => {
   it('renders three steps with labels and sublabels', () => {
     const { container, getByText } = render(<StepRail stage={0} />);
-    expect(container.querySelectorAll('[data-testid^="step-"]')).toHaveLength(3);
+    expect(container.querySelector('[data-testid="step-rail"]')).not.toBeNull();
+    expect(container.querySelectorAll('[data-testid^="step-"][data-done]')).toHaveLength(3);
     expect(getByText('Connect')).toBeInTheDocument();
     expect(getByText('Done — shop authorized')).toBeInTheDocument();
     expect(getByText('Sync products')).toBeInTheDocument();
