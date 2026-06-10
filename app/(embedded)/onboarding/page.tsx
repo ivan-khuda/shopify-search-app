@@ -180,123 +180,125 @@ function OnboardingContent() {
 
   return (
     <s-page heading="Welcome to SmartDiscovery AI">
-      <s-paragraph>
-        Three steps and your storefront can answer natural-language questions
-        about your catalog. We&apos;ll sync your products, generate embeddings,
-        and turn on the chat drawer.
-      </s-paragraph>
+      <s-stack direction="block" gap="large">
+        <s-paragraph>
+          Three steps and your storefront can answer natural-language questions
+          about your catalog. We&apos;ll sync your products, generate embeddings,
+          and turn on the chat drawer.
+        </s-paragraph>
 
-      <StepRail stage={stage} />
+        <StepRail stage={stage} />
 
-      <s-section heading={syncHeading}>
-        {syncRunId === null && (
-          <s-paragraph>
-            We&apos;ll pull every active product, generate embeddings, and create
-            the search index. Takes a few minutes for most shops.
-          </s-paragraph>
-        )}
-        {isRunning && (
-          <s-paragraph>
-            You can close this tab — we&apos;ll email you the moment it finishes.
-          </s-paragraph>
-        )}
+        <s-section heading={syncHeading}>
+          {syncRunId === null && (
+            <s-paragraph>
+              We&apos;ll pull every active product, generate embeddings, and create
+              the search index. Takes a few minutes for most shops.
+            </s-paragraph>
+          )}
+          {isRunning && (
+            <s-paragraph>
+              You can close this tab — we&apos;ll email you the moment it finishes.
+            </s-paragraph>
+          )}
 
-        {retryRun?.state === 'failed' && syncRunId === null ? (
-          <s-banner tone="critical">
-            Your previous sync failed — Retry?
-            {retryRun.errors[0] ? <s-text>{retryRun.errors[0]}</s-text> : null}
-            <s-button data-testid="retry-deep-link" variant="primary" onClick={handleStartSync}>
-              Retry sync
-            </s-button>
-          </s-banner>
-        ) : null}
+          {retryRun?.state === 'failed' && syncRunId === null ? (
+            <s-banner tone="critical">
+              Your previous sync failed — Retry?
+              {retryRun.errors[0] ? <s-text>{retryRun.errors[0]}</s-text> : null}
+              <s-button data-testid="retry-deep-link" variant="primary" onClick={handleStartSync}>
+                Retry sync
+              </s-button>
+            </s-banner>
+          ) : null}
 
-        {syncRunId === null ? (
-          <s-stack direction="inline" gap="base" alignItems="center">
-            <s-button
-              data-testid="start-sync"
-              variant="primary"
-              onClick={handleStartSync}
-              {...(syncing ? { loading: '' } : {})}
-            >
-              Start sync
-            </s-button>
-            <s-text tone="subdued">
-              You can keep using your store while sync runs in the background.
-            </s-text>
-          </s-stack>
-        ) : (
-          <>
-            {isRunning && (
-              <>
-                <s-progress-bar
-                  data-testid="progress-bar"
-                  value={String(progressValue)}
-                />
-                <s-stack direction="inline" gap="base" alignItems="center">
-                  <s-text>
-                    {totalCount
-                      ? `${processedCount} of ${totalCount} products (${progressValue}%)`
-                      : `${processedCount} products synced so far`}
-                  </s-text>
-                  <s-badge data-testid="state-badge">{stateLabel(syncState)}</s-badge>
-                </s-stack>
-              </>
-            )}
-
-            {syncState === 'succeeded' && (
-              <>
-                <s-paragraph>
-                  {totalCount ?? processedCount} products are now searchable. Try
-                  the admin chat to see real results.
-                </s-paragraph>
-                <s-grid gridTemplateColumns="1fr 1fr" gap="base">
-                  <StatTile
-                    label="Products"
-                    value={totalCount ?? processedCount}
-                    testId="stat-products"
+          {syncRunId === null ? (
+            <s-stack direction="inline" gap="base" alignItems="center">
+              <s-button
+                data-testid="start-sync"
+                variant="primary"
+                onClick={handleStartSync}
+                {...(syncing ? { loading: '' } : {})}
+              >
+                Start sync
+              </s-button>
+              <s-text tone="subdued">
+                You can keep using your store while sync runs in the background.
+              </s-text>
+            </s-stack>
+          ) : (
+            <>
+              {isRunning && (
+                <>
+                  <s-progress-bar
+                    data-testid="progress-bar"
+                    value={String(progressValue)}
                   />
-                  <StatTile
-                    label="Embeddings"
-                    value={totalCount ?? processedCount}
-                    testId="stat-embeddings"
-                  />
-                </s-grid>
-                <s-stack direction="inline" gap="base">
-                  <s-button data-testid="open-chat" variant="primary" href="/chat">
-                    Open admin chat
+                  <s-stack direction="inline" gap="base" alignItems="center">
+                    <s-text>
+                      {totalCount
+                        ? `${processedCount} of ${totalCount} products (${progressValue}%)`
+                        : `${processedCount} products synced so far`}
+                    </s-text>
+                    <s-badge data-testid="state-badge">{stateLabel(syncState)}</s-badge>
+                  </s-stack>
+                </>
+              )}
+
+              {syncState === 'succeeded' && (
+                <>
+                  <s-paragraph>
+                    {totalCount ?? processedCount} products are now searchable. Try
+                    the admin chat to see real results.
+                  </s-paragraph>
+                  <s-grid gridTemplateColumns="1fr 1fr" gap="base">
+                    <StatTile
+                      label="Products"
+                      value={totalCount ?? processedCount}
+                      testId="stat-products"
+                    />
+                    <StatTile
+                      label="Embeddings"
+                      value={totalCount ?? processedCount}
+                      testId="stat-embeddings"
+                    />
+                  </s-grid>
+                  <s-stack direction="inline" gap="base">
+                    <s-button data-testid="open-chat" variant="primary" href="/chat">
+                      Open admin chat
+                    </s-button>
+                    <s-button data-testid="configure-model" href="/settings">
+                      Configure model
+                    </s-button>
+                  </s-stack>
+                </>
+              )}
+
+              {syncState === 'partial' && (
+                <>
+                  <s-banner tone="warning">
+                    {processedCount} products synced, {errors.length} failed
+                  </s-banner>
+                  <s-button data-testid="retry-sync" onClick={handleStartSync}>
+                    Retry sync
                   </s-button>
-                  <s-button data-testid="configure-model" href="/settings">
-                    Configure model
+                </>
+              )}
+
+              {syncState === 'failed' && (
+                <>
+                  <s-banner tone="critical">Sync failed</s-banner>
+                  <s-button data-testid="retry-sync" onClick={handleStartSync}>
+                    Retry sync
                   </s-button>
-                </s-stack>
-              </>
-            )}
+                </>
+              )}
+            </>
+          )}
+        </s-section>
 
-            {syncState === 'partial' && (
-              <>
-                <s-banner tone="warning">
-                  {processedCount} products synced, {errors.length} failed
-                </s-banner>
-                <s-button data-testid="retry-sync" onClick={handleStartSync}>
-                  Retry sync
-                </s-button>
-              </>
-            )}
-
-            {syncState === 'failed' && (
-              <>
-                <s-banner tone="critical">Sync failed</s-banner>
-                <s-button data-testid="retry-sync" onClick={handleStartSync}>
-                  Retry sync
-                </s-button>
-              </>
-            )}
-          </>
-        )}
-      </s-section>
-
-      <InfoCards />
+        <InfoCards />
+      </s-stack>
     </s-page>
   );
 }
