@@ -17,6 +17,8 @@ const {
   rateLimitMock,
   conversationUpdateMock,
   conversationCreateMock,
+  conversationFindFirstMock,
+  executeRawMock,
   hybridSearchMock,
   getActiveChatModelMock,
   // Phase 8 (plan 08-01) additions
@@ -27,6 +29,8 @@ const {
   rateLimitMock: vi.fn().mockReturnValue({ ok: true }),
   conversationUpdateMock: vi.fn(),
   conversationCreateMock: vi.fn(),
+  conversationFindFirstMock: vi.fn(),
+  executeRawMock: vi.fn(),
   hybridSearchMock: vi.fn().mockResolvedValue([]),
   getActiveChatModelMock: vi.fn().mockReturnValue({ id: 'google/gemini-2.5-flash' }),
   tryConsumeRequestMock: vi.fn().mockResolvedValue({ allowed: true }),
@@ -48,7 +52,9 @@ vi.mock('@/lib/db/client', () => ({
     conversation: {
       update: conversationUpdateMock,
       create: conversationCreateMock,
+      findFirst: conversationFindFirstMock,
     },
+    $executeRaw: executeRawMock,
   },
 }));
 
@@ -134,6 +140,10 @@ beforeEach(() => {
   rateLimitMock.mockReturnValue({ ok: true });
   conversationUpdateMock.mockResolvedValue({});
   conversationCreateMock.mockResolvedValue({ id: 'conv-new' });
+  // WR-11(b): the route validates conversation ownership (id + shop +
+  // visitorId) before reusing a client-supplied conversation_id.
+  conversationFindFirstMock.mockResolvedValue({ id: 'conv-existing', messages: [] });
+  executeRawMock.mockResolvedValue(1);
   // Phase 8 default — cap-allowed so existing tests are unaffected.
   tryConsumeRequestMock.mockResolvedValue({ allowed: true });
   capReachedResponseMock.mockImplementation(() =>
@@ -243,7 +253,7 @@ describe('POST /api/proxy/chat — happy path', () => {
 });
 
 describe('POST /api/proxy/chat — D-19 onFinish DB write', () => {
-  it('calls prisma.conversation.update with lastMessageAt Date after stream completes', async () => {
+  it('appends new turns via atomic JSONB concatenation ($executeRaw) after stream completes (WR-11a)', async () => {
     const req = makeRequest({ visitor_id: VISITOR_ID }, {
       visitor_id: VISITOR_ID,
       conversation_id: 'conv-existing',
@@ -252,15 +262,44 @@ describe('POST /api/proxy/chat — D-19 onFinish DB write', () => {
 
     await POST(req);
 
-    // onFinish must write the conversation update atomically
-    expect(conversationUpdateMock).toHaveBeenCalledWith(
+    // onFinish must APPEND (messages || newTurns), never replace the column
+    expect(executeRawMock).toHaveBeenCalledTimes(1);
+    const [strings, ...values] = executeRawMock.mock.calls[0] as [TemplateStringsArray, ...unknown[]];
+    const sql = strings.join('?');
+    expect(sql).toMatch(/"messages"\s*=\s*"messages"\s*\|\|/);
+    expect(sql).toMatch(/"lastMessageAt"\s*=\s*NOW\(\)/);
+    // Bound params: serialized newTurns JSON, conversation id, shop
+    expect(values).toContain('conv-existing');
+    expect(values).toContain(SHOP);
+    const jsonParam = values.find((v) => typeof v === 'string' && (v as string).startsWith('['));
+    expect(jsonParam).toBeDefined();
+    expect(JSON.parse(jsonParam as string)).toEqual(
+      expect.arrayContaining([expect.objectContaining({ role: 'user' })])
+    );
+  });
+
+  it('WR-11(b): validates conversation ownership (id + shop + visitorId) and 404s on foreign conversation_id', async () => {
+    conversationFindFirstMock.mockResolvedValueOnce(null);
+
+    const req = makeRequest({ visitor_id: VISITOR_ID }, {
+      visitor_id: VISITOR_ID,
+      conversation_id: 'conv-someone-elses',
+      messages: [{ role: 'user', parts: [{ type: 'text', text: 'Find me running shoes' }] }],
+    });
+
+    const response = await POST(req);
+
+    expect(conversationFindFirstMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: expect.objectContaining({ shop: SHOP }),
-        data: expect.objectContaining({
-          lastMessageAt: expect.any(Date),
+        where: expect.objectContaining({
+          id: 'conv-someone-elses',
+          shop: SHOP,
+          visitorId: VISITOR_ID,
         }),
       })
     );
+    expect(response.status).toBe(404);
+    expect(executeRawMock).not.toHaveBeenCalled();
   });
 
   it('does NOT call hybridSearch with raw URL shop param (shop derived from HMAC, not raw query)', async () => {

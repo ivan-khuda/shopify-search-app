@@ -101,7 +101,19 @@ export const POST = withAppProxyHmac(async ({ shop, query, req }) => {
   // D-21 steps 6 + 7: conversation lifecycle + merge.
   let conversationId: string;
   if (body.conversation_id) {
-    conversationId = body.conversation_id;
+    // WR-11(b): validate conversation ownership — scope to the requesting
+    // visitor, not just the shop, so a same-shop client who learns another
+    // visitor's conversation cuid cannot write turns into it. The merge flow
+    // (mergeVisitorIntoCustomer) preserves visitorId on re-keyed rows, so
+    // this check stays valid for customer-promoted conversations.
+    const owned = await prisma.conversation.findFirst({
+      where: { id: body.conversation_id, shop, visitorId: body.visitor_id },
+      select: { id: true },
+    });
+    if (!owned) {
+      return Response.json({ error: 'conversation_not_found' }, { status: 404 });
+    }
+    conversationId = owned.id;
   } else {
     const lastUser = [...body.messages].reverse().find((m) => m.role === 'user');
     const rawText = lastUser ? extractUserText(lastUser) : '';
@@ -167,13 +179,16 @@ export const POST = withAppProxyHmac(async ({ shop, query, req }) => {
       if (Array.isArray(respMessages)) {
         newTurns.push(...respMessages);
       }
-      await prisma.conversation.update({
-        where: { id: conversationId, shop } as never,
-        data: {
-          messages: newTurns as never,
-          lastMessageAt: new Date(),
-        },
-      });
+      // WR-11(a): APPEND the new turns via a single atomic JSONB
+      // concatenation (`messages || newTurns`). The previous
+      // prisma.conversation.update REPLACED the Json column with only the
+      // latest exchange, truncating every multi-turn conversation's history.
+      await prisma.$executeRaw`
+        UPDATE "conversations"
+        SET "messages" = "messages" || ${JSON.stringify(newTurns)}::jsonb,
+            "lastMessageAt" = NOW()
+        WHERE id = ${conversationId} AND shop = ${shop}
+      `;
     },
   });
 
