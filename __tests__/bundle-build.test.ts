@@ -1,17 +1,19 @@
 /**
- * RED scaffold for D-13/D-14 — prebuild pipeline test.
- * Verifies bun run prebuild produces public/storefront-bundle-*.js + valid manifest.
+ * D-13/D-14 — prebuild pipeline gate.
+ * Verifies bun run prebuild produces public/storefront-bundle-*.js + valid manifest,
+ * and that the ENTRY chunk stays under the 250KB budget.
  *
  * Gates with it.skipIf when bun is not on PATH (non-bun CI environments).
- * Fails today because:
- *   1. `bun run prebuild` script doesn't exist yet (Wave 3 adds it)
- *   2. The esbuild entry file doesn't exist yet
+ *
+ * WR-09: prebuild runs ONCE in beforeAll and FAILS the suite on error (no
+ * stale-manifest validation), the size test reads the entry path from the
+ * manifest (content hashes have no lexicographic temporal ordering), and the
+ * RED-scaffold `expect(true)` escape hatches are gone.
  */
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeAll } from 'vitest';
 import { execSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve, join } from 'node:path';
-import { readdirSync } from 'node:fs';
 
 const ROOT = resolve(__dirname, '..');
 
@@ -27,57 +29,47 @@ function isBunAvailable(): boolean {
 
 const bunAvailable = isBunAvailable();
 
-describe('bundle-build — D-13/D-14 prebuild pipeline', () => {
-  it.skipIf(!bunAvailable)(
-    'bun run prebuild produces public/storefront-bundle-*.js',
-    () => {
-      // Run prebuild — will fail until Wave 3 adds the script + entry.tsx
-      try {
-        execSync('bun run prebuild', {
-          stdio: 'pipe',
-          cwd: ROOT,
-        });
-      } catch (err) {
-        // If prebuild fails, the test fails with the error message
-        const message = err instanceof Error ? err.message : String(err);
-        // Rethrow for meaningful failure message
-        throw new Error(`prebuild failed: ${message}`);
-      }
+interface StorefrontManifest {
+  bundle: string;
+  chunks?: string[];
+  version: string;
+}
 
-      // Assert the bundle file exists
-      const publicDir = resolve(ROOT, 'public');
-      const files = readdirSync(publicDir);
-      const bundleFiles = files.filter((f) => f.match(/^storefront-bundle-[A-Za-z0-9]+\.js$/));
-      expect(bundleFiles.length).toBeGreaterThan(0);
+function readManifest(): StorefrontManifest {
+  const manifestPath = resolve(ROOT, 'public/storefront-manifest.json');
+  expect(existsSync(manifestPath), 'public/storefront-manifest.json must exist after prebuild').toBe(true);
+  return JSON.parse(readFileSync(manifestPath, 'utf-8')) as StorefrontManifest;
+}
+
+describe('bundle-build — D-13/D-14 prebuild pipeline', () => {
+  beforeAll(() => {
+    if (!bunAvailable) return;
+    // Run prebuild ONCE; any failure fails the whole suite — never fall back
+    // to validating a stale manifest/bundle from a previous run.
+    try {
+      execSync('bun run prebuild', { stdio: 'pipe', cwd: ROOT });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      throw new Error(`prebuild failed: ${message}`);
+    }
+  }, 120_000);
+
+  it.skipIf(!bunAvailable)(
+    'bun run prebuild produces the public/storefront-bundle-*.js entry named in the manifest',
+    () => {
+      const manifest = readManifest();
+      expect(manifest.bundle).toMatch(/^\/storefront-bundle-[A-Za-z0-9]+\.js$/);
+      const entryPath = join(ROOT, 'public', manifest.bundle.replace(/^\//, ''));
+      expect(existsSync(entryPath), `entry bundle ${manifest.bundle} must exist`).toBe(true);
     }
   );
 
   it.skipIf(!bunAvailable)(
     'bun run prebuild produces valid public/storefront-manifest.json',
     () => {
-      try {
-        execSync('bun run prebuild', {
-          stdio: 'pipe',
-          cwd: ROOT,
-        });
-      } catch {
-        // Prebuild failure is handled by the bundle-existence test above
-        // This test only checks the manifest if prebuild succeeded
-      }
+      const manifest = readManifest();
 
-      const manifestPath = resolve(ROOT, 'public/storefront-manifest.json');
-      if (!existsSync(manifestPath)) {
-        // RED state: manifest doesn't exist yet
-        expect(existsSync(manifestPath)).toBe(true);
-        return;
-      }
-
-      const manifest = JSON.parse(readFileSync(manifestPath, 'utf-8')) as {
-        bundle: string;
-        version: string;
-      };
-
-      // Manifest shape: { bundle: '/storefront-bundle-X.js', version: string }
+      // Manifest shape: { bundle: '/storefront-bundle-X.js', chunks: [...], version: string }
       expect(typeof manifest.bundle).toBe('string');
       expect(manifest.bundle).toMatch(/^\/storefront-bundle-[A-Za-z0-9]+\.js$/);
       expect(typeof manifest.version).toBe('string');
@@ -88,39 +80,19 @@ describe('bundle-build — D-13/D-14 prebuild pipeline', () => {
   it.skipIf(!bunAvailable)(
     'storefront bundle size is < 250KB minified (D-14)',
     () => {
-      const publicDir = resolve(ROOT, 'public');
-
-      if (!existsSync(publicDir)) {
-        // RED state: public dir doesn't exist yet
-        expect(existsSync(publicDir)).toBe(true);
-        return;
-      }
-
-      let files: string[];
-      try {
-        files = readdirSync(publicDir);
-      } catch {
-        expect(true).toBe(true);
-        return;
-      }
-
-      const bundleFiles = files.filter((f) => f.match(/^storefront-bundle-[A-Za-z0-9]+\.js$/));
-
-      if (bundleFiles.length === 0) {
-        // RED state: no bundle yet
-        expect(bundleFiles.length).toBeGreaterThan(0);
-        return;
-      }
-
       // Measure the ENTRY chunk only. Heavy panes (ChatPane/HistoryPanel/
       // SavedProductsPanel + DbBacked stores) ship as split chunks loaded on
       // first FAB click via React.lazy; the 250KB budget guards initial-paint
       // bytes, not the total feature size.
-      const latestBundle = bundleFiles.sort().pop()!;
-      const bundlePath = join(publicDir, latestBundle);
-      const bundleContent = readFileSync(bundlePath);
+      //
+      // The entry path comes from the manifest the build just wrote — NOT
+      // from a lexicographic sort of directory listings, which can pick an
+      // arbitrary stale bundle when more than one is present.
+      const manifest = readManifest();
+      const bundlePath = join(ROOT, 'public', manifest.bundle.replace(/^\//, ''));
+      expect(existsSync(bundlePath), `entry bundle ${manifest.bundle} must exist`).toBe(true);
 
-      const sizeKB = bundleContent.length / 1024;
+      const sizeKB = readFileSync(bundlePath).length / 1024;
       expect(sizeKB).toBeLessThan(250);
     }
   );
