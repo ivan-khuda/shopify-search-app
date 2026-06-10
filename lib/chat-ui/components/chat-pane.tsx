@@ -113,7 +113,9 @@ export function ChatPane({ adapter, savedProductIds, onToggleSave, onHistoryAdd 
             return;
         }
 
-        sendMessage({ text: query });
+        // WR-02: attachments-only submit — forward the files instead of
+        // silently dropping them and posting an empty message.
+        sendMessage({ text: query, files: message.files });
     }, [submitText, sendMessage]);
 
     return (
