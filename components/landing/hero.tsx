@@ -3,6 +3,7 @@ import React from 'react';
 import { ACCENT, rgba } from './tokens';
 import { ShopifyMark } from './brand';
 import { ChatDemo } from './chat-demo';
+import { cn } from '@/lib/utils';
 
 const HEADLINE = 'Your shoppers describe it.';
 const HEADLINE2 = 'Your store finds it.';
@@ -26,47 +27,35 @@ export function CTAButton({
   onDark,
   href,
 }: CTAButtonProps) {
-  const base: React.CSSProperties = {
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: 9,
-    fontWeight: 600,
-    fontSize: large ? 15 : 14,
-    padding: large ? '13px 22px' : '11px 18px',
-    borderRadius: 11,
-    border: '1px solid transparent',
-    transition: 'transform .12s, box-shadow .2s, background .2s',
-    whiteSpace: 'nowrap',
-    cursor: 'pointer',
-    textDecoration: 'none',
-  };
-  const styles: Record<string, React.CSSProperties> = {
-    primary: {
-      ...base,
-      background: accent,
-      color: '#fff',
-      boxShadow: `0 1px 0 rgba(255,255,255,.25) inset, 0 8px 22px -8px ${rgba(accent, 0.7)}`,
-    },
-    ghost: {
-      ...base,
-      background: onDark ? 'rgba(255,255,255,.08)' : '#fff',
-      color: onDark ? '#fff' : 'var(--text-strong)',
-      borderColor: onDark ? 'rgba(255,255,255,.22)' : 'var(--border)',
-    },
-    shopify: {
-      ...base,
-      background: '#fff',
-      color: '#1a1d21',
-      borderColor: 'var(--border)',
-    },
+  const base =
+    'inline-flex items-center gap-[9px] font-semibold rounded-[11px] border border-transparent [transition:transform_.12s,box-shadow_.2s,background_.2s] whitespace-nowrap cursor-pointer no-underline hover:-translate-y-px';
+
+  const sizeClasses = large
+    ? 'px-[22px] py-[13px] text-[15px]'
+    : 'px-[18px] py-[11px] text-[14px]';
+
+  const kindClasses: Record<string, string> = {
+    primary: '',
+    ghost: cn(
+      'border',
+      onDark
+        ? 'bg-white/[.08] text-white border-white/[.22]'
+        : 'bg-white text-(--text-strong) border-(--border)'
+    ),
+    shopify: 'bg-white text-[#1a1d21] border-(--border)',
   };
 
-  const handleMouseEnter = (e: React.MouseEvent<HTMLElement>) => {
-    (e.currentTarget as HTMLElement).style.transform = 'translateY(-1px)';
-  };
-  const handleMouseLeave = (e: React.MouseEvent<HTMLElement>) => {
-    (e.currentTarget as HTMLElement).style.transform = 'translateY(0)';
-  };
+  // primary: accent background and shadow are runtime-prop-derived — stay inline
+  const primaryStyle =
+    kind === 'primary'
+      ? {
+          background: accent,
+          color: '#fff',
+          boxShadow: `0 1px 0 rgba(255,255,255,.25) inset, 0 8px 22px -8px ${rgba(accent, 0.7)}`,
+        }
+      : undefined;
+
+  const cls = cn(base, sizeClasses, kindClasses[kind]);
 
   const content = (
     <>
@@ -77,67 +66,35 @@ export function CTAButton({
 
   if (href) {
     return (
-      <a
-        href={href}
-        style={styles[kind]}
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
-      >
+      <a href={href} className={cls} style={primaryStyle}>
         {content}
       </a>
     );
   }
 
   return (
-    <button
-      type="button"
-      style={styles[kind]}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-    >
+    <button type="button" className={cls} style={primaryStyle}>
       {content}
     </button>
   );
 }
 
-interface TrustLineProps {
-  onDark?: boolean;
-}
-
-export function TrustLine({ onDark }: TrustLineProps) {
-  const c = onDark ? 'rgba(255,255,255,.72)' : 'var(--text-sub)';
-  const dot = onDark ? 'rgba(255,255,255,.4)' : 'var(--border)';
+export function TrustLine() {
   const items = ['Installs in minutes', 'No theme edits', 'Works with your theme'];
   return (
-    <div
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        flexWrap: 'wrap',
-        gap: 14,
-        fontSize: 13,
-        color: c,
-      }}
-    >
+    <div className="flex items-center flex-wrap gap-[14px] text-[13px] text-(--text-sub)">
       {items.map((t, i) => (
         <React.Fragment key={t}>
           {i > 0 && (
-            <span
-              style={{
-                width: 4,
-                height: 4,
-                borderRadius: '50%',
-                background: dot,
-              }}
-            ></span>
+            <span className="w-[4px] h-[4px] rounded-full bg-(--border)"></span>
           )}
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+          <span className="inline-flex items-center gap-[6px]">
             <svg
               width="14"
               height="14"
               viewBox="0 0 24 24"
               fill="none"
-              stroke={onDark ? '#fff' : '#008060'}
+              stroke="#008060"
               strokeWidth="2.4"
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -155,39 +112,17 @@ export function TrustLine({ onDark }: TrustLineProps) {
 
 interface EyebrowProps {
   accent?: string;
-  onDark?: boolean;
 }
 
-export function Eyebrow({ accent = ACCENT, onDark }: EyebrowProps) {
+export function Eyebrow({ accent = ACCENT }: EyebrowProps) {
   return (
     <span
-      style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: 8,
-        fontSize: 12.5,
-        fontWeight: 600,
-        padding: '6px 12px 6px 8px',
-        borderRadius: 999,
-        letterSpacing: '.01em',
-        background: onDark ? 'rgba(255,255,255,.1)' : rgba(accent, 0.1),
-        color: onDark ? '#fff' : accent,
-        border: onDark
-          ? '1px solid rgba(255,255,255,.16)'
-          : `1px solid ${rgba(accent, 0.2)}`,
-      }}
+      className="inline-flex items-center gap-[8px] text-[12.5px] font-semibold px-[12px] py-[6px] pl-[8px] rounded-full tracking-[.01em] bg-(--accent)/10 border border-(--accent)/20"
+      style={{ color: accent }}
     >
       <span
-        style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: 5,
-          padding: '2px 8px',
-          borderRadius: 999,
-          background: onDark ? 'rgba(255,255,255,.16)' : '#fff',
-          color: onDark ? '#fff' : accent,
-          fontWeight: 700,
-        }}
+        className="inline-flex items-center gap-[5px] px-[8px] py-[2px] rounded-full bg-white font-bold"
+        style={{ color: accent }}
       >
         <ShopifyMark size={13} color="#95BF47" /> Shopify App
       </span>
@@ -202,59 +137,22 @@ interface HeroConversationProps {
 
 export function HeroConversation({ accent = ACCENT }: HeroConversationProps) {
   return (
-    <section
-      style={{
-        background: 'linear-gradient(180deg,#fbfaf8 0%, #f6f6f7 100%)',
-        borderBottom: '1px solid var(--border-sub)',
-      }}
-    >
+    <section className="bg-[linear-gradient(180deg,#fbfaf8_0%,#f6f6f7_100%)] border-b border-(--border-sub)">
       <div
-        style={{
-          maxWidth: 1200,
-          margin: '0 auto',
-          padding: 'clamp(48px,7vw,92px) 28px',
-          display: 'grid',
-          gridTemplateColumns: 'minmax(0,1.05fr) minmax(0,0.95fr)',
-          gap: 'clamp(36px,5vw,72px)',
-          alignItems: 'center',
-        }}
-        className="hero-grid"
+        className="max-w-[1200px] mx-auto px-[28px] py-[clamp(48px,7vw,92px)] grid grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] max-[920px]:grid-cols-1 gap-[clamp(36px,5vw,72px)] items-center"
       >
         <div className="reveal in">
           <Eyebrow accent={accent} />
-          <h1
-            style={{
-              fontSize: 'clamp(38px,5.2vw,62px)',
-              lineHeight: 1.04,
-              letterSpacing: '-0.03em',
-              fontWeight: 700,
-              margin: '22px 0 0',
-              color: 'var(--text-strong)',
-            }}
-          >
+          <h1 className="text-[clamp(38px,5.2vw,62px)] leading-[1.04] tracking-[-0.03em] font-bold mt-[22px] text-(--text-strong)">
             {HEADLINE}
             <br />
+            {/* accent is a runtime prop — color stays inline */}
             <span style={{ color: accent }}>{HEADLINE2}</span>
           </h1>
-          <p
-            style={{
-              fontSize: 'clamp(16px,1.4vw,19px)',
-              lineHeight: 1.55,
-              color: 'var(--text)',
-              margin: '20px 0 0',
-              maxWidth: 480,
-            }}
-          >
+          <p className="text-[clamp(16px,1.4vw,19px)] leading-[1.55] text-(--text) mt-[20px] max-w-[480px]">
             {SUBHEAD}
           </p>
-          <div
-            style={{
-              display: 'flex',
-              flexWrap: 'wrap',
-              gap: 12,
-              margin: '30px 0 22px',
-            }}
-          >
+          <div className="flex flex-wrap gap-[12px] mt-[30px] mb-[22px]">
             <CTAButton accent={accent} kind="primary" large href="/api/auth">
               Add to Shopify — free
             </CTAButton>
@@ -264,10 +162,7 @@ export function HeroConversation({ accent = ACCENT }: HeroConversationProps) {
           </div>
           <TrustLine />
         </div>
-        <div
-          className="reveal in"
-          style={{ height: 'min(560px, 74vh)', minHeight: 440 }}
-        >
+        <div className="reveal in h-[min(560px,74vh)] min-h-[440px]">
           <ChatDemo accent={accent} />
         </div>
       </div>

@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { ACCENT } from './tokens';
 import { SDLogo } from './brand';
 import { CTAButton } from './hero';
+import { cn } from '@/lib/utils';
 
 interface NavProps {
   accent?: string;
@@ -25,82 +26,37 @@ export function Nav({ accent = ACCENT }: NavProps) {
 
   return (
     <header
-      style={{
-        position: 'sticky',
-        top: 0,
-        zIndex: 100,
-        background: solid ? 'rgba(255,255,255,.82)' : 'transparent',
-        backdropFilter: solid ? 'blur(14px) saturate(160%)' : 'none',
-        WebkitBackdropFilter: solid ? 'blur(14px) saturate(160%)' : 'none',
-        borderBottom: solid ? '1px solid var(--border-sub)' : '1px solid transparent',
-        transition: 'background .25s, border-color .25s',
-      }}
+      className={cn(
+        'sticky top-0 z-[100] [transition:background_.25s,border-color_.25s]',
+        solid
+          ? 'bg-white/[.82] backdrop-blur-[14px] backdrop-saturate-[160%] border-b border-(--border-sub)'
+          : 'bg-transparent border-b border-transparent'
+      )}
     >
-      <div
-        style={{
-          maxWidth: 1200,
-          margin: '0 auto',
-          padding: '12px 28px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 22,
-        }}
-      >
-        <a href="#top" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+      <div className="max-w-[1200px] mx-auto px-[28px] py-[12px] flex items-center gap-[22px]">
+        <a href="#top" className="flex items-center gap-[10px]">
           <SDLogo size={32} accent={accent} />
-          <span
-            style={{
-              fontWeight: 700,
-              fontSize: 16,
-              letterSpacing: '-0.01em',
-              color: 'var(--text-strong)',
-            }}
-          >
-            SmartDiscovery <span style={{ color: accent }}>AI</span>
+          <span className="font-bold text-[16px] tracking-[-0.01em] text-(--text-strong)">
+            SmartDiscovery{' '}
+            {/* accent is a runtime prop — color stays inline */}
+            <span style={{ color: accent }}>AI</span>
           </span>
         </a>
-        <nav
-          style={{ display: 'flex', gap: 4, marginLeft: 14 }}
-          className="nav-links"
-        >
+        <nav className="flex gap-[4px] ml-[14px] max-[920px]:hidden">
           {links.map(([t, h]) => (
             <a
               key={t}
               href={h}
-              style={{
-                fontSize: 14,
-                fontWeight: 500,
-                color: 'var(--text)',
-                padding: '7px 12px',
-                borderRadius: 8,
-              }}
-              onMouseEnter={(e) =>
-                (e.currentTarget.style.background = 'rgba(0,0,0,.04)')
-              }
-              onMouseLeave={(e) =>
-                (e.currentTarget.style.background = 'transparent')
-              }
+              className="text-[14px] font-medium text-(--text) px-[12px] py-[7px] rounded-[8px] hover:bg-black/[.04]"
             >
               {t}
             </a>
           ))}
         </nav>
-        <div
-          style={{
-            marginLeft: 'auto',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 10,
-          }}
-        >
+        <div className="ml-auto flex items-center gap-[10px]">
           <a
             href="/api/auth"
-            style={{
-              fontSize: 14,
-              fontWeight: 600,
-              color: 'var(--text-strong)',
-            }}
-            className="nav-signin"
+            className="text-[14px] font-semibold text-(--text-strong) max-[560px]:hidden"
           >
             Sign in
           </a>
