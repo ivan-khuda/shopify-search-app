@@ -44,7 +44,12 @@
 
     fetch('/apps/smartdiscovery/_meta/bundle-url', { method: 'GET', cache: 'no-store' })
       .then(function (r) { return r.json(); })
-      .then(function (m) { return import(m.bundle); })
+      .then(function (m) {
+        // CR-01 defense: require an absolute URL. new URL() throws on a
+        // relative/scheme-less value, routing it to the .catch below instead
+        // of letting import() resolve it against the shop's domain.
+        return import(new URL(m.bundle).href);
+      })
       .then(function () {
         if (window.smartdiscovery && typeof window.smartdiscovery.mount === 'function') {
           window.smartdiscovery.mount({
