@@ -35,5 +35,6 @@ describe('StepRail', () => {
     expect(getByTestId('step-2').getAttribute('data-done')).toBe('true');
     expect(getByTestId('step-2').getAttribute('data-active')).toBe('false');
     expect(getByTestId('step-3').getAttribute('data-active')).toBe('true');
+    expect(getByTestId('step-3').getAttribute('data-done')).toBe('false');
   });
 });

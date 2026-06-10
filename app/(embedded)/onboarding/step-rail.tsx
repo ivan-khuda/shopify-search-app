@@ -3,6 +3,10 @@
 // Pure presentational; jsdom can't run Polaris custom elements, so state is
 // also exposed via data-done/data-active for tests.
 
+// 0 = idle (nothing started), 1 = sync in flight OR ended in failed/partial
+// (sync is still the active concern), 2 = sync succeeded (enable-drawer is next).
+// There is intentionally no stage 3: V1 never confirms the drawer was enabled,
+// so the last step can only ever be active, not done.
 export type SyncStage = 0 | 1 | 2;
 
 interface Step {
