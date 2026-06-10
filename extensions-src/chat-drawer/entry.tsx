@@ -29,15 +29,35 @@ let visitorId: string | null = null;
 // different `initialOpen` is a no-op once mounted).
 let drawerToggle: (() => void) | null = null;
 
+// WR-10: localStorage throws SecurityError when site data is blocked (Safari
+// "Block all cookies", embedded webviews, some private modes). An unguarded
+// throw here would unwind mount() entirely — bundle loaded, skeleton removed,
+// drawer never appears. Degrade to the module-level in-memory id instead.
+function safeStorageGet(key: string): string | null {
+  try {
+    return window.localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function safeStorageSet(key: string, value: string): void {
+  try {
+    window.localStorage.setItem(key, value);
+  } catch {
+    // Storage blocked — module-level `visitorId` keeps it stable for this page load.
+  }
+}
+
 function resolveVisitorId(): string {
   if (visitorId) return visitorId;
-  const stored = window.localStorage.getItem(STORAGE_KEY);
+  const stored = safeStorageGet(STORAGE_KEY);
   if (stored) {
     visitorId = stored;
     return stored;
   }
   const fresh = crypto.randomUUID();
-  window.localStorage.setItem(STORAGE_KEY, fresh);
+  safeStorageSet(STORAGE_KEY, fresh);
   visitorId = fresh;
   return fresh;
 }
