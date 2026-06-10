@@ -65,6 +65,14 @@ function mount(opts: MountOpts): void {
 
   document.body.classList.remove('sd-skeleton-open');
 
+  // WR-04: the loader.js IIFE painted its own FAB directly under
+  // <smartdiscovery-app>. StorefrontDrawer renders a React-owned FAB with the
+  // same class/position/z-index — remove the loader's so the page never has
+  // two stacked buttons with duplicate accessible names and stale
+  // aria-expanded. (`:scope >` excludes React's FAB, which lives inside
+  // .sd-drawer-mount.)
+  rootEl.querySelector(':scope > button.sd-fab')?.remove();
+
   let container = rootEl.querySelector<HTMLDivElement>('.sd-drawer-mount');
   if (!container) {
     container = document.createElement('div');

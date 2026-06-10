@@ -43,7 +43,12 @@
     document.body.classList.add('sd-skeleton-open');
 
     fetch('/apps/smartdiscovery/_meta/bundle-url', { method: 'GET', cache: 'no-store' })
-      .then(function (r) { return r.json(); })
+      .then(function (r) {
+        // WR-04: surface non-2xx (429/500) responses to the .catch instead
+        // of letting them die as a JSON parse error.
+        if (!r.ok) throw new Error('bundle-url request failed: ' + r.status);
+        return r.json();
+      })
       .then(function (m) {
         // CR-01 defense: require an absolute URL. new URL() throws on a
         // relative/scheme-less value, routing it to the .catch below instead
