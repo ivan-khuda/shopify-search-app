@@ -6,9 +6,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ```bash
 bun dev          # Start Next.js dev server
-bun build        # Production build
+bun run build    # Production build (bare `bun build` invokes bun's native bundler, not Next)
 bun lint         # ESLint
-bun test         # Run all tests (vitest)
+bun run test     # Run all tests (vitest) — bare `bun test` runs bun's native test runner and fails
 ```
 
 Run a single test file:
