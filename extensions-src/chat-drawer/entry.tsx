@@ -1,18 +1,27 @@
 /**
- * Storefront bundle entry — Phase 6 (D-13).
+ * Storefront bundle entry — Phase 6 (D-13), updated CR-03.
  *
  * Runs INSIDE the dynamically-imported main bundle. loader.js (the
  * vanilla IIFE in extensions/chat-drawer/assets/loader.js) calls
  * `window.smartdiscovery.mount(opts)` after `await import(bundleUrl)`.
  * From that point on this module owns the drawer's React lifecycle.
  *
+ * CR-03 / IN-03: visitor identity now comes from resolveSignedVisitorId
+ * (server-minted, HMAC-signed). The previous local resolveVisitorId /
+ * STORAGE_KEY / safeStorage* helpers are removed — that logic lives in
+ * lib/chat-ui/identity/visitor-bootstrap.ts (single source, IN-03).
+ *
+ * WR-10 preserved: if resolveSignedVisitorId rejects (network down, HMAC
+ * config error), mount() catches and falls back to an empty-string token so
+ * the drawer still renders. The server will return 401 on the first request,
+ * the client re-mints, and subsequent requests succeed.
+ *
  * No console.* logging.
  */
 import * as React from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { StorefrontDrawer } from './components/StorefrontDrawer';
-
-const STORAGE_KEY = 'smartdiscovery.visitor_id';
+import { resolveSignedVisitorId } from '@/lib/chat-ui/identity/visitor-bootstrap';
 
 interface MountOpts {
   shop: string;
@@ -23,51 +32,17 @@ interface MountOpts {
 
 let reactRoot: Root | null = null;
 let lastOpts: MountOpts | null = null;
-let visitorId: string | null = null;
 // WR-03: imperative toggle registered by the mounted StorefrontDrawer so
 // `toggle()` can flip the drawer's real open state (re-rendering with a
 // different `initialOpen` is a no-op once mounted).
 let drawerToggle: (() => void) | null = null;
 
-// WR-10: localStorage throws SecurityError when site data is blocked (Safari
-// "Block all cookies", embedded webviews, some private modes). An unguarded
-// throw here would unwind mount() entirely — bundle loaded, skeleton removed,
-// drawer never appears. Degrade to the module-level in-memory id instead.
-function safeStorageGet(key: string): string | null {
-  try {
-    return window.localStorage.getItem(key);
-  } catch {
-    return null;
-  }
-}
-
-function safeStorageSet(key: string, value: string): void {
-  try {
-    window.localStorage.setItem(key, value);
-  } catch {
-    // Storage blocked — module-level `visitorId` keeps it stable for this page load.
-  }
-}
-
-function resolveVisitorId(): string {
-  if (visitorId) return visitorId;
-  const stored = safeStorageGet(STORAGE_KEY);
-  if (stored) {
-    visitorId = stored;
-    return stored;
-  }
-  const fresh = crypto.randomUUID();
-  safeStorageSet(STORAGE_KEY, fresh);
-  visitorId = fresh;
-  return fresh;
-}
-
-function renderDrawer(opts: MountOpts, initialOpen: boolean): void {
+function renderDrawer(opts: MountOpts, visitorId: string, initialOpen: boolean): void {
   if (!reactRoot) return;
   reactRoot.render(
     <StorefrontDrawer
       shop={opts.shop}
-      visitorId={resolveVisitorId()}
+      visitorId={visitorId}
       customerId={opts.customerId}
       accent={opts.accent}
       position={opts.position}
@@ -79,7 +54,7 @@ function renderDrawer(opts: MountOpts, initialOpen: boolean): void {
   );
 }
 
-function mount(opts: MountOpts): void {
+async function mount(opts: MountOpts): Promise<void> {
   const rootEl = document.querySelector('smartdiscovery-app');
   if (!rootEl) return;
 
@@ -103,7 +78,19 @@ function mount(opts: MountOpts): void {
     reactRoot = createRoot(container);
   }
   lastOpts = opts;
-  renderDrawer(opts, true);
+
+  // CR-03: resolve signed visitor token before first render so DrawerBody
+  // has it immediately. On failure degrade to empty string — server returns
+  // 401 on first use, client re-mints via /_meta/visitor, subsequent
+  // requests succeed. Drawer always mounts (WR-10 mount-survival guarantee).
+  let visitorId = '';
+  try {
+    visitorId = await resolveSignedVisitorId();
+  } catch {
+    // Fallback: empty token — drawer mounts, first request triggers re-mint.
+  }
+
+  renderDrawer(opts, visitorId, true);
 }
 
 function toggle(): void {
@@ -115,7 +102,10 @@ function toggle(): void {
   // Fallback (drawer never registered, e.g. first render still in flight):
   // re-render requesting an open drawer.
   if (!lastOpts) return;
-  renderDrawer(lastOpts, true);
+  // Use the cached token from the bootstrap module (already resolved).
+  void resolveSignedVisitorId().then((visitorId) => {
+    if (lastOpts) renderDrawer(lastOpts, visitorId, true);
+  });
 }
 
 declare global {

@@ -1,11 +1,27 @@
+/**
+ * StorefrontAdapter tests — updated for CR-03.
+ * visitor_id now comes from resolveSignedVisitorId (server-signed token),
+ * not from crypto.randomUUID.
+ */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+
+const SIGNED_TOKEN = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee.abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890';
+
+// Mock the visitor-bootstrap module so tests don't hit fetch
+// Use a literal string (not the const) because vi.mock factories are hoisted.
+vi.mock('@/lib/chat-ui/identity/visitor-bootstrap', () => ({
+  resolveSignedVisitorId: vi.fn().mockResolvedValue(
+    'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee.abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890'
+  ),
+}));
+
 import { StorefrontAdapter } from '@/lib/chat-ui/adapters/storefront';
+import { resolveSignedVisitorId } from '@/lib/chat-ui/identity/visitor-bootstrap';
 
-const FIXED_UUID = 'fixed-uuid-aaaa-bbbb-cccc-dddd-eeeeffff0000';
-
-describe('StorefrontAdapter (SHR-03)', () => {
+describe('StorefrontAdapter (SHR-03, CR-03)', () => {
   beforeEach(() => {
     window.localStorage.clear();
+    vi.mocked(resolveSignedVisitorId).mockResolvedValue(SIGNED_TOKEN);
   });
 
   afterEach(() => {
@@ -24,20 +40,18 @@ describe('StorefrontAdapter (SHR-03)', () => {
     expect(headers).toEqual({});
   });
 
-  it('getRequestBody on first invocation generates + persists visitor_id under smartdiscovery.visitor_id', async () => {
-    vi.spyOn(crypto, 'randomUUID').mockReturnValue(FIXED_UUID as ReturnType<typeof crypto.randomUUID>);
+  it('CR-03: getRequestBody returns visitor_id from resolveSignedVisitorId (not randomUUID)', async () => {
     const adapter = new StorefrontAdapter();
     const body = await adapter.getRequestBody();
-    expect(body).toEqual({ visitor_id: FIXED_UUID });
-    expect(window.localStorage.getItem('smartdiscovery.visitor_id')).toBe(FIXED_UUID);
+    expect(body).toMatchObject({ visitor_id: SIGNED_TOKEN });
+    expect(resolveSignedVisitorId).toHaveBeenCalled();
   });
 
-  it('getRequestBody on second invocation reuses persisted visitor_id (does not call crypto.randomUUID again)', async () => {
-    const spy = vi.spyOn(crypto, 'randomUUID').mockReturnValue(FIXED_UUID as ReturnType<typeof crypto.randomUUID>);
+  it('CR-03: does NOT call crypto.randomUUID for identity', async () => {
+    const spy = vi.spyOn(crypto, 'randomUUID');
     const adapter = new StorefrontAdapter();
     await adapter.getRequestBody();
-    await adapter.getRequestBody();
-    expect(spy).toHaveBeenCalledTimes(1);
+    expect(spy).not.toHaveBeenCalled();
   });
 
   it('getRequestBody returns {} when window is undefined (SSR guard)', async () => {
@@ -48,47 +62,35 @@ describe('StorefrontAdapter (SHR-03)', () => {
   });
 });
 
-// ── IDN-02: customer_id injection from window.Shopify.customer (Phase 6) ─────
-//
-// STR-08: endpoint is an App Proxy path '/apps/smartdiscovery/chat' so the
-// request stays same-origin from the storefront and Shopify HMAC-signs it
-// before forwarding to the app backend. IDN-02: when window.Shopify.customer.id
-// is present, getRequestBody() includes customer_id as a STRING (BigInt
-// precision preserved — Pitfall 7 from RESEARCH).
-
-describe('IDN-02 customer_id — window.Shopify.customer injection (Phase 6)', () => {
+// ── IDN-02: customer_id injection from window.Shopify.customer ──────────────
+describe('IDN-02 customer_id — window.Shopify.customer injection (CR-03 update)', () => {
   afterEach(() => {
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
   });
 
   it('includes customer_id as string when window.Shopify.customer.id is a number', async () => {
-    // BigInt-precision test case: 5570080145486 must come through as the exact string
     Object.defineProperty(window, 'Shopify', {
       value: { customer: { id: 5570080145486 } },
       configurable: true,
       writable: true,
     });
 
-    vi.spyOn(crypto, 'randomUUID').mockReturnValue(FIXED_UUID as ReturnType<typeof crypto.randomUUID>);
     const adapter = new StorefrontAdapter();
     const body = await adapter.getRequestBody() as { visitor_id: string; customer_id?: string };
 
-    expect(body.visitor_id).toBe(FIXED_UUID);
-    expect(body.customer_id).toBe('5570080145486');
-    // BigInt precision: the string value must exactly match — no rounding
+    expect(body.visitor_id).toBe(SIGNED_TOKEN);
     expect(body.customer_id).toBe('5570080145486');
   });
 
   it('does NOT include customer_id key when window.Shopify is undefined', async () => {
-    // window.Shopify may not be defined on non-Shopify storefronts
     vi.stubGlobal('window', { localStorage: window.localStorage, Shopify: undefined });
+    vi.mocked(resolveSignedVisitorId).mockResolvedValue(SIGNED_TOKEN);
 
-    vi.spyOn(crypto, 'randomUUID').mockReturnValue(FIXED_UUID as ReturnType<typeof crypto.randomUUID>);
     const adapter = new StorefrontAdapter();
     const body = await adapter.getRequestBody() as Record<string, unknown>;
 
-    expect(body.visitor_id).toBe(FIXED_UUID);
+    expect(body.visitor_id).toBe(SIGNED_TOKEN);
     expect('customer_id' in body).toBe(false);
   });
 
@@ -99,11 +101,10 @@ describe('IDN-02 customer_id — window.Shopify.customer injection (Phase 6)', (
       writable: true,
     });
 
-    vi.spyOn(crypto, 'randomUUID').mockReturnValue(FIXED_UUID as ReturnType<typeof crypto.randomUUID>);
     const adapter = new StorefrontAdapter();
     const body = await adapter.getRequestBody() as Record<string, unknown>;
 
-    expect(body.visitor_id).toBe(FIXED_UUID);
+    expect(body.visitor_id).toBe(SIGNED_TOKEN);
     expect('customer_id' in body).toBe(false);
   });
 
@@ -115,7 +116,6 @@ describe('IDN-02 customer_id — window.Shopify.customer injection (Phase 6)', (
     });
 
     const adapter = new StorefrontAdapter();
-    // Endpoint must never be a full URL or cross-origin path
     expect(adapter.endpoint).toBe('/apps/smartdiscovery/chat');
     expect(adapter.endpoint).not.toMatch(/^https?:\/\//);
   });
@@ -127,7 +127,6 @@ describe('IDN-02 customer_id — window.Shopify.customer injection (Phase 6)', (
       writable: true,
     });
 
-    vi.spyOn(crypto, 'randomUUID').mockReturnValue(FIXED_UUID as ReturnType<typeof crypto.randomUUID>);
     const adapter = new StorefrontAdapter();
     const body = await adapter.getRequestBody() as { visitor_id: string; customer_id?: string };
 
