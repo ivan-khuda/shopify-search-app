@@ -1,6 +1,7 @@
 'use client';
 import React, { useState } from 'react';
-import { ACCENT, rgba, shade } from './tokens';
+import { cn } from '@/lib/utils';
+import { ACCENT } from './tokens';
 import { SDLogo, ShopifyMark } from './brand';
 import { CTAButton } from './hero';
 import { SectionLabel } from './sections';
@@ -39,106 +40,40 @@ export function Testimonials({ accent = ACCENT }: TestimonialsProps) {
   return (
     <section
       ref={ref}
-      style={{
-        background: 'var(--page)',
-        padding: 'clamp(64px,8vw,110px) 28px',
-        borderTop: '1px solid var(--border-sub)',
-      }}
+      className="bg-(--page) py-[clamp(64px,8vw,110px)] px-[28px] border-t border-(--border-sub)"
     >
-      <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-        <div style={{ textAlign: 'center' }}>
+      <div className="max-w-[1100px] mx-auto">
+        <div className="text-center">
           <div className="reveal">
             <SectionLabel accent={accent}>From the storefront</SectionLabel>
           </div>
           <h2
-            className="reveal"
-            style={{
-              fontSize: 'clamp(28px,3.6vw,44px)',
-              letterSpacing: '-0.025em',
-              fontWeight: 700,
-              margin: 0,
-              color: 'var(--text-strong)',
-            }}
+            className="reveal text-[clamp(28px,3.6vw,44px)] tracking-[-0.025em] font-bold m-0 text-(--text-strong)"
           >
             Merchants feel the difference.
           </h2>
         </div>
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(3,1fr)',
-            gap: 'clamp(14px,1.6vw,22px)',
-            marginTop: 'clamp(40px,5vw,58px)',
-          }}
-          className="quote-grid"
-        >
+        <div className="grid grid-cols-3 max-[920px]:grid-cols-1 gap-[clamp(14px,1.6vw,22px)] mt-[clamp(40px,5vw,58px)]">
           {quotes.map((qt, i) => (
             <figure
               key={qt.n}
-              className="reveal"
-              style={{
-                animationDelay: `${i * 0.09}s`,
-                margin: 0,
-                padding: 26,
-                borderRadius: 16,
-                background: '#fff',
-                border: '1px solid var(--border)',
-                display: 'flex',
-                flexDirection: 'column',
-              }}
+              className="reveal m-0 p-[26px] rounded-[16px] bg-white border border-(--border) flex flex-col"
+              style={{ animationDelay: `${i * 0.09}s` }}
             >
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'baseline',
-                  gap: 8,
-                  marginBottom: 14,
-                }}
-              >
+              <div className="flex items-baseline gap-[8px] mb-[14px]">
                 <span
-                  className="tnum"
-                  style={{
-                    fontSize: 30,
-                    fontWeight: 700,
-                    color: accent,
-                    letterSpacing: '-0.02em',
-                  }}
+                  className="tabular-nums text-[30px] font-bold text-(--accent) tracking-[-0.02em]"
                 >
                   {qt.stat}
                 </span>
-                <span style={{ fontSize: 13, color: 'var(--text-sub)' }}>{qt.sl}</span>
+                <span className="text-[13px] text-(--text-sub)">{qt.sl}</span>
               </div>
-              <blockquote
-                style={{
-                  margin: 0,
-                  fontSize: 15,
-                  lineHeight: 1.6,
-                  color: 'var(--text-strong)',
-                  flex: 1,
-                }}
-              >
+              <blockquote className="m-0 text-[15px] leading-[1.6] text-(--text-strong) flex-1">
                 &ldquo;{qt.q}&rdquo;
               </blockquote>
-              <figcaption
-                style={{
-                  marginTop: 18,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 11,
-                }}
-              >
+              <figcaption className="mt-[18px] flex items-center gap-[11px]">
                 <span
-                  style={{
-                    width: 38,
-                    height: 38,
-                    borderRadius: '50%',
-                    background: rgba(accent, 0.14),
-                    display: 'grid',
-                    placeItems: 'center',
-                    fontWeight: 650,
-                    color: accent,
-                    fontSize: 14,
-                  }}
+                  className="w-[38px] h-[38px] rounded-full bg-(--accent)/14 grid place-items-center font-[650] text-(--accent) text-[14px]"
                 >
                   {qt.n
                     .split(' ')
@@ -146,10 +81,8 @@ export function Testimonials({ accent = ACCENT }: TestimonialsProps) {
                     .join('')}
                 </span>
                 <span>
-                  <div style={{ fontSize: 14, fontWeight: 650, color: 'var(--text-strong)' }}>
-                    {qt.n}
-                  </div>
-                  <div style={{ fontSize: 12.5, color: 'var(--text-sub)' }}>{qt.r}</div>
+                  <div className="text-[14px] font-[650] text-(--text-strong)">{qt.n}</div>
+                  <div className="text-[12.5px] text-(--text-sub)">{qt.r}</div>
                 </span>
               </figcaption>
             </figure>
@@ -217,159 +150,65 @@ export function Pricing({ accent = ACCENT }: PricingProps) {
     <section
       id="pricing"
       ref={ref}
-      style={{ background: '#fff', padding: 'clamp(64px,8vw,110px) 28px' }}
+      className="bg-white py-[clamp(64px,8vw,110px)] px-[28px]"
     >
-      <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-        <div style={{ textAlign: 'center', maxWidth: 560, margin: '0 auto' }}>
+      <div className="max-w-[1100px] mx-auto">
+        <div className="text-center max-w-[560px] mx-auto">
           <div className="reveal">
             <SectionLabel accent={accent}>Pricing</SectionLabel>
           </div>
           <h2
-            className="reveal"
-            style={{
-              fontSize: 'clamp(28px,3.6vw,44px)',
-              letterSpacing: '-0.025em',
-              fontWeight: 700,
-              margin: 0,
-              color: 'var(--text-strong)',
-            }}
+            className="reveal text-[clamp(28px,3.6vw,44px)] tracking-[-0.025em] font-bold m-0 text-(--text-strong)"
           >
             Free to install. Pay as you grow.
           </h2>
-          <p
-            className="reveal"
-            style={{
-              fontSize: 17,
-              color: 'var(--text)',
-              margin: '14px auto 0',
-              lineHeight: 1.55,
-            }}
-          >
+          <p className="reveal text-[17px] text-(--text) mt-[14px] mx-auto mb-0 leading-[1.55]">
             Every plan starts free. Upgrade only when your search volume does.
           </p>
         </div>
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(3,1fr)',
-            gap: 'clamp(14px,1.6vw,20px)',
-            marginTop: 'clamp(40px,5vw,58px)',
-            alignItems: 'stretch',
-          }}
-          className="price-grid"
-        >
+        <div className="grid grid-cols-3 max-[920px]:grid-cols-1 gap-[clamp(14px,1.6vw,20px)] mt-[clamp(40px,5vw,58px)] items-stretch">
           {tiers.map((t, i) => (
             <div
               key={t.name}
-              className="reveal"
-              style={{
-                animationDelay: `${i * 0.08}s`,
-                position: 'relative',
-                padding: 28,
-                borderRadius: 18,
-                display: 'flex',
-                flexDirection: 'column',
-                border: t.highlight ? `2px solid ${accent}` : '1px solid var(--border)',
-                background: t.highlight ? rgba(accent, 0.035) : '#fff',
-                boxShadow: t.highlight ? `0 24px 60px -28px ${rgba(accent, 0.55)}` : 'none',
-              }}
+              className={cn(
+                'reveal relative p-[28px] rounded-[18px] flex flex-col',
+                t.highlight
+                  ? /* border-2 accent + tinted bg + shadow — literal rgba: shadow color can't use var/opacity modifier */
+                    'border-2 border-(--accent) bg-(--accent)/[.035] shadow-[0_24px_60px_-28px_rgba(91,79,233,0.55)]'
+                  : 'border border-(--border) bg-white',
+              )}
+              style={{ animationDelay: `${i * 0.08}s` }}
             >
               {t.highlight && (
-                <span
-                  style={{
-                    position: 'absolute',
-                    top: -12,
-                    left: 28,
-                    fontSize: 11.5,
-                    fontWeight: 700,
-                    letterSpacing: '.04em',
-                    textTransform: 'uppercase',
-                    color: '#fff',
-                    background: accent,
-                    padding: '5px 11px',
-                    borderRadius: 999,
-                  }}
-                >
+                <span className="absolute -top-3 left-7 text-[11.5px] font-bold tracking-[.04em] uppercase text-white bg-(--accent) py-[5px] px-[11px] rounded-full">
                   Most popular
                 </span>
               )}
-              <div style={{ fontSize: 15, fontWeight: 650, color: 'var(--text-strong)' }}>
-                {t.name}
-              </div>
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'baseline',
-                  gap: 7,
-                  margin: '12px 0 6px',
-                }}
-              >
-                <span
-                  className="tnum"
-                  style={{
-                    fontSize: 42,
-                    fontWeight: 700,
-                    letterSpacing: '-0.03em',
-                    color: 'var(--text-strong)',
-                  }}
-                >
+              <div className="text-[15px] font-[650] text-(--text-strong)">{t.name}</div>
+              <div className="flex items-baseline gap-[7px] mt-[12px] mb-[6px]">
+                <span className="tabular-nums text-[42px] font-bold tracking-[-0.03em] text-(--text-strong)">
                   {t.price}
                 </span>
-                <span style={{ fontSize: 14, color: 'var(--text-sub)' }}>{t.per}</span>
+                <span className="text-[14px] text-(--text-sub)">{t.per}</span>
               </div>
-              <p
-                style={{
-                  fontSize: 13.5,
-                  color: 'var(--text)',
-                  margin: '0 0 18px',
-                  minHeight: 38,
-                  lineHeight: 1.5,
-                }}
-              >
+              <p className="text-[13.5px] text-(--text) m-0 mb-[18px] min-h-[38px] leading-[1.5]">
                 {t.d}
               </p>
               <a
                 href="/api/auth"
-                style={{
-                  display: 'block',
-                  width: '100%',
-                  padding: '12px',
-                  borderRadius: 11,
-                  fontWeight: 600,
-                  fontSize: 14.5,
-                  border: t.highlight ? 'none' : '1px solid var(--border)',
-                  background: t.highlight ? accent : '#fff',
-                  color: t.highlight ? '#fff' : 'var(--text-strong)',
-                  boxShadow: t.highlight ? `0 8px 22px -8px ${rgba(accent, 0.7)}` : 'none',
-                  textAlign: 'center',
-                  textDecoration: 'none',
-                  cursor: 'pointer',
-                  boxSizing: 'border-box',
-                }}
+                className={cn(
+                  'block w-full py-[12px] px-[12px] rounded-[11px] font-semibold text-[14.5px] text-center no-underline cursor-pointer box-border',
+                  t.highlight
+                    ? /* shadow: literal rgba — shadow color can't use var/opacity modifier */
+                      'border-0 bg-(--accent) text-white shadow-[0_8px_22px_-8px_rgba(91,79,233,0.7)]'
+                    : 'border border-(--border) bg-white text-(--text-strong)',
+                )}
               >
                 {t.cta}
               </a>
-              <ul
-                style={{
-                  listStyle: 'none',
-                  padding: 0,
-                  margin: '22px 0 0',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 11,
-                }}
-              >
+              <ul className="list-none p-0 mt-[22px] mb-0 flex flex-col gap-[11px]">
                 {t.feats.map((f) => (
-                  <li
-                    key={f}
-                    style={{
-                      display: 'flex',
-                      gap: 10,
-                      fontSize: 13.5,
-                      color: 'var(--text)',
-                      lineHeight: 1.4,
-                    }}
-                  >
+                  <li key={f} className="flex gap-[10px] text-[13.5px] text-(--text) leading-[1.4]">
                     <svg
                       width="17"
                       height="17"
@@ -379,7 +218,7 @@ export function Pricing({ accent = ACCENT }: PricingProps) {
                       strokeWidth="2.6"
                       strokeLinecap="round"
                       strokeLinejoin="round"
-                      style={{ flexShrink: 0, marginTop: 1 }}
+                      className="shrink-0 mt-[1px]"
                       aria-hidden="true"
                     >
                       <path d="M20 6L9 17l-5-5" />
@@ -403,45 +242,24 @@ interface FAQItemProps {
   accent?: string;
 }
 
-export function FAQItem({ q, a, accent = ACCENT }: FAQItemProps) {
+export function FAQItem({ q, a }: FAQItemProps) {
   const [open, setOpen] = useState(false);
   const id = 'faq-' + q.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
   return (
-    <div style={{ borderBottom: '1px solid var(--border)' }}>
+    <div className="border-b border-(--border)">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
         aria-controls={id}
-        style={{
-          width: '100%',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: 16,
-          padding: '22px 4px',
-          background: 'none',
-          border: 'none',
-          textAlign: 'left',
-          fontSize: 17,
-          fontWeight: 600,
-          color: 'var(--text-strong)',
-        }}
+        className="w-full flex items-center justify-between gap-[16px] py-[22px] px-[4px] bg-transparent border-0 text-left text-[17px] font-semibold text-(--text-strong)"
       >
         {q}
         <span
-          style={{
-            width: 26,
-            height: 26,
-            borderRadius: '50%',
-            border: '1px solid var(--border)',
-            display: 'grid',
-            placeItems: 'center',
-            flexShrink: 0,
-            color: accent,
-            transform: open ? 'rotate(45deg)' : 'none',
-            transition: 'transform .2s',
-          }}
+          className={cn(
+            'w-[26px] h-[26px] rounded-full border border-(--border) grid place-items-center shrink-0 text-(--accent) transition-transform duration-200',
+            open && 'rotate-45',
+          )}
         >
           <svg
             width="13"
@@ -460,21 +278,12 @@ export function FAQItem({ q, a, accent = ACCENT }: FAQItemProps) {
       <div
         id={id}
         role="region"
-        style={{
-          maxHeight: open ? 320 : 0,
-          overflow: 'hidden',
-          transition: 'max-height .3s ease',
-        }}
+        className={cn(
+          'overflow-hidden transition-[max-height] duration-300 ease-in-out',
+          open ? 'max-h-[320px]' : 'max-h-0',
+        )}
       >
-        <p
-          style={{
-            fontSize: 15,
-            lineHeight: 1.6,
-            color: 'var(--text)',
-            margin: '0 0 22px',
-            maxWidth: 680,
-          }}
-        >
+        <p className="text-[15px] leading-[1.6] text-(--text) m-0 mb-[22px] max-w-[680px]">
           {a}
         </p>
       </div>
@@ -514,26 +323,15 @@ export function FAQ({ accent = ACCENT }: FAQProps) {
     <section
       id="faq"
       ref={ref}
-      style={{
-        background: 'var(--page)',
-        padding: 'clamp(64px,8vw,110px) 28px',
-        borderTop: '1px solid var(--border-sub)',
-      }}
+      className="bg-(--page) py-[clamp(64px,8vw,110px)] px-[28px] border-t border-(--border-sub)"
     >
-      <div style={{ maxWidth: 820, margin: '0 auto' }}>
-        <div style={{ textAlign: 'center', marginBottom: 'clamp(32px,4vw,48px)' }}>
+      <div className="max-w-[820px] mx-auto">
+        <div className="text-center mb-[clamp(32px,4vw,48px)]">
           <div className="reveal">
             <SectionLabel accent={accent}>FAQ</SectionLabel>
           </div>
           <h2
-            className="reveal"
-            style={{
-              fontSize: 'clamp(28px,3.6vw,44px)',
-              letterSpacing: '-0.025em',
-              fontWeight: 700,
-              margin: 0,
-              color: 'var(--text-strong)',
-            }}
+            className="reveal text-[clamp(28px,3.6vw,44px)] tracking-[-0.025em] font-bold m-0 text-(--text-strong)"
           >
             Questions, answered.
           </h2>
@@ -556,75 +354,42 @@ interface FinalCTAProps {
 export function FinalCTA({ accent = ACCENT }: FinalCTAProps) {
   const ref = useReveal();
   return (
-    <section ref={ref} style={{ background: '#fff', padding: 'clamp(40px,6vw,90px) 28px' }}>
+    <section ref={ref} className="bg-white py-[clamp(40px,6vw,90px)] px-[28px]">
+      {/* FinalCTA gradient: precomputed shade vars --accent-d6/--accent-d44 from landing.css */}
       <div
-        className="reveal"
-        style={{
-          maxWidth: 1100,
-          margin: '0 auto',
-          position: 'relative',
-          overflow: 'hidden',
-          borderRadius: 28,
-          padding: 'clamp(48px,6vw,84px) 28px',
-          textAlign: 'center',
-          background: `radial-gradient(120% 140% at 80% 0%, ${shade(accent, -6)}, ${shade(accent, -44)} 70%, #16161f)`,
-          color: '#fff',
-        }}
+        className="reveal max-w-[1100px] mx-auto relative overflow-hidden rounded-[28px] py-[clamp(48px,6vw,84px)] px-[28px] text-center text-white bg-[radial-gradient(120%_140%_at_80%_0%,var(--accent-d6),var(--accent-d44)_70%,#16161f)]"
       >
         <div
+          className="absolute inset-0 opacity-50"
           style={{
-            position: 'absolute',
-            inset: 0,
-            opacity: 0.5,
             backgroundImage:
               'linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px)',
             backgroundSize: '48px 48px',
-            maskImage:
-              'radial-gradient(100% 100% at 50% 0%, #000, transparent 75%)',
-            WebkitMaskImage:
-              'radial-gradient(100% 100% at 50% 0%, #000, transparent 75%)',
+            /* maskImage/WebkitMaskImage: no clean Tailwind arbitrary for vendor-prefixed mask — permitted inline survivor */
+            maskImage: 'radial-gradient(100% 100% at 50% 0%, #000, transparent 75%)',
+            WebkitMaskImage: 'radial-gradient(100% 100% at 50% 0%, #000, transparent 75%)',
           }}
         ></div>
-        <div style={{ position: 'relative' }}>
-          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 22 }}>
+        <div className="relative">
+          <div className="flex justify-center mb-[22px]">
             <SDLogo size={48} accent="#fff" aria-hidden="true" />
           </div>
           <h2
-            style={{
-              fontSize: 'clamp(30px,4vw,52px)',
-              letterSpacing: '-0.03em',
-              fontWeight: 700,
-              margin: 0,
-              lineHeight: 1.05,
-            }}
+            className="text-[clamp(30px,4vw,52px)] tracking-[-0.03em] font-bold m-0 leading-[1.05]"
           >
             Give every shopper their
             <br />
             own shopkeeper.
           </h2>
           <p
-            style={{
-              fontSize: 'clamp(16px,1.4vw,18px)',
-              color: 'rgba(255,255,255,.82)',
-              margin: '18px auto 0',
-              maxWidth: 480,
-              lineHeight: 1.55,
-            }}
+            className="text-[clamp(16px,1.4vw,18px)] text-white/[.82] mt-[18px] mx-auto mb-0 max-w-[480px] leading-[1.55]"
           >
             Install free, sync your catalog, and watch &ldquo;just browsing&rdquo; turn into
             &ldquo;added to cart.&rdquo;
           </p>
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'center',
-              flexWrap: 'wrap',
-              gap: 12,
-              marginTop: 30,
-            }}
-          >
+          <div className="flex justify-center flex-wrap gap-[12px] mt-[30px]">
             <CTAButton accent="#fff" kind="shopify" large href="/api/auth">
-              <span style={{ color: '#1a1d21' }}>Add to Shopify — free</span>
+              <span className="text-[#1a1d21]">Add to Shopify — free</span>
             </CTAButton>
             <CTAButton accent={accent} kind="ghost" large onDark>
               Book a 15-min walkthrough
@@ -648,80 +413,31 @@ export function Footer({ accent = ACCENT }: FooterProps) {
     ['Company', ['About', 'Blog', 'Contact', 'Privacy']],
   ];
   return (
-    <footer style={{ background: '#1a1d21', color: 'rgba(255,255,255,.7)', padding: '56px 28px 32px' }}>
-      <div
-        style={{
-          maxWidth: 1100,
-          margin: '0 auto',
-          display: 'grid',
-          gridTemplateColumns: '1.6fr repeat(3,1fr)',
-          gap: 'clamp(24px,4vw,48px)',
-        }}
-        className="foot-grid"
-      >
+    <footer className="bg-[#1a1d21] text-white/[.7] py-[56px] px-[28px] pb-[32px]">
+      <div className="max-w-[1100px] mx-auto grid grid-cols-[1.6fr_repeat(3,1fr)] max-[920px]:grid-cols-2 max-[560px]:grid-cols-1 gap-[clamp(24px,4vw,48px)]">
         <div>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 10,
-              marginBottom: 14,
-            }}
-          >
+          <div className="flex items-center gap-[10px] mb-[14px]">
             <SDLogo size={32} accent={accent} aria-hidden="true" />
-            <span style={{ fontWeight: 700, fontSize: 16, color: '#fff' }}>
-              SmartDiscovery <span style={{ color: shade(accent, 40) }}>AI</span>
+            <span className="font-bold text-[16px] text-white">
+              SmartDiscovery <span className="text-(--accent-l40)">AI</span>
             </span>
           </div>
-          <p style={{ fontSize: 13.5, lineHeight: 1.6, maxWidth: 280, margin: 0 }}>
+          <p className="text-[13.5px] leading-[1.6] max-w-[280px] m-0">
             Conversational product discovery for Shopify. Grounded in your real catalog.
           </p>
-          <div
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 8,
-              marginTop: 18,
-              fontSize: 12.5,
-              color: 'rgba(255,255,255,.55)',
-            }}
-          >
+          <div className="inline-flex items-center gap-[8px] mt-[18px] text-[12.5px] text-white/[.55]">
             <ShopifyMark size={15} /> Built for the Shopify App Store
           </div>
         </div>
         {cols.map(([h, items]) => (
           <div key={h}>
-            <h3
-              style={{
-                fontSize: 12,
-                fontWeight: 650,
-                letterSpacing: '.06em',
-                textTransform: 'uppercase',
-                color: 'rgba(255,255,255,.45)',
-                marginBottom: 14,
-                margin: 0,
-              }}
-            >
+            <h3 className="text-[12px] font-[650] tracking-[.06em] uppercase text-white/[.45] mb-[14px] mt-0">
               {h}
             </h3>
-            <ul
-              style={{
-                listStyle: 'none',
-                padding: 0,
-                margin: 0,
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 10,
-              }}
-            >
+            <ul className="list-none p-0 m-0 flex flex-col gap-[10px]">
               {items.map((it) => (
                 <li key={it}>
-                  <a
-                    href="#"
-                    style={{ fontSize: 13.5 }}
-                    onMouseEnter={(e) => (e.currentTarget.style.color = '#fff')}
-                    onMouseLeave={(e) => (e.currentTarget.style.color = '')}
-                  >
+                  <a href="#" className="text-[13.5px] hover:text-white">
                     {it}
                   </a>
                 </li>
@@ -730,22 +446,9 @@ export function Footer({ accent = ACCENT }: FooterProps) {
           </div>
         ))}
       </div>
-      <div
-        style={{
-          maxWidth: 1100,
-          margin: '40px auto 0',
-          paddingTop: 22,
-          borderTop: '1px solid rgba(255,255,255,.1)',
-          display: 'flex',
-          justifyContent: 'space-between',
-          flexWrap: 'wrap',
-          gap: 12,
-          fontSize: 12.5,
-          color: 'rgba(255,255,255,.5)',
-        }}
-      >
+      <div className="max-w-[1100px] mt-[40px] mx-auto pt-[22px] border-t border-white/[.1] flex justify-between flex-wrap gap-[12px] text-[12.5px] text-white/[.5]">
         <span>© 2026 SmartDiscovery AI · by Field &amp; Form</span>
-        <span style={{ display: 'flex', gap: 18 }}>
+        <span className="flex gap-[18px]">
           <a href="#">Privacy</a>
           <a href="#">Terms</a>
           <a href="#">Conversations stay on your store</a>
