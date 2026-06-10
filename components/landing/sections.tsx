@@ -1,7 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
 'use client';
 import React from 'react';
-import { ACCENT, rgba } from './tokens';
+import { ACCENT } from './tokens';
 import { CATALOG } from './catalog';
 import type { LandingProduct } from './catalog';
 import { useReveal } from './use-reveal';
@@ -12,15 +12,13 @@ interface SectionLabelProps {
   children: React.ReactNode;
 }
 
-export function SectionLabel({ accent = ACCENT, children }: SectionLabelProps) {
+export function SectionLabel({ children }: SectionLabelProps) {
   return (
     <div
-      className="inline-flex items-center gap-[8px] text-[12px] font-[650] tracking-[.08em] uppercase mb-[14px]"
-      style={{ color: accent }}
+      className="inline-flex items-center gap-[8px] text-[12px] font-[650] tracking-[.08em] uppercase mb-[14px] text-(--accent)"
     >
       <span
-        className="w-[22px] h-[1.5px] rounded-[2px]"
-        style={{ background: accent }}
+        className="w-[22px] h-[1.5px] rounded-[2px] bg-(--accent)"
       ></span>
       {children}
     </div>
@@ -117,11 +115,7 @@ export function HowItWorks({ accent = ACCENT }: HowItWorksProps) {
             >
               <div className="flex items-center justify-between">
                 <div
-                  className="w-[46px] h-[46px] rounded-[12px] grid place-items-center"
-                  style={{
-                    background: rgba(accent, 0.12),
-                    color: accent,
-                  }}
+                  className="w-[46px] h-[46px] rounded-[12px] grid place-items-center bg-(--accent)/12 text-(--accent)"
                 >
                   <svg
                     width="22"
@@ -138,8 +132,7 @@ export function HowItWorks({ accent = ACCENT }: HowItWorksProps) {
                   </svg>
                 </div>
                 <span
-                  className="tabular-nums text-[30px] font-bold tracking-[-0.02em]"
-                  style={{ color: rgba(accent, 0.22) }}
+                  className="tabular-nums text-[30px] font-bold tracking-[-0.02em] text-(--accent)/[.22]"
                 >
                   {s.n}
                 </span>
@@ -168,7 +161,7 @@ interface ProductCardProps {
   accent?: string;
 }
 
-export function ProductCard({ p, accent = ACCENT }: ProductCardProps) {
+export function ProductCard({ p }: ProductCardProps) {
   return (
     <div
       className="bg-white border border-(--border) rounded-[14px] overflow-hidden flex flex-col"
@@ -211,8 +204,7 @@ export function ProductCard({ p, accent = ACCENT }: ProductCardProps) {
             {p.title}
           </span>
           <span
-            className="tabular-nums text-[15px] font-[650]"
-            style={{ color: accent }}
+            className="tabular-nums text-[15px] font-[650] text-(--accent)"
           >
             ${p.price}
           </span>
@@ -260,8 +252,7 @@ export function Showcase({ accent = ACCENT }: ShowcaseProps) {
           className="reveal inline-flex items-center gap-[10px] mt-[34px] mx-auto mb-[22px] py-[11px] pr-[16px] pl-[11px] bg-white rounded-[999px] border border-(--border) shadow-[0_10px_30px_-16px_rgba(0,0,0,.25)] w-fit"
         >
           <span
-            className="size-[30px] rounded-full grid place-items-center shrink-0"
-            style={{ background: accent }}
+            className="size-[30px] rounded-full grid place-items-center shrink-0 bg-(--accent)"
           >
             <svg
               width="15"
@@ -381,11 +372,7 @@ export function Features({ accent = ACCENT }: FeaturesProps) {
               style={{ animationDelay: `${(i % 3) * 0.08}s` }}
             >
               <div
-                className="w-[42px] h-[42px] rounded-[11px] grid place-items-center mb-[16px]"
-                style={{
-                  background: rgba(accent, 0.12),
-                  color: accent,
-                }}
+                className="w-[42px] h-[42px] rounded-[11px] grid place-items-center mb-[16px] bg-(--accent)/12 text-(--accent)"
               >
                 <svg
                   width="21"
