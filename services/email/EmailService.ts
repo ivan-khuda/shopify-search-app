@@ -20,19 +20,36 @@
  *            `args.to`, `args.errorMessage`, or the `RESEND_API_KEY`.
  *
  * Initialization choices:
- *  - `new Resend(process.env.RESEND_API_KEY!)` at module scope so unit tests
- *    can `vi.mock('resend', ...)` and intercept the singleton's `.emails.send`.
- *  - `FROM` resolved once at module load — deploy-time misconfiguration
- *    (missing env var) surfaces loudly via `!` rather than silently sending
- *    from `undefined`.
+ *  - The Resend client and FROM address resolve lazily on first send, not at
+ *    module load: `next build` collects page data by importing the /api/inngest
+ *    route (which imports this module), so a module-scope `new Resend(key!)`
+ *    breaks the build in any environment without the secret (CI, fresh clones).
+ *    Misconfiguration still surfaces loudly — at send time, where Inngest
+ *    retries make the error visible. Unit tests keep mocking via
+ *    `vi.mock('resend', ...)`; the lazy constructor uses the mocked class.
  */
 import { Resend } from 'resend';
 import { render } from '@react-email/render';
 import { SyncSuccessEmail } from '@/lib/email/templates/SyncSuccessEmail';
 import { SyncFailureEmail } from '@/lib/email/templates/SyncFailureEmail';
 
-const resend = new Resend(process.env.RESEND_API_KEY!);
-const FROM = process.env.RESEND_FROM_ADDRESS!;
+let resendClient: Resend | null = null;
+
+function getResend(): Resend {
+  if (!process.env.RESEND_API_KEY) {
+    throw new Error('RESEND_API_KEY is not set — cannot send email');
+  }
+  resendClient ??= new Resend(process.env.RESEND_API_KEY);
+  return resendClient;
+}
+
+function getFrom(): string {
+  const from = process.env.RESEND_FROM_ADDRESS;
+  if (!from) {
+    throw new Error('RESEND_FROM_ADDRESS is not set — cannot send email');
+  }
+  return from;
+}
 
 export interface SendSyncSuccessArgs {
   to: string;
@@ -51,9 +68,9 @@ export async function sendSyncSuccess(args: SendSyncSuccessArgs): Promise<void> 
       adminUrl: args.adminUrl,
     }),
   );
-  const result = await resend.emails.send(
+  const result = await getResend().emails.send(
     {
-      from: FROM,
+      from: getFrom(),
       to: args.to,
       subject: `Catalog sync complete — ${args.productCount} products`,
       html,
@@ -82,9 +99,9 @@ export async function sendSyncFailure(args: SendSyncFailureArgs): Promise<void> 
       retryUrl: args.retryUrl,
     }),
   );
-  const result = await resend.emails.send(
+  const result = await getResend().emails.send(
     {
-      from: FROM,
+      from: getFrom(),
       to: args.to,
       subject: 'Catalog sync failed',
       html,
