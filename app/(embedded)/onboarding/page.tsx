@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 
 type SyncState = 'queued' | 'running' | 'succeeded' | 'partial' | 'failed';
@@ -12,7 +12,17 @@ function stateLabel(s: SyncState | null): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
+// useSearchParams() forces a CSR bailout during prerender; Next requires a
+// Suspense boundary around it for `next build` to succeed on this route.
 export default function OnboardingPage() {
+  return (
+    <Suspense fallback={null}>
+      <OnboardingContent />
+    </Suspense>
+  );
+}
+
+function OnboardingContent() {
   const searchParams = useSearchParams();
   const retryId = searchParams?.get('retry') ?? null;
 
