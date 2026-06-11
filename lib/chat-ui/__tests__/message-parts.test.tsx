@@ -15,7 +15,7 @@ const sampleProducts: ChatProduct[] = [
   },
 ];
 
-function renderParts(parts: unknown[], onToggleSave: ReturnType<typeof vi.fn> = vi.fn()) {
+function renderParts(parts: unknown[], onToggleSave: (product: ChatProduct) => void = vi.fn()) {
   return render(
     <MessageParts
       parts={parts as UIMessage['parts']}

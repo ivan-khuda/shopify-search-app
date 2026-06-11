@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ChatPane } from '@/lib/chat-ui';
 import type { ChatIdentityAdapter } from '@/lib/chat-ui';
 import type { ChatProduct } from '@/types/product';
@@ -17,20 +17,27 @@ const mockAdapter: ChatIdentityAdapter = {
   getRequestBody: async () => ({}),
 };
 
-const { getMessages, sendMessage, setMessages } = vi.hoisted(() => {
-  let messages = [
-    {
-      id: 'assistant-1',
-      role: 'assistant',
-      parts: [{ type: 'text', text: 'Earlier suggestions are ready.' }],
-    },
-  ];
+const DEFAULT_MESSAGES = [
+  {
+    id: 'assistant-1',
+    role: 'assistant',
+    parts: [{ type: 'text', text: 'Earlier suggestions are ready.' }],
+  },
+];
+
+const { getMessages, sendMessage, setMessages, getStatus, setStatus } = vi.hoisted(() => {
+  let messages: { id: string; role: string; parts: { type: string; text: string }[] }[] = [];
+  let status = 'ready';
 
   return {
     getMessages: () => messages,
     sendMessage: vi.fn(),
     setMessages: (nextMessages: typeof messages) => {
       messages = nextMessages;
+    },
+    getStatus: () => status,
+    setStatus: (nextStatus: string) => {
+      status = nextStatus;
     },
   };
 });
@@ -39,23 +46,20 @@ vi.mock('@ai-sdk/react', () => ({
   useChat: () => ({
     messages: getMessages(),
     sendMessage,
-    status: 'ready',
+    status: getStatus(),
   }),
 }));
 
 describe('ChatPane', () => {
+  beforeEach(() => {
+    setMessages(DEFAULT_MESSAGES);
+    setStatus('ready');
+    sendMessage.mockClear();
+  });
+
   it('renders product cards from tool-searchCatalog parts on the assistant response', async () => {
     const onHistoryAdd = vi.fn();
     const onToggleSave = vi.fn();
-
-    setMessages([
-      {
-        id: 'assistant-1',
-        role: 'assistant',
-        parts: [{ type: 'text', text: 'Earlier suggestions are ready.' }],
-      },
-    ]);
-    sendMessage.mockClear();
 
     const { rerender } = render(
       <ChatPane
@@ -67,7 +71,7 @@ describe('ChatPane', () => {
     );
 
     fireEvent.change(
-      screen.getByPlaceholderText(/comfortable shoes for running/i),
+      screen.getByPlaceholderText(/search your catalog/i),
       { target: { value: 'running shoes' } },
     );
     fireEvent.click(screen.getByRole('button', { name: /submit/i }));
@@ -121,7 +125,118 @@ describe('ChatPane', () => {
     expect(screen.getByText('Fresh running options for you.')).toBeInTheDocument();
     expect(screen.getByText(TEST_PRODUCT.title)).toBeInTheDocument();
 
+    // Action row reflects the tool-searchCatalog output length for its message.
+    expect(
+      screen.getByText((_, element) => element?.textContent === '1 grounded result'),
+    ).toBeInTheDocument();
+
     fireEvent.click(screen.getByRole('button', { name: /remove saved product/i }));
     expect(onToggleSave).toHaveBeenCalledWith(TEST_PRODUCT);
+  });
+
+  it('renders the EmptyChat cards variant when there are no messages', () => {
+    setMessages([]);
+
+    render(
+      <ChatPane
+        adapter={mockAdapter}
+        savedProductIds={new Set<string>()}
+        onToggleSave={vi.fn()}
+        onHistoryAdd={vi.fn()}
+        catalogCount={151}
+      />,
+    );
+
+    expect(screen.getByText(/hi there/i)).toBeInTheDocument();
+    expect(screen.getByText(/151 products/)).toBeInTheDocument();
+  });
+
+  it('picking a suggested prompt from the empty state submits it', () => {
+    setMessages([]);
+    const onHistoryAdd = vi.fn();
+
+    render(
+      <ChatPane
+        adapter={mockAdapter}
+        savedProductIds={new Set<string>()}
+        onToggleSave={vi.fn()}
+        onHistoryAdd={onHistoryAdd}
+      />,
+    );
+
+    fireEvent.click(screen.getByText('Something to drink coffee out of'));
+
+    expect(sendMessage).toHaveBeenCalledTimes(1);
+    expect(sendMessage).toHaveBeenCalledWith({ text: 'Something to drink coffee out of' });
+    expect(onHistoryAdd).toHaveBeenCalledTimes(1);
+  });
+
+  it('submits autoSubmitQuery exactly once per id', () => {
+    setMessages([]);
+    const onHistoryAdd = vi.fn();
+
+    const renderPane = (autoSubmitQuery: { id: number; query: string } | null) => (
+      <ChatPane
+        adapter={mockAdapter}
+        savedProductIds={new Set<string>()}
+        onToggleSave={vi.fn()}
+        onHistoryAdd={onHistoryAdd}
+        autoSubmitQuery={autoSubmitQuery}
+      />
+    );
+
+    const { rerender } = render(renderPane(null));
+    expect(sendMessage).not.toHaveBeenCalled();
+
+    rerender(renderPane({ id: 1, query: 'red mug' }));
+    expect(sendMessage).toHaveBeenCalledTimes(1);
+    expect(sendMessage).toHaveBeenCalledWith({ text: 'red mug' });
+    expect(onHistoryAdd).toHaveBeenCalledTimes(1);
+
+    rerender(renderPane({ id: 1, query: 'red mug' }));
+    expect(sendMessage).toHaveBeenCalledTimes(1);
+
+    rerender(renderPane({ id: 2, query: 'blue mug' }));
+    expect(sendMessage).toHaveBeenCalledTimes(2);
+    expect(sendMessage).toHaveBeenLastCalledWith({ text: 'blue mug' });
+  });
+
+  it('auto-scrolls the messages container to the bottom when messages change', () => {
+    const props = {
+      adapter: mockAdapter,
+      savedProductIds: new Set<string>(),
+      onToggleSave: vi.fn(),
+      onHistoryAdd: vi.fn(),
+    };
+
+    const { container, rerender } = render(<ChatPane {...props} />);
+    const scrollArea = container.firstElementChild!.firstElementChild as HTMLDivElement;
+    Object.defineProperty(scrollArea, 'scrollHeight', { configurable: true, value: 640 });
+
+    setMessages([
+      ...DEFAULT_MESSAGES,
+      { id: 'user-1', role: 'user', parts: [{ type: 'text', text: 'more please' }] },
+    ]);
+    rerender(<ChatPane {...props} />);
+
+    expect(scrollArea.scrollTop).toBe(640);
+  });
+
+  it('shows the thinking bubble while submitted and awaiting the assistant', () => {
+    setMessages([
+      { id: 'user-1', role: 'user', parts: [{ type: 'text', text: 'red mug' }] },
+    ]);
+    setStatus('submitted');
+
+    render(
+      <ChatPane
+        adapter={mockAdapter}
+        savedProductIds={new Set<string>()}
+        onToggleSave={vi.fn()}
+        onHistoryAdd={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByRole('status', { name: /thinking/i })).toBeInTheDocument();
   });
 });
