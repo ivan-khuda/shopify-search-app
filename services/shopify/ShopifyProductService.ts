@@ -62,12 +62,10 @@ export const PRODUCTS_QUERY = /* GraphQL */ `
           }
         }
         options(first: 3) {
-          nodes {
-            id
-            name
-            position
-            values
-          }
+          id
+          name
+          position
+          values
         }
       }
       pageInfo {
@@ -100,7 +98,8 @@ export interface ShopifyProductNode {
   publishedAt?: string | null;
   variants?: { nodes: ShopifyVariantNode[] };
   images?: { nodes: ShopifyImageNode[] };
-  options?: { nodes: ShopifyOptionNode[] };
+  // Plain list, not a connection — Product.options has no `nodes` wrapper.
+  options?: ShopifyOptionNode[];
 }
 
 export interface ShopifyVariantNode {
@@ -212,7 +211,7 @@ export function mapToUpsertInput(node: ShopifyProductNode): ProductUpsertInput {
       height: img.height ?? null,
       position: idx + 1,
     })),
-    options: (node.options?.nodes ?? []).map((o) => ({
+    options: (node.options ?? []).map((o) => ({
       shopifyId: gidToBigInt(o.id),
       name: o.name,
       position: o.position ?? 1,

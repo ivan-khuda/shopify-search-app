@@ -133,9 +133,10 @@ describe('mapToUpsertInput (SYN-02)', () => {
         },
       ],
     },
-    options: {
-      nodes: [{ id: 'gid://shopify/ProductOption/999', name: 'Size', position: 1, values: ['S', 'M', 'L'] }],
-    },
+    // Product.options is a plain list in the Admin API — NOT a connection.
+    // Wrapping it in { nodes } made the real API reject the query with
+    // "Field 'nodes' doesn't exist on type 'ProductOption'".
+    options: [{ id: 'gid://shopify/ProductOption/999', name: 'Size', position: 1, values: ['S', 'M', 'L'] }],
   };
 
   it('maps GraphQL Product node to ProductUpsertInput including updatedAtShopify (D-17)', () => {
