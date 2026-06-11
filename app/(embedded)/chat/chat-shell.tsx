@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, type CSSProperties } from 'react';
+import { useCallback, useMemo, useState, type CSSProperties } from 'react';
 import { Tabs, TabsContent, TabsContents, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 import { Bookmark, HistoryIcon, MessageSquare, PlusIcon } from 'lucide-react';
@@ -75,6 +75,13 @@ export function ChatShell({ shop, modelName, appearance, catalogCount }: ChatShe
         setResume({ id: Date.now(), query });
         setSelectedTab('chat');
     };
+
+    // Admin tabs keep ChatPane mounted (TabsContents), so a stale resume is
+    // harmless here today — but clearing consumed state mirrors the drawer
+    // wiring and keeps the contract honest if the tab tree ever changes.
+    const handleAutoSubmitConsumed = useCallback(() => {
+        setResume(null);
+    }, []);
 
     const tabs = [
         { id: 'chat', label: 'Chat', Icon: MessageSquare, badge: null as number | null },
@@ -189,6 +196,7 @@ export function ChatShell({ shop, modelName, appearance, catalogCount }: ChatShe
                             catalogCount={catalogCount}
                             modelName={modelName}
                             autoSubmitQuery={resume}
+                            onAutoSubmitConsumed={handleAutoSubmitConsumed}
                         />
                     </TabsContent>
                     <TabsContent value="history" className="h-full overflow-y-auto bg-[#fafbfb]">

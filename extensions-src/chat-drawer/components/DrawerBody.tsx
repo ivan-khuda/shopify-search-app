@@ -84,6 +84,13 @@ function DrawerBody({
     [onSwitchToChat],
   );
 
+  // Tab switches unmount ChatPane (each tab renders a different tree), which
+  // resets its once-per-id guard — a stale `resume` would re-submit on the
+  // next chat-tab mount, so clear it as soon as the pane consumes it.
+  const handleAutoSubmitConsumed = React.useCallback(() => {
+    setResume(null);
+  }, []);
+
   if (activeTab === 'chat') {
     return (
       <ChatPane
@@ -94,6 +101,7 @@ function DrawerBody({
         density={appearance.cardDensity}
         emptyStateVariant={appearance.emptyStateVariant}
         autoSubmitQuery={resume}
+        onAutoSubmitConsumed={handleAutoSubmitConsumed}
       />
     );
   }

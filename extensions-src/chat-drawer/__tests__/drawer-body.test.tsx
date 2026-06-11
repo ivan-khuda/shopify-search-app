@@ -135,4 +135,30 @@ describe('DrawerBody — history resume (Task 14)', () => {
     expect(autoSubmit?.query).toBe('blue running shoes');
     expect(typeof autoSubmit?.id).toBe('number');
   });
+
+  it('clears a consumed resume so leaving and re-entering the chat tab does not re-submit', async () => {
+    const user = userEvent.setup();
+    const { rerender } = render(
+      <DrawerBody activeTab="history" {...baseProps} onSwitchToChat={vi.fn()} />,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'resume-row' }));
+    rerender(<DrawerBody activeTab="chat" {...baseProps} />);
+
+    const props = chatPaneProps[chatPaneProps.length - 1];
+    expect(props.autoSubmitQuery).not.toBeNull();
+
+    // The real ChatPane fires this right after the auto-submit; the stubbed
+    // pane reports consumption manually.
+    await act(async () => {
+      (props.onAutoSubmitConsumed as () => void)();
+    });
+
+    // Tab away and back — ChatPane unmounts and remounts (fresh
+    // lastAutoSubmitIdRef), so a stale query here would re-fire the search.
+    rerender(<DrawerBody activeTab="saved" {...baseProps} />);
+    rerender(<DrawerBody activeTab="chat" {...baseProps} />);
+
+    expect(chatPaneProps[chatPaneProps.length - 1].autoSubmitQuery).toBeNull();
+  });
 });

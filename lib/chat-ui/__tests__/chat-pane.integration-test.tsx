@@ -192,9 +192,10 @@ describe('ChatPane', () => {
     expect(onHistoryAdd).toHaveBeenCalledTimes(1);
   });
 
-  it('submits autoSubmitQuery exactly once per id', () => {
+  it('submits autoSubmitQuery exactly once per id and reports consumption', () => {
     setMessages([]);
     const onHistoryAdd = vi.fn();
+    const onAutoSubmitConsumed = vi.fn();
 
     const renderPane = (autoSubmitQuery: { id: number; query: string } | null) => (
       <ChatPane
@@ -203,23 +204,28 @@ describe('ChatPane', () => {
         onToggleSave={vi.fn()}
         onHistoryAdd={onHistoryAdd}
         autoSubmitQuery={autoSubmitQuery}
+        onAutoSubmitConsumed={onAutoSubmitConsumed}
       />
     );
 
     const { rerender } = render(renderPane(null));
     expect(sendMessage).not.toHaveBeenCalled();
+    expect(onAutoSubmitConsumed).not.toHaveBeenCalled();
 
     rerender(renderPane({ id: 1, query: 'red mug' }));
     expect(sendMessage).toHaveBeenCalledTimes(1);
     expect(sendMessage).toHaveBeenCalledWith({ text: 'red mug' });
     expect(onHistoryAdd).toHaveBeenCalledTimes(1);
+    expect(onAutoSubmitConsumed).toHaveBeenCalledTimes(1);
 
     rerender(renderPane({ id: 1, query: 'red mug' }));
     expect(sendMessage).toHaveBeenCalledTimes(1);
+    expect(onAutoSubmitConsumed).toHaveBeenCalledTimes(1);
 
     rerender(renderPane({ id: 2, query: 'blue mug' }));
     expect(sendMessage).toHaveBeenCalledTimes(2);
     expect(sendMessage).toHaveBeenLastCalledWith({ text: 'blue mug' });
+    expect(onAutoSubmitConsumed).toHaveBeenCalledTimes(2);
   });
 
   it('auto-scrolls the messages container to the bottom when messages change', () => {

@@ -138,6 +138,13 @@ interface ChatPaneProps {
     modelName?: string;
     /** History-resume: submitted once per id change. */
     autoSubmitQuery?: { id: number; query: string } | null;
+    /**
+     * Fired right after an autoSubmitQuery is submitted. Owners that unmount
+     * ChatPane (e.g. the drawer's tab switch) MUST clear their pending query
+     * here — a remounted pane has a fresh lastAutoSubmitIdRef and would
+     * otherwise re-submit the stale query.
+     */
+    onAutoSubmitConsumed?: () => void;
 }
 
 export function ChatPane({
@@ -150,6 +157,7 @@ export function ChatPane({
     catalogCount,
     modelName,
     autoSubmitQuery,
+    onAutoSubmitConsumed,
 }: ChatPaneProps) {
     const transport = useMemo(
         () => new DefaultChatTransport({
@@ -199,7 +207,8 @@ export function ChatPane({
         if (lastAutoSubmitIdRef.current === autoSubmitQuery.id) return;
         lastAutoSubmitIdRef.current = autoSubmitQuery.id;
         submitText(autoSubmitQuery.query);
-    }, [autoSubmitQuery, submitText]);
+        onAutoSubmitConsumed?.();
+    }, [autoSubmitQuery, submitText, onAutoSubmitConsumed]);
 
     // Keep the newest message in view as the conversation grows/streams.
     const scrollRef = useRef<HTMLDivElement>(null);
