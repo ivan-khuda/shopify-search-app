@@ -11,6 +11,10 @@ import type { ShopSettings } from '@/app/generated/prisma/client';
  * - `upsert(shop, activeChatModelId)`: creates or updates the row keyed by
  *   `shop` (PK). `updatedAt` is `@updatedAt`-managed by Prisma; it MUST NOT be
  *   set manually.
+ * - `upsertAppearance(shop, fields)`: creates or updates only the appearance
+ *   columns (emptyStateVariant / cardDensity). A create leaves
+ *   `activeChatModelId` null — appearance-only rows are valid (see
+ *   getActiveChatModel's null guard).
  *
  * Multi-tenancy: `shop` is the primary key, so every query is structurally
  * scoped to a single shop. The shop must be derived from a verified session
