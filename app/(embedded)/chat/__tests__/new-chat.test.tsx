@@ -25,7 +25,14 @@ vi.mock('@/lib/chat-ui', () => ({
 
 describe('ChatShell — New Chat', () => {
   it('remounts ChatPane so the conversation starts fresh', () => {
-    render(<ChatShell shop="test.myshopify.com" />);
+    render(
+      <ChatShell
+        shop="test.myshopify.com"
+        modelName="Gemini 2.5 Flash"
+        appearance={{ emptyStateVariant: 'cards', cardDensity: 'standard' }}
+        catalogCount={0}
+      />,
+    );
     expect(mounts.length).toBe(1);
 
     fireEvent.click(screen.getByRole('button', { name: /new chat/i }));
