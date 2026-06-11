@@ -1,4 +1,3 @@
-import React from 'react';
 import { SDLogo, rgba } from './prototype-brand';
 
 export type PrototypeView = 'admin' | 'storefront' | 'editor' | 'email';
