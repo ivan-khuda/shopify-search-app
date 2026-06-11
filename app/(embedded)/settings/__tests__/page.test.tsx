@@ -128,6 +128,16 @@ describe('SettingsPage — active row pre-selection (SC3, D-06)', () => {
     expect(getByTestId('settings-form-stub')).toBeInTheDocument();
     expect(getActiveMock).toHaveBeenCalledWith('');
   });
+
+  // WR-01 parity with /chat: searchParams.shop is attacker-controllable on
+  // direct navigation — a non-.myshopify.com value must never reach the
+  // shop-scoped resolvers.
+  it('rejects an invalid searchParams.shop and passes empty shop to resolvers', async () => {
+    const { getByTestId } = await renderPage({ shop: 'evil.example.com' });
+    expect(getByTestId('settings-form-stub')).toBeInTheDocument();
+    expect(getActiveMock).toHaveBeenCalledWith('');
+    expect(getAppearanceMock).toHaveBeenCalledWith('');
+  });
 });
 
 describe('SettingsPage — appearance load (chat-redesign Task 13)', () => {

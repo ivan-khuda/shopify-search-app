@@ -28,11 +28,19 @@ export default async function SettingsPage({
 }: {
   searchParams: Promise<{ shop?: string }>;
 }) {
-  const { shop } = await searchParams;
+  const { shop: shopFromQuery } = await searchParams;
+  // WR-01: searchParams.shop is attacker-controllable on direct navigation.
+  // Mirror the `.myshopify.com` hostname validation that the session-token
+  // path applies (lib/shopify/server-resolve-shop.ts) before letting the
+  // query value drive shop-scoped reads (model lookup, appearance lookup).
+  const shop =
+    shopFromQuery && /^[a-zA-Z0-9][a-zA-Z0-9-]*\.myshopify\.com$/.test(shopFromQuery)
+      ? shopFromQuery
+      : '';
   const [catalogResult, activeModel, appearance] = await Promise.all([
     fetchModelCatalog(),
-    getActiveChatModel(shop ?? ''),
-    getShopAppearance(shop ?? ''),
+    getActiveChatModel(shop),
+    getShopAppearance(shop),
   ]);
 
   // The catalog client returns the full language-model slice (per Plan 04
