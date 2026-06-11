@@ -20,6 +20,7 @@
  */
 import { fetchModelCatalog } from '@/services/chat/model-catalog';
 import { getActiveChatModel } from '@/services/chat/getActiveChatModel';
+import { getShopAppearance } from '@/services/chat/getShopAppearance';
 import { SettingsForm } from './settings-form';
 
 export default async function SettingsPage({
@@ -28,9 +29,10 @@ export default async function SettingsPage({
   searchParams: Promise<{ shop?: string }>;
 }) {
   const { shop } = await searchParams;
-  const [catalogResult, activeModel] = await Promise.all([
+  const [catalogResult, activeModel, appearance] = await Promise.all([
     fetchModelCatalog(),
     getActiveChatModel(shop ?? ''),
+    getShopAppearance(shop ?? ''),
   ]);
 
   // The catalog client returns the full language-model slice (per Plan 04
@@ -79,6 +81,7 @@ export default async function SettingsPage({
           activeId={activeModel.id}
           activeDisplayName={activeModel.displayName}
           saveDisabled={catalogResult.coldStartFallback}
+          appearance={appearance}
         />
       </s-section>
     </s-page>

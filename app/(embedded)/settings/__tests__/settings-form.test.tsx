@@ -81,7 +81,8 @@ describe('SettingsForm — radio rendering', () => {
     const { container } = render(
       <SettingsForm catalog={catalog} activeId="google/gemini-2.5-flash" />,
     );
-    const choices = container.querySelectorAll('s-choice');
+    // Scoped to the model group — the Appearance section adds its own choices.
+    const choices = container.querySelectorAll('s-choice-list[name="active-model"] s-choice');
     expect(choices).toHaveLength(catalog.length);
     const values = Array.from(choices).map((el) => el.getAttribute('value'));
     expect(values).toEqual(expect.arrayContaining(catalog.map((c) => c.id)));
@@ -165,7 +166,7 @@ describe('SettingsForm — Save handler (D-07)', () => {
     const choice = container.querySelector('s-choice[value="anthropic/claude-sonnet-4.5"]');
     fireEvent.click(choice as Element);
 
-    const saveBtn = await screen.findByRole('button', { name: /save/i });
+    const saveBtn = await screen.findByRole('button', { name: /^save$/i });
     fireEvent.click(saveBtn);
 
     // Allow microtasks / async chain to settle.
@@ -189,7 +190,7 @@ describe('SettingsForm — Save handler (D-07)', () => {
     const choice = container.querySelector('s-choice[value="anthropic/claude-sonnet-4.5"]');
     fireEvent.click(choice as Element);
 
-    const saveBtn = await screen.findByRole('button', { name: /save/i });
+    const saveBtn = await screen.findByRole('button', { name: /^save$/i });
     fireEvent.click(saveBtn);
     await new Promise<void>((r) => setTimeout(r, 0));
 
@@ -211,13 +212,111 @@ describe('SettingsForm — Save handler (D-07)', () => {
     const choice = container.querySelector('s-choice[value="anthropic/claude-sonnet-4.5"]');
     fireEvent.click(choice as Element);
 
-    const saveBtn = await screen.findByRole('button', { name: /save/i });
+    const saveBtn = await screen.findByRole('button', { name: /^save$/i });
     fireEvent.click(saveBtn);
     await new Promise<void>((r) => setTimeout(r, 0));
 
     const banner = container.querySelector('s-banner[tone="critical"]');
     expect(banner).not.toBeNull();
     expect(banner?.textContent ?? '').toContain('unknown_model_id');
+  });
+});
+
+describe('SettingsForm — Appearance section (chat-redesign Task 13)', () => {
+  function renderWithAppearance() {
+    return render(
+      <SettingsForm
+        catalog={catalog}
+        activeId="google/gemini-2.5-flash"
+        appearance={{ emptyStateVariant: 'cards', cardDensity: 'standard' }}
+      />,
+    );
+  }
+
+  it('renders both choice groups with every option', () => {
+    const { container } = renderWithAppearance();
+
+    expect(container.querySelector('s-section[heading="Appearance"]')).not.toBeNull();
+    expect(screen.getByText('Empty state style')).toBeInTheDocument();
+    expect(screen.getByText('Product card density')).toBeInTheDocument();
+
+    const emptyGroup = container.querySelector('s-choice-list[name="empty-state-variant"]');
+    const densityGroup = container.querySelector('s-choice-list[name="card-density"]');
+    expect(emptyGroup).not.toBeNull();
+    expect(densityGroup).not.toBeNull();
+
+    const emptyValues = Array.from(emptyGroup!.querySelectorAll('s-choice')).map((c) =>
+      c.getAttribute('value'),
+    );
+    expect(emptyValues).toEqual(['cards', 'minimal', 'hero']);
+
+    const densityValues = Array.from(densityGroup!.querySelectorAll('s-choice')).map((c) =>
+      c.getAttribute('value'),
+    );
+    expect(densityValues).toEqual(['compact', 'standard', 'hero']);
+  });
+
+  it('selecting hero + Save PATCHes /api/settings/appearance with ONLY the changed field', async () => {
+    const { container } = renderWithAppearance();
+
+    const heroChoice = container.querySelector(
+      's-choice-list[name="empty-state-variant"] s-choice[value="hero"]',
+    );
+    expect(heroChoice).not.toBeNull();
+    fireEvent.click(heroChoice as Element);
+
+    const saveBtn = screen.getByRole('button', { name: /save appearance/i });
+    fireEvent.click(saveBtn);
+    await new Promise<void>((r) => setTimeout(r, 0));
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe('/api/settings/appearance');
+    expect(init.method).toBe('PATCH');
+    const headers = init.headers as Record<string, string>;
+    expect(headers.Authorization).toBe('Bearer tok');
+    expect(init.body).toBe(JSON.stringify({ emptyStateVariant: 'hero' }));
+  });
+
+  it('shows the "Appearance saved" toast on success', async () => {
+    const { container } = renderWithAppearance();
+
+    const compactChoice = container.querySelector(
+      's-choice-list[name="card-density"] s-choice[value="compact"]',
+    );
+    fireEvent.click(compactChoice as Element);
+
+    fireEvent.click(screen.getByRole('button', { name: /save appearance/i }));
+    await new Promise<void>((r) => setTimeout(r, 0));
+
+    expect(shopifyToastShow).toHaveBeenCalledWith('Appearance saved');
+    // density-only change → density-only body
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(init.body).toBe(JSON.stringify({ cardDensity: 'compact' }));
+  });
+
+  it('renders critical banner with the API error code on failed appearance save', async () => {
+    fetchMock.mockResolvedValueOnce({
+      ok: false,
+      status: 401,
+      json: async () => ({ error: 'missing_bearer' }),
+    } as Response);
+
+    const { container } = renderWithAppearance();
+    const heroChoice = container.querySelector(
+      's-choice-list[name="empty-state-variant"] s-choice[value="hero"]',
+    );
+    fireEvent.click(heroChoice as Element);
+
+    fireEvent.click(screen.getByRole('button', { name: /save appearance/i }));
+    await new Promise<void>((r) => setTimeout(r, 0));
+
+    const banner = container.querySelector(
+      's-section[heading="Appearance"] s-banner[tone="critical"]',
+    );
+    expect(banner).not.toBeNull();
+    expect(banner?.textContent ?? '').toContain('missing_bearer');
+    expect(shopifyToastShow).not.toHaveBeenCalled();
   });
 });
 

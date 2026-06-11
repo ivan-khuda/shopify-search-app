@@ -34,13 +34,40 @@
 
 import { useMemo, useState } from 'react';
 import type { CatalogModel } from '@/services/chat/model-catalog';
+import {
+  DEFAULT_APPEARANCE,
+  type CardDensity,
+  type EmptyStateVariant,
+  type ShopAppearance,
+} from '@/lib/chat-ui/appearance';
 
 export interface SettingsFormProps {
   catalog: CatalogModel[];
   activeId: string;
   activeDisplayName?: string;
   saveDisabled?: boolean;
+  appearance?: ShopAppearance;
 }
+
+const EMPTY_STATE_OPTIONS: ReadonlyArray<{
+  value: EmptyStateVariant;
+  label: string;
+  description: string;
+}> = [
+  { value: 'cards', label: 'Cards', description: 'Suggested searches as clickable cards' },
+  { value: 'minimal', label: 'Minimal', description: 'A single quiet prompt line' },
+  { value: 'hero', label: 'Hero', description: 'Large welcome headline with gradient accent' },
+];
+
+const DENSITY_OPTIONS: ReadonlyArray<{
+  value: CardDensity;
+  label: string;
+  description: string;
+}> = [
+  { value: 'compact', label: 'Compact', description: 'More products per row, smaller cards' },
+  { value: 'standard', label: 'Standard', description: 'Balanced grid with full product details' },
+  { value: 'hero', label: 'Hero', description: 'Oversized feature card for the top result' },
+];
 
 type SortKey =
   | 'contextWindow'
@@ -56,11 +83,21 @@ export function SettingsForm({
   catalog,
   activeId,
   saveDisabled = false,
+  appearance = DEFAULT_APPEARANCE,
 }: SettingsFormProps) {
   const [selectedId, setSelectedId] = useState(activeId);
   const [sort, setSort] = useState<SortState | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [emptyStateVariant, setEmptyStateVariant] = useState<EmptyStateVariant>(
+    appearance.emptyStateVariant,
+  );
+  const [cardDensity, setCardDensity] = useState<CardDensity>(appearance.cardDensity);
+  // Last server-confirmed appearance — diff base for the changed-fields-only
+  // PATCH body. Updated on successful save so a second save isn't a no-op diff.
+  const [savedAppearance, setSavedAppearance] = useState<ShopAppearance>(appearance);
+  const [appearanceSaving, setAppearanceSaving] = useState(false);
+  const [appearanceError, setAppearanceError] = useState<string | null>(null);
 
   const inCatalog = catalog.some((m) => m.id === activeId);
 
@@ -109,6 +146,48 @@ export function SettingsForm({
       setError('network_error');
     } finally {
       setSaving(false);
+    }
+  }
+
+  const appearanceDirty =
+    emptyStateVariant !== savedAppearance.emptyStateVariant ||
+    cardDensity !== savedAppearance.cardDensity;
+
+  // Mirrors handleSave above: Bearer session token, error code → inline
+  // critical banner, success → toast. Body carries ONLY the changed fields
+  // (PATCH /api/settings/appearance rejects empty bodies by contract).
+  async function handleAppearanceSave() {
+    if (!appearanceDirty || appearanceSaving) return;
+    setAppearanceSaving(true);
+    setAppearanceError(null);
+    const payload: Partial<ShopAppearance> = {};
+    if (emptyStateVariant !== savedAppearance.emptyStateVariant) {
+      payload.emptyStateVariant = emptyStateVariant;
+    }
+    if (cardDensity !== savedAppearance.cardDensity) {
+      payload.cardDensity = cardDensity;
+    }
+    try {
+      const token = await shopify.idToken();
+      const res = await fetch('/api/settings/appearance', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
+      if (res.ok) {
+        setSavedAppearance({ emptyStateVariant, cardDensity });
+        shopify.toast.show('Appearance saved');
+      } else {
+        const body = await res.json().catch(() => ({}) as { error?: string });
+        setAppearanceError(body.error ?? 'save_failed');
+      }
+    } catch {
+      setAppearanceError('network_error');
+    } finally {
+      setAppearanceSaving(false);
     }
   }
 
@@ -175,6 +254,47 @@ export function SettingsForm({
           </tbody>
         </s-table>
       </s-choice-list>
+      <s-section heading="Appearance">
+        {appearanceError && (
+          <s-banner tone="critical">Save failed: {appearanceError}</s-banner>
+        )}
+        <s-text>Empty state style</s-text>
+        <s-choice-list name="empty-state-variant" value={emptyStateVariant}>
+          {EMPTY_STATE_OPTIONS.map((opt) => (
+            <s-choice
+              key={opt.value}
+              value={opt.value}
+              aria-label={`Empty state style: ${opt.label}`}
+              {...(emptyStateVariant === opt.value ? { selected: '' } : {})}
+              onClick={() => setEmptyStateVariant(opt.value)}
+            >
+              {opt.label} — {opt.description}
+            </s-choice>
+          ))}
+        </s-choice-list>
+        <s-text>Product card density</s-text>
+        <s-choice-list name="card-density" value={cardDensity}>
+          {DENSITY_OPTIONS.map((opt) => (
+            <s-choice
+              key={opt.value}
+              value={opt.value}
+              aria-label={`Product card density: ${opt.label}`}
+              {...(cardDensity === opt.value ? { selected: '' } : {})}
+              onClick={() => setCardDensity(opt.value)}
+            >
+              {opt.label} — {opt.description}
+            </s-choice>
+          ))}
+        </s-choice-list>
+        <button
+          type="button"
+          onClick={handleAppearanceSave}
+          disabled={!appearanceDirty || appearanceSaving}
+          {...(appearanceSaving ? { loading: '' } : {})}
+        >
+          Save appearance
+        </button>
+      </s-section>
       {dirty && !saveDisabled && (
         <ui-save-bar id="settings-save-bar" discardConfirmation="">
           <button
