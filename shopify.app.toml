@@ -9,7 +9,9 @@
 
 client_id = "eb629f7ef2177c6f74d0e0da6b7f2749"
 name = "SmartDiscovery AI"
-application_url = "https://REPLACE-WITH-PRODUCTION-HOST"
+# /chat is the app home: the nav link with rel="home" is hidden from the
+# admin sidebar by design, so clicking the app name must open chat directly.
+application_url = "https://REPLACE-WITH-PRODUCTION-HOST/chat"
 embedded = true
 
 [webhooks]
