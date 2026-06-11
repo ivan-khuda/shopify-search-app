@@ -95,7 +95,7 @@ export function ChatShell({ shop }: { shop: string }) {
                         />
                     </TabsContent>
                     <TabsContent value="history" className="h-full overflow-y-auto">
-                        <HistoryPanel items={history.items} onClear={history.clear} />
+                        <HistoryPanel items={history.items} onClear={history.clear} onResume={() => {}} />
                     </TabsContent>
                     <TabsContent value="saved" className="h-full overflow-y-auto">
                         <SavedProductsPanel products={saved.items} onToggleSave={saved.toggle} />

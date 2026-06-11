@@ -47,7 +47,9 @@ function DrawerBody({ activeTab, shop, visitorId, customerId }: DrawerBodyProps)
     );
   }
   if (activeTab === 'history') {
-    return <HistoryPanel items={history.items} onClear={history.clear} />;
+    // onResume is a no-op until the drawer grows tab-switch + resume wiring
+    // (chat-redesign Task 14 reworks this component).
+    return <HistoryPanel items={history.items} onClear={history.clear} onResume={() => {}} />;
   }
   return <SavedProductsPanel products={saved.items} onToggleSave={saved.toggle} />;
 }
