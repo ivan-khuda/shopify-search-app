@@ -35,6 +35,17 @@ export class ShopSettingsRepository {
       update: { activeChatModelId },
     });
   }
+
+  async upsertAppearance(
+    shop: string,
+    fields: { emptyStateVariant?: string; cardDensity?: string },
+  ): Promise<ShopSettings> {
+    return prisma.shopSettings.upsert({
+      where: { shop },
+      create: { shop, ...fields },
+      update: { ...fields },
+    });
+  }
 }
 
 export const shopSettingsRepository = new ShopSettingsRepository();

@@ -147,6 +147,22 @@ describe('Phase 7 contract — DB-backed resolver (D-06, D-09)', () => {
     expect(result.id).toBe('anthropic/claude-sonnet-4.5');
     expect(result.displayName).toBe('claude-sonnet-4.5');
   });
-});
 
-// RED: Phase 7 body of services/chat/getActiveChatModel.ts lands in Plan 06.
+  it('returns DEFAULT_MODEL when row exists but activeChatModelId is null (appearance-only row)', async () => {
+    findUniqueMock.mockResolvedValue({
+      shop: 'shop-d.myshopify.com',
+      activeChatModelId: null,
+      emptyStateVariant: 'cards',
+      cardDensity: 'standard',
+      updatedAt: new Date(),
+    });
+    fetchCatalogMock.mockResolvedValue({ models: [] });
+
+    const result = await getActiveChatModel('shop-d.myshopify.com');
+
+    expect(result).toEqual({
+      id: 'google/gemini-2.5-flash',
+      displayName: 'Gemini 2.5 Flash',
+    });
+  });
+});

@@ -261,7 +261,9 @@ model VisitorCustomerLink {
 // when no row exists. First /settings Save creates the row.
 model ShopSettings {
   shop              String   @id
-  activeChatModelId String
+  activeChatModelId String?  // nullable: appearance-only saves may create the row
+  emptyStateVariant String   @default("cards")
+  cardDensity       String   @default("standard")
   updatedAt         DateTime @updatedAt
 
   @@map("shop_settings")

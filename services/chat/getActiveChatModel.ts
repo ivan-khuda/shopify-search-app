@@ -84,7 +84,8 @@ export async function getActiveChatModel(shop: string): Promise<ActiveChatModel>
   const row = await prisma.shopSettings.findUnique({ where: { shop } });
 
   // D-09: never explicitly seed — absence of a row IS the fallback signal.
-  if (!row) return DEFAULT_MODEL;
+  // Also treat null activeChatModelId as the fallback (appearance-only rows).
+  if (!row || !row.activeChatModelId) return DEFAULT_MODEL;
 
   // Best-effort catalog hydration. Catalog failures (network, gateway down,
   // unknown id) fall through to id-segment synthesis. Silent by design —
