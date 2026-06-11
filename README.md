@@ -20,6 +20,24 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Inngest Dev Server (background jobs)
+
+Product sync and retention sweeps run as [Inngest](https://www.inngest.com) functions. In local development, events are only delivered when the Inngest dev server is running alongside `bun dev`.
+
+1. Make sure `.env` contains `INNGEST_DEV=1` (see `.env.example`). Without it the SDK targets Inngest Cloud and `inngest.send()` fails with "couldn't find an event key".
+
+2. Start the dev server in a separate terminal:
+
+   ```bash
+   NPM_CONFIG_CACHE=$(mktemp -d) npx -y --ignore-scripts=false inngest-cli@latest dev
+   ```
+
+   > Note: plain `bunx inngest-cli` does not work — bun skips the postinstall script that downloads the CLI binary, hence the `npx --ignore-scripts=false` form.
+
+3. Open the dev server UI at [http://localhost:8288](http://localhost:8288). With `bun dev` running, it auto-discovers the app's functions at `http://localhost:3000/api/inngest`.
+
+In production no dev server is needed: leave `INNGEST_DEV` unset and provide `INNGEST_EVENT_KEY` + `INNGEST_SIGNING_KEY` (auto-set by the Vercel ↔ Inngest marketplace integration).
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:

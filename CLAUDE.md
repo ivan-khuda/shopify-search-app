@@ -77,6 +77,8 @@ Required in `.env`:
 - `NEXT_PUBLIC_SHOPIFY_API_KEY` — Same value as `SHOPIFY_API_KEY`; exposed to client components for App Bridge initialization
 - `AI_GATEWAY_API_KEY` — Vercel AI Gateway key for embedding calls (required for EmbeddingService.embed and embedMany; sync + webhook re-embedding both fail without it)
 - `DIRECT_URL` — Direct Postgres URL (postgresql://...). Required in production when DATABASE_URL is a Prisma Accelerate URL. Used by scripts/apply-manual-indexes.ts. In local dev where DATABASE_URL is already a direct postgres URL, DIRECT_URL is optional (the script falls back to DATABASE_URL).
+- `INNGEST_DEV` — Set to `1` in local dev so the Inngest SDK targets the local dev server (`bunx inngest-cli@latest dev`) instead of Inngest Cloud; without it `inngest.send()` fails with "couldn't find an event key". Leave unset in production.
+- `INNGEST_EVENT_KEY`, `INNGEST_SIGNING_KEY` — Production-only Inngest credentials (auto-set by the Vercel ↔ Inngest marketplace integration per D-12). Not needed locally when `INNGEST_DEV=1`.
 
 ## Key Design Decisions
 
