@@ -6,5 +6,7 @@
 name = "smartdiscovery"
 roles = ["frontend", "backend"]
 
+# No shell expansion here (the CLI execs the command directly) — next dev
+# reads the PORT env var the CLI injects.
 [commands]
-dev = "bunx next dev -p $PORT"
+dev = "bun run dev"
