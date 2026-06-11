@@ -165,3 +165,61 @@ describe('MessageParts — tool-searchCatalog', () => {
     expect(screen.getByText('hello world')).toBeDefined();
   });
 });
+
+describe('MessageParts — density grid', () => {
+  const TOOL_OUTPUT_PARTS = [
+    {
+      type: 'tool-searchCatalog',
+      state: 'output-available',
+      output: sampleProducts,
+      input: { query: 'shoes' },
+      toolCallId: 't1',
+    },
+  ] as unknown as UIMessage['parts'];
+
+  it('renders the product grid single-column for hero density', () => {
+    render(
+      <MessageParts
+        parts={TOOL_OUTPUT_PARTS}
+        messageId="m1"
+        density="hero"
+        savedProductIds={new Set<string>()}
+        onToggleSave={vi.fn()}
+      />,
+    );
+    const list = screen.getByRole('list');
+    expect(list.className).toContain('grid-cols-1');
+    expect(list.className).not.toContain('lg:grid-cols-3');
+  });
+
+  it('renders the two-up compact grid for compact density', () => {
+    render(
+      <MessageParts
+        parts={TOOL_OUTPUT_PARTS}
+        messageId="m1"
+        density="compact"
+        savedProductIds={new Set<string>()}
+        onToggleSave={vi.fn()}
+      />,
+    );
+    const list = screen.getByRole('list');
+    expect(list.className).toContain('grid-cols-2');
+    expect(list.className).toContain('lg:grid-cols-3');
+    expect(list.className).not.toContain('sm:grid-cols-2');
+  });
+
+  it('keeps the three-column responsive grid for default density', () => {
+    render(
+      <MessageParts
+        parts={TOOL_OUTPUT_PARTS}
+        messageId="m1"
+        savedProductIds={new Set<string>()}
+        onToggleSave={vi.fn()}
+      />,
+    );
+    const list = screen.getByRole('list');
+    expect(list.className).toContain('grid-cols-1');
+    expect(list.className).toContain('sm:grid-cols-2');
+    expect(list.className).toContain('lg:grid-cols-3');
+  });
+});
