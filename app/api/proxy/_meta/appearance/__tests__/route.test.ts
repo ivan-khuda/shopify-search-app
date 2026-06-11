@@ -27,5 +27,6 @@ describe('GET /api/proxy/_meta/appearance', () => {
       cardDensity: 'compact',
     });
     expect(getShopAppearance).toHaveBeenCalledWith('test.myshopify.com');
+    expect(res.headers.get('cache-control')).toBe('private, max-age=60');
   });
 });
