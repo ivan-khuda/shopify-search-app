@@ -110,6 +110,23 @@ describe('ChatPane', () => {
           { type: 'tool-searchCatalog', state: 'output-available', output: [TEST_PRODUCT], input: {}, toolCallId: 't1' } as never,
         ],
       },
+      {
+        id: 'assistant-3',
+        role: 'assistant',
+        parts: [
+          { type: 'text', text: 'Two more matches below.' },
+          {
+            type: 'tool-searchCatalog',
+            state: 'output-available',
+            output: [
+              { ...TEST_PRODUCT, id: 'p-2', title: 'Trail Sneakers' },
+              { ...TEST_PRODUCT, id: 'p-3', title: 'Road Sneakers' },
+            ],
+            input: {},
+            toolCallId: 't2',
+          } as never,
+        ],
+      },
     ]);
 
     rerender(
@@ -125,9 +142,13 @@ describe('ChatPane', () => {
     expect(screen.getByText('Fresh running options for you.')).toBeInTheDocument();
     expect(screen.getByText(TEST_PRODUCT.title)).toBeInTheDocument();
 
-    // Action row reflects the tool-searchCatalog output length for its message.
+    // Action row reflects the tool-searchCatalog output length for its message,
+    // singular and plural.
     expect(
       screen.getByText((_, element) => element?.textContent === '1 grounded result'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText((_, element) => element?.textContent === '2 grounded results'),
     ).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: /remove saved product/i }));

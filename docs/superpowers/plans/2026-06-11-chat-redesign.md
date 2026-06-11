@@ -758,7 +758,7 @@ Pass `density` into each `<ProductCard …/>`. Restyle the searching state to th
 `chat-message.tsx`: rewrite the bubble shells —
 - user: `bg-[var(--sd-accent,#5B4FE9)] text-white rounded-[14px] rounded-br-[4px] px-3.5 py-2.5 text-sm max-w-[480px] self-end shadow-[0_1px_2px_rgba(91,79,233,0.3)]`
 - assistant: avatar `<SDLogo size={28}/>` (replaces the "S" circle), content column; text bubble `bg-white border border-[#e1e3e5] rounded-[14px] rounded-bl-[4px] px-3.5 py-3 text-sm max-w-[600px]`
-- add props `density?: CardDensity` (forward to MessageParts) and `groundedCount?: number`; when `status !== 'streaming'` and the message is the last assistant message, render the action row:
+- add props `density?: CardDensity` (forward to MessageParts) and `groundedCount?: number`; when `status !== 'streaming'`, render the action row on every settled assistant message (prototype shows it on every `done` message, not just the last):
 
 ```tsx
 <div className="mt-1.5 flex items-center gap-1.5 text-[11px] text-[#8c9196]">
