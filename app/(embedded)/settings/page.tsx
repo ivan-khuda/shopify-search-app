@@ -20,6 +20,7 @@
  */
 import { fetchModelCatalog } from '@/services/chat/model-catalog';
 import { getActiveChatModel } from '@/services/chat/getActiveChatModel';
+import { getShopAppearance } from '@/services/chat/getShopAppearance';
 import { SettingsForm } from './settings-form';
 
 export default async function SettingsPage({
@@ -27,10 +28,19 @@ export default async function SettingsPage({
 }: {
   searchParams: Promise<{ shop?: string }>;
 }) {
-  const { shop } = await searchParams;
-  const [catalogResult, activeModel] = await Promise.all([
+  const { shop: shopFromQuery } = await searchParams;
+  // WR-01: searchParams.shop is attacker-controllable on direct navigation.
+  // Mirror the `.myshopify.com` hostname validation that the session-token
+  // path applies (lib/shopify/server-resolve-shop.ts) before letting the
+  // query value drive shop-scoped reads (model lookup, appearance lookup).
+  const shop =
+    shopFromQuery && /^[a-zA-Z0-9][a-zA-Z0-9-]*\.myshopify\.com$/.test(shopFromQuery)
+      ? shopFromQuery
+      : '';
+  const [catalogResult, activeModel, appearance] = await Promise.all([
     fetchModelCatalog(),
-    getActiveChatModel(shop ?? ''),
+    getActiveChatModel(shop),
+    getShopAppearance(shop),
   ]);
 
   // The catalog client returns the full language-model slice (per Plan 04
@@ -48,39 +58,41 @@ export default async function SettingsPage({
 
   return (
     <s-page heading="Settings">
-      <s-section heading="AI chat model">
-        {/*
-          Static column descriptor: the locked D-04 column order is announced
-          here at the SSR boundary so the contract is visible without parsing
-          the (client-rendered) interactive table. The column labels match the
-          headers rendered inside <SettingsForm> verbatim — the order MUST
-          stay in lockstep with that file's <thead> when D-04 evolves.
-        */}
-        <s-text>
-          Columns: Model name · Provider · Context window · $ / M input tokens · $ / M output tokens · Best for · Active
-        </s-text>
-        {catalogResult.coldStartFallback && (
-          <s-banner tone="critical">
-            Model catalog unavailable — showing default only.
-          </s-banner>
-        )}
-        {catalogResult.stale && (
-          <s-banner tone="warning">
-            Showing cached models — live catalog unavailable.
-          </s-banner>
-        )}
-        {activeMissingFromCatalog && (
-          <s-banner tone="warning">
-            Your previously-selected model is no longer available — pick a replacement.
-          </s-banner>
-        )}
-        <SettingsForm
-          catalog={curated}
-          activeId={activeModel.id}
-          activeDisplayName={activeModel.displayName}
-          saveDisabled={catalogResult.coldStartFallback}
-        />
-      </s-section>
+      {/*
+        Static column descriptor: the locked D-04 column order is announced
+        here at the SSR boundary so the contract is visible without parsing
+        the (client-rendered) interactive table. The column labels match the
+        headers rendered inside <SettingsForm> verbatim — the order MUST
+        stay in lockstep with that file's <thead> when D-04 evolves.
+        Note: s-section is a page-level primitive (child of s-page). The two
+        sections ("AI chat model" and "Appearance") are rendered as siblings
+        inside <SettingsForm> to avoid nesting s-section elements.
+      */}
+      <s-text>
+        Columns: Model name · Provider · Context window · $ / M input tokens · $ / M output tokens · Best for · Active
+      </s-text>
+      {catalogResult.coldStartFallback && (
+        <s-banner tone="critical">
+          Model catalog unavailable — showing default only.
+        </s-banner>
+      )}
+      {catalogResult.stale && (
+        <s-banner tone="warning">
+          Showing cached models — live catalog unavailable.
+        </s-banner>
+      )}
+      {activeMissingFromCatalog && (
+        <s-banner tone="warning">
+          Your previously-selected model is no longer available — pick a replacement.
+        </s-banner>
+      )}
+      <SettingsForm
+        catalog={curated}
+        activeId={activeModel.id}
+        activeDisplayName={activeModel.displayName}
+        saveDisabled={catalogResult.coldStartFallback}
+        appearance={appearance}
+      />
     </s-page>
   );
 }

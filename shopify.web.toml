@@ -1,0 +1,10 @@
+# Tells `shopify app dev` how to run this app's web process.
+# The CLI provisions a free Cloudflare tunnel, injects PORT/HOST (plus
+# SHOPIFY_API_KEY/SECRET/SCOPES) into this process's environment, and
+# auto-rewrites the URLs in the active app config on every run — no more
+# hand-editing tunnel hosts into shopify.app.dev.toml.
+name = "smartdiscovery"
+roles = ["frontend", "backend"]
+
+[commands]
+dev = "bunx next dev -p $PORT"

@@ -1,18 +1,26 @@
 "use client";
 
 import { UIMessage } from "ai";
-import { AlertCircle, Loader2, SearchX } from "lucide-react";
+import { AlertCircle, SearchX } from "lucide-react";
 
 import { TextShimmer } from "@/components/ui/text-shimmer";
 import { Response } from "@/components/ai-elements/response";
 import { ProductCard } from "./product-card";
 import type { ChatProduct } from "@/types/product";
+import type { CardDensity } from "../appearance";
 
 interface MessagePartProps {
   parts: UIMessage["parts"];
   messageId: string;
   savedProductIds: Set<string>;
   onToggleSave: (product: ChatProduct) => void;
+  /** Threads ShopSettings.cardDensity into the results grid + cards. */
+  density?: CardDensity;
+  /**
+   * 'assistant' (default) wraps text parts in the white handoff bubble;
+   * 'user' renders text plain — ChatMessage supplies the accent bubble.
+   */
+  variant?: "user" | "assistant";
 }
 
 export const MessageParts = ({
@@ -20,11 +28,20 @@ export const MessageParts = ({
   messageId,
   savedProductIds,
   onToggleSave,
+  density = "standard",
+  variant = "assistant",
 }: MessagePartProps) => {
   const messageParts = parts ?? [];
 
+  const gridClass =
+    density === "hero"
+      ? "grid grid-cols-1 gap-3"
+      : density === "compact"
+        ? "grid grid-cols-2 gap-2 lg:grid-cols-3"
+        : "grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3";
+
   return (
-    <div>
+    <div className={variant === "assistant" ? "flex w-full min-w-0 flex-col gap-3" : undefined}>
       {messageParts.map((part, index) => {
         const { type } = part;
         const key = `message-${messageId}-part-${index}`;
@@ -42,9 +59,12 @@ export const MessageParts = ({
                 key={key}
                 role="status"
                 aria-live="polite"
-                className="inline-flex items-center gap-2 rounded-md bg-muted px-2 py-1 text-xs text-muted-foreground transition-opacity duration-150"
+                className="inline-flex items-center gap-2 self-start rounded-xl border border-[#e1e3e5] bg-white px-3 py-2 text-[13px] text-[#5c5f62] transition-opacity duration-150"
               >
-                <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+                <div
+                  aria-hidden="true"
+                  className="size-3 animate-spin rounded-full border-2 border-[var(--sd-accent,#5B4FE9)]/20 border-t-[var(--sd-accent,#5B4FE9)]"
+                />
                 Searching your catalog…
               </div>
             );
@@ -83,12 +103,13 @@ export const MessageParts = ({
                 role="list"
                 aria-live="polite"
                 aria-label={`${products.length} matching products`}
-                className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 transition-opacity duration-150"
+                className={`${gridClass} transition-opacity duration-150`}
               >
                 {products.map((product) => (
                   <li key={product.id}>
                     <ProductCard
                       product={product}
+                      density={density}
                       isSaved={savedProductIds.has(product.id)}
                       onSave={() => onToggleSave(product)}
                     />
@@ -126,8 +147,18 @@ export const MessageParts = ({
         }
 
         if (type === "text") {
+          if (variant === "user") {
+            return (
+              <div className="markdown" key={key}>
+                <Response>{part.text}</Response>
+              </div>
+            );
+          }
           return (
-            <div className="markdown" key={key}>
+            <div
+              className="markdown max-w-[600px] rounded-[14px] rounded-bl-[4px] border border-[#e1e3e5] bg-white px-3.5 py-3 text-sm leading-[1.55] text-[#202223]"
+              key={key}
+            >
               <Response>{part.text}</Response>
             </div>
           );

@@ -12,8 +12,8 @@ export { ChatMessage } from './components/chat-message';
 export { ProductCard } from './components/product-card';
 export { HistoryPanel } from './components/history-panel';
 export { SavedProductsPanel } from './components/saved-products-panel';
-export { EmptyState } from './components/empty-state';
-export { PromptChips, CHIP_LABELS } from './components/prompt-chips';
+export { SDLogo } from './components/sd-logo';
+export { EmptyChat, SUGGESTED_PROMPTS } from './components/empty-chat';
 // NOTE: message-parts is intentionally NOT exported — internal implementation
 // detail of ChatMessage (RESEARCH §"Open Questions" item 1).
 
@@ -28,3 +28,14 @@ export {
   DbBackedHistoryStore,
   DbBackedSavedProductsStore,
 } from './stores/db-backed';
+
+export {
+  EMPTY_STATE_VARIANTS,
+  CARD_DENSITIES,
+  DEFAULT_APPEARANCE,
+  parseAppearance,
+  SD_ACCENT,
+  type EmptyStateVariant,
+  type CardDensity,
+  type ShopAppearance,
+} from './appearance';

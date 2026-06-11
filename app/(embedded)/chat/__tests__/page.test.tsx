@@ -1,26 +1,27 @@
 import { render } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { ShopAppearance } from '@/lib/chat-ui/appearance';
 
 /**
- * Phase 4 Plan 6 — page.tsx server-component banner test.
+ * Chat-redesign Task 12 — page.tsx server-component data-flow test.
  *
  * page.tsx is an async Server Component that:
  *   1. awaits searchParams (Next 15+ async pattern)
- *   2. awaits getActiveChatModel(shop)
- *   3. renders a single banner div above <ChatShell />
+ *   2. resolves the shop (session token first, validated searchParams fallback)
+ *   3. loads getActiveChatModel + getShopAppearance + product count in parallel
+ *   4. renders <ChatShell /> with { shop, modelName, appearance, catalogCount }
  *
- * We invoke the async component and unwrap its returned JSX, then mount it
- * with @testing-library/react. ChatShell is mocked to a stub so this test
- * only asserts the banner's contract (typography, ARIA, dynamic
- * interpolation, style tokens) per UI-SPEC.md Copywriting + Accessibility +
- * Color rows.
+ * The old standalone preview banner is gone — its copy lives in the ChatShell
+ * header pill now (covered by chat-shell.test.tsx), so this file asserts the
+ * data flow into ChatShell instead of banner markup.
  *
- * Phase 8.1 Plan 05 — W-2 session-resolved shop tests.
- *
- * Three new tests verify that ChatPage prefers the session-token shop over
- * searchParams.shop (T-08.1.05-01 mitigation). The helper under test is
- * resolveShopFromRequest which decodes the Authorization Bearer header.
+ * Phase 8.1 Plan 05 — W-2 session-resolved shop tests retained below: ChatPage
+ * must prefer the session-token shop over searchParams.shop (T-08.1.05-01).
  */
+
+const { shellProps } = vi.hoisted(() => ({
+  shellProps: [] as Array<Record<string, unknown>>,
+}));
 
 vi.mock('@/services/chat/getActiveChatModel', () => ({
   getActiveChatModel: vi.fn(async () => ({
@@ -29,8 +30,26 @@ vi.mock('@/services/chat/getActiveChatModel', () => ({
   })),
 }));
 
+vi.mock('@/services/chat/getShopAppearance', () => ({
+  getShopAppearance: vi.fn(async (): Promise<ShopAppearance> => ({
+    emptyStateVariant: 'hero',
+    cardDensity: 'compact',
+  })),
+}));
+
+vi.mock('@/lib/db/client', () => ({
+  prisma: {
+    product: {
+      count: vi.fn(async () => 12),
+    },
+  },
+}));
+
 vi.mock('../chat-shell', () => ({
-  ChatShell: () => <div data-testid="chat-shell-stub">chat shell</div>,
+  ChatShell: (props: Record<string, unknown>) => {
+    shellProps.push(props);
+    return <div data-testid="chat-shell-stub">chat shell</div>;
+  },
 }));
 
 // W-2: mock next/headers so resolveShopFromRequest can be exercised in jsdom
@@ -48,8 +67,10 @@ vi.mock('@/lib/shopify/client', () => ({
 }));
 
 import { headers } from 'next/headers';
+import { prisma } from '@/lib/db/client';
 import { shopifyClient } from '@/lib/shopify/client';
 import { getActiveChatModel } from '@/services/chat/getActiveChatModel';
+import { getShopAppearance } from '@/services/chat/getShopAppearance';
 import ChatPage from '@/app/(embedded)/chat/page';
 
 async function renderServerPage(searchParams: Record<string, string | undefined>) {
@@ -64,75 +85,78 @@ function makeHeadersMap(authValue: string | null) {
   return { get: (key: string) => (key.toLowerCase() === 'authorization' ? authValue : null) };
 }
 
-describe('ChatPage server component — preview-mode banner', () => {
-  // Default: no Authorization header — resolveShopFromRequest returns null, falls back to searchParams
+function restoreLoaderDefaults() {
+  vi.mocked(getActiveChatModel).mockResolvedValue({
+    id: 'google/gemini-2.5-flash',
+    displayName: 'Gemini 2.5 Flash',
+  });
+  vi.mocked(getShopAppearance).mockResolvedValue({
+    emptyStateVariant: 'hero',
+    cardDensity: 'compact',
+  });
+  vi.mocked(prisma.product.count).mockResolvedValue(12);
+}
+
+describe('ChatPage server component — playground data flow', () => {
   beforeEach(() => {
+    shellProps.length = 0;
+    vi.clearAllMocks();
+    restoreLoaderDefaults();
     vi.mocked(headers).mockResolvedValue(
       makeHeadersMap(null) as Awaited<ReturnType<typeof headers>>,
     );
   });
 
-  it('renders the banner with byte-precise em-dash and middle-dot glyphs', async () => {
+  it('no longer renders the standalone preview banner (copy moved into the shell header)', async () => {
     const { container } = await renderServerPage({ shop: 'example.myshopify.com' });
-    const banner = container.querySelector('[role="status"]');
-    expect(banner).not.toBeNull();
-    const text = banner?.textContent ?? '';
-    // U+2014 em-dash and U+00B7 middle-dot must be present, not hyphens.
-    expect(text.includes('—')).toBe(true); // —
-    expect(text.includes('·')).toBe(true); // ·
-    expect(text).toContain('Preview mode');
-    expect(text).toContain('using your real catalog');
-    expect(text).toContain('Model:');
+    expect(container.querySelector('[role="status"]')).toBeNull();
   });
 
-  it("dynamically interpolates model.displayName into the banner text", async () => {
-    const { container } = await renderServerPage({ shop: 'example.myshopify.com' });
-    const banner = container.querySelector('[role="status"]');
-    expect(banner?.textContent).toContain('Gemini 2.5 Flash');
-  });
-
-  it("has aria-live='off' (static banner — not a transient update)", async () => {
-    const { container } = await renderServerPage({ shop: 'example.myshopify.com' });
-    const banner = container.querySelector('[role="status"]');
-    expect(banner?.getAttribute('aria-live')).toBe('off');
-  });
-
-  it('has the exact UI-SPEC.md aria-label phrase including the displayName', async () => {
-    const { container } = await renderServerPage({ shop: 'example.myshopify.com' });
-    const banner = container.querySelector('[role="status"]');
-    expect(banner?.getAttribute('aria-label')).toBe(
-      'Chat playground preview mode banner. Active model: Gemini 2.5 Flash.',
-    );
-  });
-
-  it('wraps the displayName in a span with text-foreground font-semibold', async () => {
-    const { container } = await renderServerPage({ shop: 'example.myshopify.com' });
-    const banner = container.querySelector('[role="status"]');
-    const span = banner?.querySelector('span');
-    expect(span).not.toBeNull();
-    expect(span?.className).toContain('text-foreground');
-    expect(span?.className).toContain('font-semibold');
-    expect(span?.textContent).toBe('Gemini 2.5 Flash');
-  });
-
-  it('uses the bg-muted/40 Tailwind background token per UI-SPEC.md Color row', async () => {
-    const { container } = await renderServerPage({ shop: 'example.myshopify.com' });
-    const banner = container.querySelector('[role="status"]');
-    expect(banner?.className).toContain('bg-muted/40');
-    expect(banner?.className).toContain('text-muted-foreground');
-    expect(banner?.className).toContain('text-xs');
-  });
-
-  it('renders the ChatShell client component below the banner', async () => {
+  it('renders the ChatShell client component', async () => {
     const { getByTestId } = await renderServerPage({ shop: 'example.myshopify.com' });
     expect(getByTestId('chat-shell-stub')).toBeInTheDocument();
   });
 
-  it('falls back to empty shop when searchParams.shop is missing (no crash)', async () => {
-    const { container } = await renderServerPage({});
-    const banner = container.querySelector('[role="status"]');
-    expect(banner).not.toBeNull();
-    expect(banner?.textContent).toContain('Gemini 2.5 Flash');
+  it('passes the resolved shop and model displayName to ChatShell', async () => {
+    await renderServerPage({ shop: 'example.myshopify.com' });
+    expect(shellProps.at(-1)).toMatchObject({
+      shop: 'example.myshopify.com',
+      modelName: 'Gemini 2.5 Flash',
+    });
+  });
+
+  it('loads the shop appearance and passes it through', async () => {
+    await renderServerPage({ shop: 'example.myshopify.com' });
+    expect(vi.mocked(getShopAppearance)).toHaveBeenCalledWith('example.myshopify.com');
+    expect(shellProps.at(-1)?.appearance).toEqual({
+      emptyStateVariant: 'hero',
+      cardDensity: 'compact',
+    });
+  });
+
+  it('counts the shop-scoped products and passes catalogCount', async () => {
+    await renderServerPage({ shop: 'example.myshopify.com' });
+    expect(vi.mocked(prisma.product.count)).toHaveBeenCalledWith({
+      where: { shop: 'example.myshopify.com' },
+    });
+    expect(shellProps.at(-1)?.catalogCount).toBe(12);
+  });
+
+  it('skips the count query and passes 0 when no shop resolves', async () => {
+    await renderServerPage({});
+    expect(vi.mocked(prisma.product.count)).not.toHaveBeenCalled();
+    expect(shellProps.at(-1)).toMatchObject({ shop: '', catalogCount: 0 });
+  });
+
+  it('degrades catalogCount to 0 when the count query fails (never crashes the page)', async () => {
+    vi.mocked(prisma.product.count).mockRejectedValue(new Error('db down'));
+    await renderServerPage({ shop: 'example.myshopify.com' });
+    expect(shellProps.at(-1)?.catalogCount).toBe(0);
+  });
+
+  it('rejects a non-myshopify searchParams shop (falls back to empty shop)', async () => {
+    await renderServerPage({ shop: 'evil.example.com' });
+    expect(shellProps.at(-1)).toMatchObject({ shop: '' });
   });
 });
 
@@ -142,9 +166,9 @@ describe('ChatPage server component — preview-mode banner', () => {
 
 describe('ChatPage server component — W-2 session-resolved shop (ADM-05)', () => {
   beforeEach(() => {
+    shellProps.length = 0;
     vi.clearAllMocks();
-    // Restore getActiveChatModel default implementation after clearAllMocks
-    vi.mocked(getActiveChatModel).mockResolvedValue({ id: 'google/gemini-2.5-flash', displayName: 'Gemini 2.5 Flash' });
+    restoreLoaderDefaults();
   });
 
   it('resolves shop from Authorization Bearer session-token, ignoring searchParams.shop when both differ', async () => {

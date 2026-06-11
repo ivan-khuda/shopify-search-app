@@ -1,18 +1,15 @@
-import { cn } from '@/lib/utils';
-import { cva } from "class-variance-authority";
+'use client';
+// Message bubble shells from the design handoff (chat.jsx Message):
+// user = accent bubble right-aligned; assistant = SDLogo avatar + content
+// column (searching pill / product grid / white text bubble via MessageParts)
+// plus the Helpful/Copy/grounded-results action row once streaming settles.
+
 import { forwardRef, ReactNode } from "react";
 import { ChatStatus, UIDataTypes, UIMessage, UITools } from "ai";
 import { MessageParts } from './message-parts';
+import { SDLogo } from './sd-logo';
 import type { ChatProduct } from '@/types/product';
-
-const messageVariants = cva("flex flex-col gap-2 p-4 rounded-lg", {
-  variants: {
-    variant: {
-      user: "bg-blue-500 self-end text-white rounded-br-none [&_a]:text-white",
-      assistant: "bg-gray-50 self-start rounded-tl-none border border-gray-200",
-    },
-  },
-});
+import type { CardDensity } from '../appearance';
 
 interface ChatMessageProps {
   message: UIMessage<unknown, UIDataTypes, UITools>;
@@ -20,6 +17,9 @@ interface ChatMessageProps {
   status?: ChatStatus;
   savedProductIds: Set<string>;
   onToggleSave: (product: ChatProduct) => void;
+  density?: CardDensity;
+  /** Result count from the message's tool-searchCatalog output (computed in ChatPane). */
+  groundedCount?: number;
 }
 
 export const ChatMessage = forwardRef<HTMLDivElement, ChatMessageProps>(
@@ -30,6 +30,8 @@ export const ChatMessage = forwardRef<HTMLDivElement, ChatMessageProps>(
       status,
       savedProductIds,
       onToggleSave,
+      density = 'standard',
+      groundedCount,
     },
     ref
   ) => {
@@ -50,56 +52,66 @@ export const ChatMessage = forwardRef<HTMLDivElement, ChatMessageProps>(
     }
 
     const hasContent = !!partsToRender?.length;
-    const partsTextHasIframe = partsToRender?.some(
-      (part) => part.type === "text" && part.text.includes("<iframe")
-    );
 
-    return (
-      <div
-        className={cn(
-          "relative group",
-          "flex flex-col gap-2 max-w-full",
-          isAiMessage ? "self-start" : "self-end",
-          partsTextHasIframe ? "w-full" : ""
-        )}
-      >
-        <div
-          ref={ref}
-          className={cn(
-            "flex gap-2 self-end max-w-full",
-            partsTextHasIframe ? "w-full" : ""
-          )}
-        >
-          {isAiMessage && (
-            <div className="flex items-center justify-center rounded-full bg-blue-100 text-blue-400 w-8 h-8 min-w-8 min-h-8">
-              S
-            </div>
-          )}
-          <div
-            className={cn(
-              "overflow-hidden max-w-full",
-              isAiMessage ? "max-w-[calc(100%-40px)]" : "max-w-[min(448px,100%)]",
-              partsTextHasIframe ? "w-full" : ""
-            )}
-          >
-            {!!hasContent && (
-              <div
-                className={cn(
-                  messageVariants({ variant: role as "user" | "assistant" })
-                )}
-              >
-                {!!partsToRender?.length && (
-                  <MessageParts
-                    parts={partsToRender}
-                    messageId={id}
-                    savedProductIds={savedProductIds}
-                    onToggleSave={onToggleSave}
-                  />
-                )}
-              </div>
+    if (!isAiMessage) {
+      return (
+        <div ref={ref} className="flex w-full justify-end">
+          <div className="max-w-[480px] rounded-[14px] rounded-br-[4px] bg-[var(--sd-accent,#5B4FE9)] px-3.5 py-2.5 text-sm leading-[1.5] text-white shadow-[0_1px_2px_rgba(91,79,233,0.3)] [&_a]:text-white">
+            {hasContent && (
+              <MessageParts
+                parts={partsToRender}
+                messageId={id}
+                variant="user"
+                savedProductIds={savedProductIds}
+                onToggleSave={onToggleSave}
+              />
             )}
             {additionalComponents}
           </div>
+        </div>
+      );
+    }
+
+    const textContent = (parts ?? [])
+      .filter((part) => part.type === 'text')
+      .map((part) => part.text)
+      .join('\n\n');
+
+    const resultCount = groundedCount ?? 0;
+    const showActions =
+      hasContent && status !== 'streaming' && status !== 'submitted';
+
+    return (
+      <div ref={ref} className="flex w-full items-start gap-2.5">
+        <SDLogo size={28} />
+        <div className="min-w-0 flex-1">
+          {hasContent && (
+            <MessageParts
+              parts={partsToRender}
+              messageId={id}
+              density={density}
+              savedProductIds={savedProductIds}
+              onToggleSave={onToggleSave}
+            />
+          )}
+          {additionalComponents}
+          {showActions && (
+            <div className="mt-1.5 flex items-center gap-1.5 text-[11px] text-[#8c9196]">
+              <button type="button" className="rounded px-1.5 py-0.5">👍 Helpful</button>
+              <button type="button" className="rounded px-1.5 py-0.5">👎</button>
+              <button
+                type="button"
+                className="rounded px-1.5 py-0.5"
+                onClick={() => navigator.clipboard?.writeText(textContent)}
+              >
+                📋 Copy
+              </button>
+              <span className="ml-auto flex items-center gap-1">
+                <span className="h-[5px] w-[5px] rounded-full bg-[#008060]" />
+                {resultCount} grounded result{resultCount === 1 ? '' : 's'}
+              </span>
+            </div>
+          )}
         </div>
       </div>
     );

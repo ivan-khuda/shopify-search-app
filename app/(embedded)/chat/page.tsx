@@ -1,17 +1,17 @@
 import { getActiveChatModel } from '@/services/chat/getActiveChatModel';
+import { getShopAppearance } from '@/services/chat/getShopAppearance';
+import { prisma } from '@/lib/db/client';
 import { resolveShopFromRequest } from '@/lib/shopify/server-resolve-shop';
 import { ChatShell } from './chat-shell';
 
-// Phase 4 Plan 6 (D-11): /chat is a Server Component.
-// See .planning/phases/04-searchservice-wire-chat/04-UI-SPEC.md for the
-// banner typography (em-dash U+2014, middle-dot U+00B7) and accessibility
-// contract (banner is static — distinct from message-parts.tsx transient
-// tool-state affordances). The banner interpolates the model displayName
-// dynamically so Phase 7 is a body-only swap of getActiveChatModel.
+// Chat-redesign Task 12: /chat is a Server Component that loads the playground
+// shell's data in parallel — active model, per-shop appearance, and the
+// shop-scoped catalog count. The old standalone preview banner is gone; its
+// copy lives in the ChatShell header pill now.
 //
-// Phase 8.1 Plan 05 (W-2): shop is now resolved from the embedded session-token
-// Authorization header first, falling back to searchParams.shop for direct-navigation
-// refreshes where no Bearer token is present.
+// Phase 8.1 Plan 05 (W-2): shop is resolved from the embedded session-token
+// Authorization header first, falling back to searchParams.shop for
+// direct-navigation refreshes where no Bearer token is present.
 
 export default async function ChatPage({
     searchParams,
@@ -23,29 +23,32 @@ export default async function ChatPage({
     // WR-01: searchParams.shop is attacker-controllable on direct navigation.
     // Mirror the `.myshopify.com` hostname validation that the session-token
     // path applies (lib/shopify/server-resolve-shop.ts) before letting the
-    // query value drive shop-scoped reads (model banner, ChatShell lookups).
+    // query value drive shop-scoped reads (model lookup, ChatShell lookups).
     const validatedQueryShop =
         shopFromQuery && /^[a-zA-Z0-9][a-zA-Z0-9-]*\.myshopify\.com$/.test(shopFromQuery)
             ? shopFromQuery
             : undefined;
     const shop = shopFromSession ?? validatedQueryShop ?? '';
-    const model = await getActiveChatModel(shop);
-    const displayName = model.displayName;
-    const bannerAriaLabel = `Chat playground preview mode banner. Active model: ${displayName}.`;
+
+    const [model, appearance, catalogCount] = await Promise.all([
+        getActiveChatModel(shop),
+        getShopAppearance(shop),
+        // Degrade to 0 on DB errors — the count only seeds the empty-state
+        // greeting; it must never crash the playground render path.
+        shop
+            ? prisma.product.count({ where: { shop } }).catch(() => 0)
+            : Promise.resolve(0),
+    ]);
 
     return (
         <div className="mx-auto flex h-dvh w-full flex-col overflow-hidden">
-            <div
-                role="status"
-                aria-live="off"
-                aria-label={bannerAriaLabel}
-                className="shrink-0 bg-muted/40 text-muted-foreground text-xs py-1.5 px-4 sm:px-6 border-b border-border"
-            >
-                Preview mode — using your real catalog · Model:{' '}
-                <span className="text-foreground font-semibold">{model.displayName}</span>
-            </div>
             <div className="min-h-0 flex-1">
-                <ChatShell shop={shop} />
+                <ChatShell
+                    shop={shop}
+                    modelName={model.displayName}
+                    appearance={appearance}
+                    catalogCount={catalogCount}
+                />
             </div>
         </div>
     );

@@ -15,32 +15,41 @@ vi.mock('@/services/chat/model-catalog', () => ({
   fetchModelCatalog: vi.fn(),
 }));
 
+vi.mock('@/services/chat/getShopAppearance', () => ({
+  getShopAppearance: vi.fn(),
+}));
+
 // Stub the client SettingsForm — this suite asserts the SSR layer only.
 vi.mock('../settings-form', () => ({
   SettingsForm: ({
     catalog,
     activeId,
     saveDisabled,
+    appearance,
   }: {
     catalog: Array<{ id: string }>;
     activeId: string | null;
     saveDisabled?: boolean;
+    appearance?: { emptyStateVariant: string; cardDensity: string };
   }) => (
     <div
       data-testid="settings-form-stub"
       data-catalog-count={String(catalog.length)}
       data-active-id={activeId ?? ''}
       data-save-disabled={saveDisabled ? 'true' : 'false'}
+      data-appearance={appearance ? JSON.stringify(appearance) : ''}
     />
   ),
 }));
 
 import { getActiveChatModel } from '@/services/chat/getActiveChatModel';
 import { fetchModelCatalog } from '@/services/chat/model-catalog';
+import { getShopAppearance } from '@/services/chat/getShopAppearance';
 import SettingsPage from '@/app/(embedded)/settings/page';
 
 const getActiveMock = getActiveChatModel as ReturnType<typeof vi.fn>;
 const fetchCatalogMock = fetchModelCatalog as ReturnType<typeof vi.fn>;
+const getAppearanceMock = getShopAppearance as ReturnType<typeof vi.fn>;
 
 const baseCatalog = {
   models: [
@@ -73,6 +82,10 @@ beforeEach(() => {
   getActiveMock.mockResolvedValue({
     id: 'google/gemini-2.5-flash',
     displayName: 'Gemini 2.5 Flash',
+  });
+  getAppearanceMock.mockResolvedValue({
+    emptyStateVariant: 'cards',
+    cardDensity: 'standard',
   });
 });
 
@@ -114,6 +127,31 @@ describe('SettingsPage — active row pre-selection (SC3, D-06)', () => {
     const { getByTestId } = await renderPage({});
     expect(getByTestId('settings-form-stub')).toBeInTheDocument();
     expect(getActiveMock).toHaveBeenCalledWith('');
+  });
+
+  // WR-01 parity with /chat: searchParams.shop is attacker-controllable on
+  // direct navigation — a non-.myshopify.com value must never reach the
+  // shop-scoped resolvers.
+  it('rejects an invalid searchParams.shop and passes empty shop to resolvers', async () => {
+    const { getByTestId } = await renderPage({ shop: 'evil.example.com' });
+    expect(getByTestId('settings-form-stub')).toBeInTheDocument();
+    expect(getActiveMock).toHaveBeenCalledWith('');
+    expect(getAppearanceMock).toHaveBeenCalledWith('');
+  });
+});
+
+describe('SettingsPage — appearance load (chat-redesign Task 13)', () => {
+  it('loads getShopAppearance(shop) and passes appearance to the form', async () => {
+    getAppearanceMock.mockResolvedValue({
+      emptyStateVariant: 'hero',
+      cardDensity: 'compact',
+    });
+
+    const { getByTestId } = await renderPage({ shop: 'demo.myshopify.com' });
+    expect(getAppearanceMock).toHaveBeenCalledWith('demo.myshopify.com');
+    expect(getByTestId('settings-form-stub').getAttribute('data-appearance')).toBe(
+      JSON.stringify({ emptyStateVariant: 'hero', cardDensity: 'compact' }),
+    );
   });
 });
 

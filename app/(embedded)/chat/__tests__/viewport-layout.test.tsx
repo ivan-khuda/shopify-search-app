@@ -36,19 +36,19 @@ const mockAdapter: ChatIdentityAdapter = {
 
 describe('ChatShell viewport layout', () => {
   it('uses no calc() height offsets anywhere', () => {
-    const { container } = render(<ChatShell shop="test.myshopify.com" />);
+    const { container } = render(<ChatShell shop="test.myshopify.com" modelName="Gemini 2.5 Flash" appearance={{ emptyStateVariant: 'cards', cardDensity: 'standard' }} catalogCount={0} />);
     expect(container.querySelector('[class*="calc"]')).toBeNull();
   });
 
   it('fills its parent and stacks as a flex column', () => {
-    const { container } = render(<ChatShell shop="test.myshopify.com" />);
+    const { container } = render(<ChatShell shop="test.myshopify.com" modelName="Gemini 2.5 Flash" appearance={{ emptyStateVariant: 'cards', cardDensity: 'standard' }} catalogCount={0} />);
     const root = container.firstElementChild!;
     expect(root.className).toContain('h-full');
     expect(root.className).toContain('flex-col');
   });
 
   it('lets the tabs area flex and clamps it with min-h-0', () => {
-    const { container } = render(<ChatShell shop="test.myshopify.com" />);
+    const { container } = render(<ChatShell shop="test.myshopify.com" modelName="Gemini 2.5 Flash" appearance={{ emptyStateVariant: 'cards', cardDensity: 'standard' }} catalogCount={0} />);
     const tabs = container.querySelector('[data-slot="tabs"]')!;
     expect(tabs.className).toContain('flex-1');
     expect(tabs.className).toContain('min-h-0');
