@@ -11,6 +11,9 @@ import { useHistoryStore, useSavedProductsStore } from '@/lib/chat-ui/stores/hoo
 
 export function ChatShell({ shop }: { shop: string }) {
     const [selectedTab, setSelectedTab] = useState<string>('chat');
+    // Remount key for ChatPane: incrementing it discards the useChat
+    // conversation state inside the pane, starting a fresh chat.
+    const [chatKey, setChatKey] = useState(0);
     const adapter = useMemo(() => new EmbeddedAdapter(), []);
     const history = useHistoryStore(shop);
     const saved = useSavedProductsStore(shop);
@@ -21,6 +24,7 @@ export function ChatShell({ shop }: { shop: string }) {
     );
 
     const handleNewChat = () => {
+        setChatKey((k) => k + 1);
         setSelectedTab('chat');
     };
 
@@ -83,6 +87,7 @@ export function ChatShell({ shop }: { shop: string }) {
                 <TabsContents className="min-h-0 flex-1">
                     <TabsContent value="chat" className="h-full">
                         <ChatPane
+                            key={chatKey}
                             adapter={adapter}
                             savedProductIds={savedProductIds}
                             onToggleSave={saved.toggle}
