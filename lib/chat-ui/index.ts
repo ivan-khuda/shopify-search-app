@@ -28,3 +28,14 @@ export {
   DbBackedHistoryStore,
   DbBackedSavedProductsStore,
 } from './stores/db-backed';
+
+export {
+  EMPTY_STATE_VARIANTS,
+  CARD_DENSITIES,
+  DEFAULT_APPEARANCE,
+  parseAppearance,
+  SD_ACCENT,
+  type EmptyStateVariant,
+  type CardDensity,
+  type ShopAppearance,
+} from './appearance';
