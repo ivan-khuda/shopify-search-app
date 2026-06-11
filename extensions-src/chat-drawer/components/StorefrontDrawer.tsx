@@ -182,6 +182,7 @@ export function StorefrontDrawer(props: StorefrontDrawerProps = {}): React.React
                   shop={shop}
                   visitorId={visitorId}
                   customerId={customerId ?? null}
+                  onSwitchToChat={() => setActiveTab('chat')}
                 />
               </React.Suspense>
             ) : (

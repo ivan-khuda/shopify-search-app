@@ -13,7 +13,14 @@ import { StorefrontDrawer } from '@/extensions-src/chat-drawer/components/Storef
 // real network calls in jsdom.
 vi.mock('@/lib/chat-ui', () => ({
   ChatPane: () => <div data-testid="chat-pane">Chat Pane</div>,
-  HistoryPanel: () => <div data-testid="history-panel">History Panel</div>,
+  HistoryPanel: ({ onResume }: { onResume?: (query: string) => void }) => (
+    <div data-testid="history-panel">
+      History Panel
+      <button type="button" onClick={() => onResume?.('resumed query')}>
+        resume-row
+      </button>
+    </div>
+  ),
   SavedProductsPanel: () => <div data-testid="saved-products-panel">Saved Products Panel</div>,
   useDbBackedHistoryStore: () => ({ items: [], add: vi.fn(), clear: vi.fn(), refresh: vi.fn() }),
   useDbBackedSavedProductsStore: () => ({
@@ -146,6 +153,24 @@ describe('StorefrontDrawer — UI-SPEC copywriting and interaction contract', ()
     await user.click(savedTab);
 
     await waitFor(() => expect(screen.getByTestId('saved-products-panel')).toBeDefined());
+  });
+
+  it('history resume switches the active tab back to chat (Task 14 wiring)', async () => {
+    const user = userEvent.setup();
+    render(<StorefrontDrawer shop="test.myshopify.com" visitorId="v-test-1" />);
+
+    const fab = screen.getByRole('button', { name: 'Open SmartDiscovery AI chat' });
+    await user.click(fab);
+
+    const historyTab = screen.getByRole('tab', { name: 'History' });
+    await user.click(historyTab);
+    await waitFor(() => expect(screen.getByTestId('history-panel')).toBeDefined());
+
+    await user.click(screen.getByRole('button', { name: 'resume-row' }));
+
+    // DrawerBody's onSwitchToChat callback flips the parent's tab state.
+    await waitFor(() => expect(screen.getByTestId('chat-pane')).toBeDefined());
+    expect(screen.getByRole('tab', { name: 'Chat' }).getAttribute('aria-selected')).toBe('true');
   });
 
   it('renders placeholder copy (no DbBacked hook invocation) when rendered with no props', async () => {
