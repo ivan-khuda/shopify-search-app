@@ -53,7 +53,7 @@ export function EmptyChat({ variant, onPick, catalogCount, modelName }: EmptyCha
   if (variant === 'hero') {
     return (
       <div className="mx-auto max-w-[780px] px-6 py-8">
-        <div className="relative overflow-hidden rounded-[18px] bg-[linear-gradient(135deg,var(--sd-accent,#5B4FE9)_0%,#4a3fd1_100%)] px-8 pt-8 pb-7 text-white">
+        <div className="relative overflow-hidden rounded-[18px] bg-[linear-gradient(135deg,var(--sd-accent,#5B4FE9)_0%,#4b41bf_100%)] px-8 pt-8 pb-7 text-white">
           {/* Decorative blobs */}
           <div className="absolute -top-[60px] -right-10 h-[200px] w-[200px] rounded-full bg-white/10" />
           <div className="absolute -bottom-10 right-[60px] h-[140px] w-[140px] rounded-full bg-white/[0.08]" />

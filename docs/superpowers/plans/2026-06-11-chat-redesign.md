@@ -471,7 +471,7 @@ export function SDLogo({ size = 28 }: { size?: number }) {
         width: size,
         height: size,
         borderRadius: size * 0.28,
-        background: `linear-gradient(135deg, ${SD_ACCENT} 0%, #4a3fd1 100%)`,
+        background: `linear-gradient(135deg, ${SD_ACCENT} 0%, #4b41bf 100%)`,
         boxShadow: `0 1px 0 rgba(255,255,255,0.4) inset, 0 4px 12px ${SD_ACCENT}33`,
       }}
     >
@@ -706,7 +706,7 @@ interface EmptyChatProps {
 
 export function EmptyChat({ variant, onPick, catalogCount, modelName }: EmptyChatProps) {
   if (variant === 'minimal') { /* centered SDLogo 44 + heading + single-col list with ↗ */ }
-  if (variant === 'hero') { /* gradient banner (135deg accent→#4a3fd1, blobs) + "Try one" 2-col grid */ }
+  if (variant === 'hero') { /* gradient banner (135deg accent→#4b41bf, blobs) + "Try one" 2-col grid */ }
   /* default cards: SDLogo 40 + greeting + indexed-count line + 2-col TRY IT cards + RRF tip box */
 }
 ```

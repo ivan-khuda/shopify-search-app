@@ -11,7 +11,7 @@ export function SDLogo({ size = 28 }: { size?: number }) {
         width: size,
         height: size,
         borderRadius: size * 0.28,
-        background: `linear-gradient(135deg, ${SD_ACCENT} 0%, #4a3fd1 100%)`,
+        background: `linear-gradient(135deg, ${SD_ACCENT} 0%, #4b41bf 100%)`,
         boxShadow: `0 1px 0 rgba(255,255,255,0.4) inset, 0 4px 12px ${SD_ACCENT}33`,
       }}
     >
