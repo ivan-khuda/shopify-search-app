@@ -2,7 +2,7 @@
  * RED scaffold — StorefrontDrawer component tests.
  * Tests fail with "Cannot find module" until Wave 3 ships the component.
  */
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
@@ -31,6 +31,14 @@ vi.mock('@/lib/chat-ui', () => ({
     refresh: vi.fn(),
   }),
 }));
+
+beforeEach(() => {
+  vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('network')));
+});
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
 
 describe('StorefrontDrawer — UI-SPEC copywriting and interaction contract', () => {
   it('renders FAB with aria-label "Open SmartDiscovery AI chat"', () => {

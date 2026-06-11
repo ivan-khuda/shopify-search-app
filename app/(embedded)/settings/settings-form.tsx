@@ -193,67 +193,69 @@ export function SettingsForm({
 
   return (
     <>
-      {error && (
-        <s-banner tone="critical">Save failed: {error}</s-banner>
-      )}
-      {!inCatalog && (
-        <s-banner tone="warning">
-          Your previously-selected model is no longer available — pick a replacement.
-        </s-banner>
-      )}
-      <s-choice-list name="active-model" value={selectedId}>
-        <s-table>
-          <thead>
-            <tr>
-              <th>Model name</th>
-              <th>Provider</th>
-              <th>
-                <button type="button" onClick={() => toggleSort('contextWindow')}>
-                  Context window
-                </button>
-              </th>
-              <th>
-                <button
-                  type="button"
-                  onClick={() => toggleSort('inputPricePerMillion')}
-                >
-                  $ / M input tokens
-                </button>
-              </th>
-              <th>
-                <button
-                  type="button"
-                  onClick={() => toggleSort('outputPricePerMillion')}
-                >
-                  $ / M output tokens
-                </button>
-              </th>
-              <th>Best for</th>
-              <th>Active</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((m) => (
-              <tr key={m.id} data-row-id={m.id}>
-                <td>{m.displayName}</td>
-                <td>{m.provider}</td>
-                <td>{m.contextWindow.toLocaleString()}</td>
-                <td>${m.inputPricePerMillion.toFixed(2)}</td>
-                <td>${m.outputPricePerMillion.toFixed(2)}</td>
-                <td>{m.bestFor}</td>
-                <td>
-                  <s-choice
-                    value={m.id}
-                    aria-label={`Select ${m.displayName}`}
-                    {...(selectedId === m.id ? { selected: '' } : {})}
-                    onClick={() => setSelectedId(m.id)}
-                  />
-                </td>
+      <s-section heading="AI chat model">
+        {error && (
+          <s-banner tone="critical">Save failed: {error}</s-banner>
+        )}
+        {!inCatalog && (
+          <s-banner tone="warning">
+            Your previously-selected model is no longer available — pick a replacement.
+          </s-banner>
+        )}
+        <s-choice-list name="active-model" value={selectedId}>
+          <s-table>
+            <thead>
+              <tr>
+                <th>Model name</th>
+                <th>Provider</th>
+                <th>
+                  <button type="button" onClick={() => toggleSort('contextWindow')}>
+                    Context window
+                  </button>
+                </th>
+                <th>
+                  <button
+                    type="button"
+                    onClick={() => toggleSort('inputPricePerMillion')}
+                  >
+                    $ / M input tokens
+                  </button>
+                </th>
+                <th>
+                  <button
+                    type="button"
+                    onClick={() => toggleSort('outputPricePerMillion')}
+                  >
+                    $ / M output tokens
+                  </button>
+                </th>
+                <th>Best for</th>
+                <th>Active</th>
               </tr>
-            ))}
-          </tbody>
-        </s-table>
-      </s-choice-list>
+            </thead>
+            <tbody>
+              {rows.map((m) => (
+                <tr key={m.id} data-row-id={m.id}>
+                  <td>{m.displayName}</td>
+                  <td>{m.provider}</td>
+                  <td>{m.contextWindow.toLocaleString()}</td>
+                  <td>${m.inputPricePerMillion.toFixed(2)}</td>
+                  <td>${m.outputPricePerMillion.toFixed(2)}</td>
+                  <td>{m.bestFor}</td>
+                  <td>
+                    <s-choice
+                      value={m.id}
+                      aria-label={`Select ${m.displayName}`}
+                      {...(selectedId === m.id ? { selected: '' } : {})}
+                      onClick={() => setSelectedId(m.id)}
+                    />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </s-table>
+        </s-choice-list>
+      </s-section>
       <s-section heading="Appearance">
         {appearanceError && (
           <s-banner tone="critical">Save failed: {appearanceError}</s-banner>
