@@ -1,5 +1,4 @@
 import type { Metadata } from 'next';
-import Script from 'next/script';
 import EmbeddedProviders from './EmbeddedProviders';
 
 export const metadata: Metadata = {
@@ -11,14 +10,13 @@ export const metadata: Metadata = {
 export default function EmbeddedLayout({ children }: { children: React.ReactNode }) {
   return (
     <>
-      <Script
-        src="https://cdn.shopify.com/shopifycloud/app-bridge.js"
-        strategy="beforeInteractive"
-      />
-      <Script
-        src="https://cdn.shopify.com/shopifycloud/polaris.js"
-        strategy="beforeInteractive"
-      />
+      {/* App Bridge requires a plain synchronous <script> tag — next/script
+          (any strategy) injects dynamically in App Router, which App Bridge
+          rejects with "must be included as the first <script> tag". */}
+      {/* eslint-disable-next-line @next/next/no-sync-scripts */}
+      <script src="https://cdn.shopify.com/shopifycloud/app-bridge.js" />
+      {/* eslint-disable-next-line @next/next/no-sync-scripts */}
+      <script src="https://cdn.shopify.com/shopifycloud/polaris.js" />
       <EmbeddedProviders>{children}</EmbeddedProviders>
     </>
   );
