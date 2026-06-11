@@ -34,17 +34,19 @@ export default async function ChatPage({
     const bannerAriaLabel = `Chat playground preview mode banner. Active model: ${displayName}.`;
 
     return (
-        <div className="mx-auto w-full">
+        <div className="mx-auto flex h-dvh w-full flex-col overflow-hidden">
             <div
                 role="status"
                 aria-live="off"
                 aria-label={bannerAriaLabel}
-                className="bg-muted/40 text-muted-foreground text-xs py-1.5 px-4 sm:px-6 border-b border-border"
+                className="shrink-0 bg-muted/40 text-muted-foreground text-xs py-1.5 px-4 sm:px-6 border-b border-border"
             >
                 Preview mode — using your real catalog · Model:{' '}
                 <span className="text-foreground font-semibold">{model.displayName}</span>
             </div>
-            <ChatShell shop={shop} />
+            <div className="min-h-0 flex-1">
+                <ChatShell shop={shop} />
+            </div>
         </div>
     );
 }

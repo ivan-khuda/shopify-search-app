@@ -213,11 +213,11 @@ function TabsContents({
     <div className={cn("overflow-hidden", className)} data-slot="tabs-contents" {...(props as React.ComponentProps<"div">)}>
       <motion.div
         animate={{ x: `${activeIndex * -100}%` }}
-        className="flex -mx-2"
+        className="flex h-full -mx-2"
         transition={transition}
       >
         {childrenArray.map((child, index) => (
-          <div className="w-full shrink-0 px-2" key={index}>
+          <div className="h-full w-full shrink-0 px-2" key={index}>
             {child}
           </div>
         ))}

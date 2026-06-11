@@ -25,8 +25,8 @@ export function ChatShell({ shop }: { shop: string }) {
     };
 
     return (
-        <div className='mx-auto w-full h-[calc(100vh-100px)]'>
-            <Tabs value={selectedTab} onValueChange={setSelectedTab}>
+        <div className='mx-auto flex h-full w-full flex-col'>
+            <Tabs value={selectedTab} onValueChange={setSelectedTab} className='min-h-0 flex-1'>
 
                 {/* Header */}
                 <header className="bg-white border-b border-[#e1e3e5] px-6 py-4 flex justify-between items-center shrink-0">
@@ -80,8 +80,8 @@ export function ChatShell({ shop }: { shop: string }) {
                         </Button>
                     </TabsList>
                 </header>
-                <TabsContents>
-                    <TabsContent value="chat" className="h-[calc(100%-180px)]">
+                <TabsContents className="min-h-0 flex-1">
+                    <TabsContent value="chat" className="h-full">
                         <ChatPane
                             adapter={adapter}
                             savedProductIds={savedProductIds}
@@ -89,10 +89,10 @@ export function ChatShell({ shop }: { shop: string }) {
                             onHistoryAdd={history.add}
                         />
                     </TabsContent>
-                    <TabsContent value="history">
+                    <TabsContent value="history" className="h-full overflow-y-auto">
                         <HistoryPanel items={history.items} onClear={history.clear} />
                     </TabsContent>
-                    <TabsContent value="saved">
+                    <TabsContent value="saved" className="h-full overflow-y-auto">
                         <SavedProductsPanel products={saved.items} onToggleSave={saved.toggle} />
                     </TabsContent>
                 </TabsContents>

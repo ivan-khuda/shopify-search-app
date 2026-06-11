@@ -7,9 +7,9 @@ import type { ChatHistoryItem, ChatProduct } from '@/types/product';
  *
  * ChatShell is the embedded-admin surface shell. It instantiates the
  * EmbeddedAdapter, wires the per-shop history + saved-products stores from
- * `@/lib/chat-ui/stores/hooks`, and owns the surface-specific height
- * classes (h-[calc(100vh-100px)] on the outer wrapper; h-[calc(100%-180px)]
- * on the chat TabsContent).
+ * `@/lib/chat-ui/stores/hooks`, and owns the surface-specific flex height
+ * chain (h-full column root; min-h-0 flex-1 Tabs/TabsContents — see
+ * viewport-layout.test.tsx for the layout invariants).
  *
  * This test mocks `@/lib/chat-ui` so the surface under test is the
  * chat-shell tab/state wiring only — ChatPane, HistoryPanel, and

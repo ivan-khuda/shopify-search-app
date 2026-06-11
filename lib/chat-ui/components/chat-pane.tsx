@@ -119,8 +119,8 @@ export function ChatPane({ adapter, savedProductIds, onToggleSave, onHistoryAdd 
     }, [submitText, sendMessage]);
 
     return (
-        <div className="flex flex-col w-full max-w-3xl mx-auto stretch gap-6 pt-3">
-            <div className='flex flex-col flex-1 gap-4 overflow-auto pr-4'>
+        <div className="flex h-full flex-col w-full max-w-3xl mx-auto gap-6 pt-3">
+            <div className='flex min-h-0 flex-col flex-1 gap-4 overflow-y-auto pr-4'>
                 {messages.length === 0 && (
                     <div className="flex flex-col gap-4">
                         <p>
@@ -141,7 +141,7 @@ export function ChatPane({ adapter, savedProductIds, onToggleSave, onHistoryAdd 
                 ))}
             </div>
 
-            <div className="size-full">
+            <div className="shrink-0 pb-3">
                 <PromptInputProvider>
                     <PromptInput globalDrop multiple onSubmit={handleSubmit}>
                         <PromptInputAttachmentsDisplay />
