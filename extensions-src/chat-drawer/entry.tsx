@@ -23,6 +23,32 @@ import { createRoot, type Root } from 'react-dom/client';
 import { StorefrontDrawer } from './components/StorefrontDrawer';
 import { resolveSignedVisitorId } from '@/lib/chat-ui/identity/visitor-bootstrap';
 
+// Baked in by scripts/build-storefront-bundle.ts via esbuild `define` — the
+// content-hashed filename of the compiled drawer stylesheet that the build
+// emits next to this bundle under /public. Non-secret. Declared (not
+// assigned) so dev/test loads without the define stay safe behind the
+// `typeof` guard in injectStyles().
+declare const __SD_STYLES_FILE__: string;
+
+const STYLES_LINK_ID = 'smartdiscovery-styles';
+
+/**
+ * Inject the drawer's compiled Tailwind stylesheet once per page. The drawer
+ * components style exclusively with Tailwind utility classes; without this
+ * link the storefront renders unstyled. The href is resolved against this
+ * module's own URL — the entry is an ESM module served from the app host's
+ * /public, and the CSS sits in the same directory.
+ */
+function injectStyles(): void {
+  if (typeof __SD_STYLES_FILE__ !== 'string' || !__SD_STYLES_FILE__) return;
+  if (document.getElementById(STYLES_LINK_ID)) return;
+  const link = document.createElement('link');
+  link.id = STYLES_LINK_ID;
+  link.rel = 'stylesheet';
+  link.href = new URL('./' + __SD_STYLES_FILE__, import.meta.url).href;
+  document.head.appendChild(link);
+}
+
 interface MountOpts {
   shop: string;
   customerId: string | null;
@@ -63,6 +89,8 @@ function renderDrawer(opts: MountOpts, visitorId: string, initialOpen: boolean):
 async function mount(opts: MountOpts): Promise<void> {
   const rootEl = document.querySelector<HTMLElement>('smartdiscovery-app');
   if (!rootEl) return;
+
+  injectStyles();
 
   lastShopName = rootEl.dataset?.shopName || null;
 

@@ -1,0 +1,23 @@
+/*
+ * Storefront drawer stylesheet (drawer-redesign final-review Fix 1).
+ *
+ * Compiled by `@tailwindcss/cli` from scripts/build-storefront-bundle.ts into
+ * public/storefront-styles-<contenthash>.css and injected by entry.tsx as a
+ * <link rel="stylesheet"> at mount time.
+ *
+ * IMPORTANT: this stylesheet ships INTO the merchant's storefront, so it must
+ * never leak global resets into the theme. We therefore import only the
+ * `theme` and `utilities` layers — Preflight (tailwindcss/preflight.css, the
+ * `*, ::after, ::before` reset) is deliberately skipped. Every selector in the
+ * emitted file is class-based and inert unless the drawer renders it.
+ *
+ * `source(none)` disables Tailwind's automatic project-wide source detection;
+ * the explicit `@source` globs below (relative to this file) scope scanning to
+ * the drawer components and the shared chat-ui library they render.
+ */
+@layer theme, base, components, utilities;
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities) source(none);
+
+@source "./";
+@source "../../lib/chat-ui/";

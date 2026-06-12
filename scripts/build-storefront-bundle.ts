@@ -8,9 +8,14 @@
 // import. Output:
 //   - public/storefront-bundle.<hash>.js — entry chunk
 //   - public/storefront-bundle.<hash>.<id>.js — split chunks (auto-imported)
-//   - public/storefront-manifest.json — { bundle, version } pointer the loader reads
+//   - public/storefront-styles-<hash>.css — compiled Tailwind utilities for
+//     the drawer (entry.tsx injects a <link> for it at mount time)
+//   - public/storefront-manifest.json — { bundle, styles, version } pointer
+//     the loader reads
 //
 // Entry: extensions-src/chat-drawer/entry.tsx.
+// Styles: extensions-src/chat-drawer/storefront.css (Tailwind 4 CSS-first,
+// preflight deliberately excluded so no reset leaks into merchant themes).
 //
 // Runs automatically via the `prebuild` bun lifecycle hook before
 // `bun build` / `vercel build`. Can also be invoked directly via
@@ -18,12 +23,22 @@
 //
 // No secrets are baked via `define`. The storefront bundle reads runtime
 // config from `dataset.*` attributes on the custom element (RESEARCH
-// §Pattern 5).
+// §Pattern 5). The only define besides NODE_ENV is __SD_STYLES_FILE__ — the
+// non-secret content-hashed CSS filename, baked in so entry.tsx can resolve
+// the stylesheet next to its own module URL.
 
 import { build } from 'esbuild';
-import { writeFileSync, readdirSync, unlinkSync, mkdirSync } from 'node:fs';
+import {
+  writeFileSync,
+  readFileSync,
+  readdirSync,
+  unlinkSync,
+  mkdirSync,
+} from 'node:fs';
 import * as path from 'node:path';
+import { createHash } from 'node:crypto';
 import { execSync } from 'node:child_process';
+import { tmpdir } from 'node:os';
 
 async function main(): Promise<void> {
   mkdirSync('public', { recursive: true });
@@ -36,6 +51,7 @@ async function main(): Promise<void> {
   try {
     const prev = JSON.parse(require('node:fs').readFileSync(manifestPath, 'utf8'));
     if (typeof prev.bundle === 'string') previousFiles.add(prev.bundle.replace(/^\//, ''));
+    if (typeof prev.styles === 'string') previousFiles.add(prev.styles.replace(/^\//, ''));
     if (Array.isArray(prev.chunks)) {
       for (const c of prev.chunks) if (typeof c === 'string') previousFiles.add(c.replace(/^\//, ''));
     }
@@ -43,10 +59,38 @@ async function main(): Promise<void> {
     // no prior manifest
   }
   for (const entry of readdirSync('public')) {
-    if (previousFiles.has(entry) || /^(storefront-bundle|DrawerBody|chunk|code-block|mermaid)-.*\.js$/.test(entry)) {
+    if (
+      previousFiles.has(entry) ||
+      /^(storefront-bundle|DrawerBody|chunk|code-block|mermaid)-.*\.js$/.test(entry) ||
+      /^storefront-styles-.*\.css$/.test(entry)
+    ) {
       unlinkSync(path.join('public', entry));
     }
   }
+
+  // Compile the drawer's Tailwind stylesheet BEFORE the JS build: the
+  // content-hashed CSS filename is baked into the bundle via `define` so
+  // entry.tsx can inject a <link> resolved against its own module URL.
+  // @tailwindcss/cli scans only the @source globs declared in storefront.css
+  // (drawer components + lib/chat-ui); preflight is excluded there so the
+  // emitted file is purely class-based — nothing leaks into merchant themes.
+  const cssTmp = path.join(tmpdir(), `sd-storefront-styles-${process.pid}.css`);
+  execSync(
+    `bunx @tailwindcss/cli -i extensions-src/chat-drawer/storefront.css -o ${JSON.stringify(cssTmp)} --minify`,
+    { stdio: 'pipe' }
+  );
+  const cssContent = readFileSync(cssTmp);
+  unlinkSync(cssTmp);
+  if (cssContent.includes('box-sizing:border-box')) {
+    // Guard against a future storefront.css edit re-introducing Preflight —
+    // a global reset shipped into a merchant's theme is a sev-1.
+    throw new Error(
+      'storefront styles contain a global reset (preflight?) — refusing to ship'
+    );
+  }
+  const cssHash = createHash('sha256').update(cssContent).digest('hex').slice(0, 8).toUpperCase();
+  const stylesFileName = `storefront-styles-${cssHash}.css`;
+  writeFileSync(path.join('public', stylesFileName), cssContent);
 
   const result = await build({
     entryPoints: { 'storefront-bundle': 'extensions-src/chat-drawer/entry.tsx' },
@@ -61,7 +105,11 @@ async function main(): Promise<void> {
     chunkNames: '[name]-[hash]',
     splitting: true,
     loader: { '.tsx': 'tsx', '.ts': 'ts', '.css': 'css' },
-    define: { 'process.env.NODE_ENV': '"production"' },
+    define: {
+      'process.env.NODE_ENV': '"production"',
+      // Non-secret: content-hashed stylesheet filename emitted above.
+      __SD_STYLES_FILE__: JSON.stringify(stylesFileName),
+    },
     jsx: 'automatic',
   });
 
@@ -84,13 +132,20 @@ async function main(): Promise<void> {
     .filter((p) => p !== entryOutput[0])
     .map((p) => '/' + path.basename(p));
 
+  const stylesPath = '/' + stylesFileName;
+
   writeFileSync(
     'public/storefront-manifest.json',
-    JSON.stringify({ bundle: entryPath, chunks: chunkPaths, version }, null, 2)
+    JSON.stringify(
+      { bundle: entryPath, chunks: chunkPaths, styles: stylesPath, version },
+      null,
+      2
+    )
   );
 
   const entryBytes = entryOutput[1].bytes;
   console.log(`Wrote public${entryPath} (${entryBytes} bytes entry), manifest version=${version}`);
+  console.log(`  styles: ${stylesFileName} (${cssContent.length} bytes)`);
   for (const [outPath, info] of Object.entries(result.metafile.outputs)) {
     if (outPath === entryOutput[0]) continue;
     console.log(`  chunk: ${path.basename(outPath)} (${info.bytes} bytes)`);

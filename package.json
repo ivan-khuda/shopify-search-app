@@ -47,6 +47,7 @@
     "@inngest/test": "^1.0.0",
     "@shopify/app-bridge-types": "^0.7.0",
     "@shopify/polaris-types": "^1.0.7",
+    "@tailwindcss/cli": "^4.3.1",
     "@tailwindcss/postcss": "^4",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
