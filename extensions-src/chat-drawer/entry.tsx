@@ -26,12 +26,18 @@ import { resolveSignedVisitorId } from '@/lib/chat-ui/identity/visitor-bootstrap
 interface MountOpts {
   shop: string;
   customerId: string | null;
+  // Legacy loader paint settings — the React drawer reads its accent /
+  // position from the fetched settings bundle now (drawer-redesign Task 8);
+  // these fields stay so older cached loaders keep calling mount() safely.
   accent: string;
   position: 'bottom_right' | 'bottom_left';
 }
 
 let reactRoot: Root | null = null;
 let lastOpts: MountOpts | null = null;
+// data-shop-name (Task 9 adds it to app_embed.liquid) — read defensively so
+// the bundle works against themes still serving the older liquid.
+let lastShopName: string | null = null;
 // WR-03: imperative toggle registered by the mounted StorefrontDrawer so
 // `toggle()` can flip the drawer's real open state (re-rendering with a
 // different `initialOpen` is a no-op once mounted).
@@ -44,8 +50,7 @@ function renderDrawer(opts: MountOpts, visitorId: string, initialOpen: boolean):
       shop={opts.shop}
       visitorId={visitorId}
       customerId={opts.customerId}
-      accent={opts.accent}
-      position={opts.position}
+      shopName={lastShopName}
       initialOpen={initialOpen}
       registerToggle={(fn) => {
         drawerToggle = fn;
@@ -55,8 +60,10 @@ function renderDrawer(opts: MountOpts, visitorId: string, initialOpen: boolean):
 }
 
 async function mount(opts: MountOpts): Promise<void> {
-  const rootEl = document.querySelector('smartdiscovery-app');
+  const rootEl = document.querySelector<HTMLElement>('smartdiscovery-app');
   if (!rootEl) return;
+
+  lastShopName = rootEl.dataset?.shopName || null;
 
   document.body.classList.remove('sd-skeleton-open');
 

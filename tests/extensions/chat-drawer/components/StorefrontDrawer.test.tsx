@@ -1,38 +1,60 @@
 /**
- * RED scaffold — StorefrontDrawer component tests.
- * Tests fail with "Cannot find module" until Wave 3 ships the component.
+ * StorefrontDrawer — redesigned shell (drawer-redesign Task 8).
+ *
+ * The drawer now owns the settings fetch (lifted from DrawerBody): one
+ * mount-time request against the app-proxy appearance meta endpoint drives
+ * the Fab variant, the DrawerShell position, the accent var, and the
+ * kill-switch (drawerEnabled / Theme Editor preview). DrawerBody is mocked
+ * with a prop-capturing stub — its own behavior is pinned in
+ * extensions-src/chat-drawer/__tests__/drawer-body.test.tsx.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import { StorefrontDrawer } from '@/extensions-src/chat-drawer/components/StorefrontDrawer';
 
-// Mock @/lib/chat-ui barrel so the composition tests have stable testid markers.
-// Also stubs DbBacked hooks to prevent constructor throws (Pitfall 3) and avoid
-// real network calls in jsdom.
-vi.mock('@/lib/chat-ui', () => ({
-  ChatPane: () => <div data-testid="chat-pane">Chat Pane</div>,
-  HistoryPanel: ({ onResume }: { onResume?: (query: string) => void }) => (
-    <div data-testid="history-panel">
-      History Panel
-      <button type="button" onClick={() => onResume?.('resumed query')}>
-        resume-row
-      </button>
-    </div>
-  ),
-  SavedProductsPanel: () => <div data-testid="saved-products-panel">Saved Products Panel</div>,
-  useDbBackedHistoryStore: () => ({ items: [], add: vi.fn(), clear: vi.fn(), refresh: vi.fn() }),
-  useDbBackedSavedProductsStore: () => ({
-    items: [],
-    toggle: vi.fn(),
-    clear: vi.fn(),
-    has: () => false,
-    refresh: vi.fn(),
-  }),
+interface BodyStubProps {
+  activeTab: string;
+  shop: string;
+  visitorId: string;
+  customerId: string | null;
+  settings: Record<string, unknown>;
+  onSwitchToChat?: () => void;
+  onCountsChange?: (counts: { history: number; saved: number }) => void;
+}
+
+const bodyProps: BodyStubProps[] = [];
+
+vi.mock('@/extensions-src/chat-drawer/components/DrawerBody', () => ({
+  default: (props: BodyStubProps) => {
+    bodyProps.push(props);
+    return (
+      <div data-testid="drawer-body" data-active-tab={props.activeTab}>
+        <button type="button" onClick={() => props.onSwitchToChat?.()}>
+          switch-to-chat
+        </button>
+        <button
+          type="button"
+          onClick={() => props.onCountsChange?.({ history: 3, saved: 2 })}
+        >
+          emit-counts
+        </button>
+      </div>
+    );
+  },
 }));
 
+function stubSettings(body: Record<string, unknown>): ReturnType<typeof vi.fn> {
+  const mock = vi.fn().mockResolvedValue({ ok: true, json: async () => body });
+  vi.stubGlobal('fetch', mock);
+  return mock;
+}
+
 beforeEach(() => {
+  bodyProps.length = 0;
+  // Default: settings lookup fails — fail-open keeps the drawer rendering
+  // with DEFAULT_SHOP_SETTINGS.
   vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('network')));
 });
 
@@ -40,178 +62,280 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe('StorefrontDrawer — UI-SPEC copywriting and interaction contract', () => {
-  it('renders FAB with aria-label "Open SmartDiscovery AI chat"', () => {
-    render(<StorefrontDrawer />);
-    const fab = screen.getByRole('button', { name: 'Open SmartDiscovery AI chat' });
-    expect(fab).toBeDefined();
+const baseProps = {
+  shop: 'test.myshopify.com',
+  visitorId: 'v-test-1',
+} as const;
+
+async function openDrawer(user: ReturnType<typeof userEvent.setup>): Promise<void> {
+  await user.click(screen.getByRole('button', { name: 'Open SmartDiscovery AI chat' }));
+}
+
+describe('StorefrontDrawer — settings fetch (lifted from DrawerBody)', () => {
+  it('fetches the appearance meta exactly once on mount, before the drawer opens', async () => {
+    const fetchMock = stubSettings({});
+    const { rerender } = render(<StorefrontDrawer {...baseProps} />);
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock).toHaveBeenCalledWith('/apps/smartdiscovery/_meta/appearance');
+
+    rerender(<StorefrontDrawer {...baseProps} />);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
-  it('FAB click toggles drawer open state', async () => {
+  it('applies the fetched drawerAccent as --sd-accent on the root wrapper', async () => {
+    stubSettings({ drawerAccent: '#008060' });
+    const { container } = render(<StorefrontDrawer {...baseProps} />);
+
+    await waitFor(() => {
+      const root = container.querySelector('.sd-root') as HTMLElement;
+      expect(root.style.getPropertyValue('--sd-accent')).toBe('#008060');
+    });
+  });
+
+  it('fails open: network error keeps the default circle FAB', async () => {
+    render(<StorefrontDrawer {...baseProps} />);
+    expect(
+      screen.getByRole('button', { name: 'Open SmartDiscovery AI chat' }),
+    ).toBeInTheDocument();
+  });
+});
+
+describe('StorefrontDrawer — FAB variants from settings', () => {
+  it('renders the pill FAB with "Ask {shopName}" when fabStyle is pill', async () => {
+    stubSettings({ fabStyle: 'pill' });
+    render(<StorefrontDrawer {...baseProps} shopName="Field & Form" />);
+
+    const fab = screen.getByRole('button', { name: 'Open SmartDiscovery AI chat' });
+    await waitFor(() => expect(fab.textContent).toContain('Ask Field & Form'));
+  });
+
+  it('renders the labeled FAB when fabStyle is labeled', async () => {
+    stubSettings({ fabStyle: 'labeled' });
+    render(<StorefrontDrawer {...baseProps} />);
+
+    const fab = screen.getByRole('button', { name: 'Open SmartDiscovery AI chat' });
+    await waitFor(() => expect(fab.textContent).toContain('Find anything'));
+  });
+});
+
+describe('StorefrontDrawer — DrawerShell position from settings', () => {
+  it('passes the fetched drawerPosition to the shell (center-modal)', async () => {
+    stubSettings({ drawerPosition: 'center-modal' });
     const user = userEvent.setup();
-    render(<StorefrontDrawer />);
+    render(<StorefrontDrawer {...baseProps} />);
 
-    // Initially closed — aside should not be visible
-    expect(screen.queryByRole('complementary')).toBeNull();
+    await openDrawer(user);
 
-    // Click FAB to open
-    const fab = screen.getByRole('button', { name: 'Open SmartDiscovery AI chat' });
-    await user.click(fab);
-
-    // Drawer aside should now be visible
-    expect(screen.getByRole('complementary')).toBeDefined();
-  });
-
-  it('drawer aside contains tabs labeled "Chat", "History", "Saved" (UI-SPEC)', async () => {
-    const user = userEvent.setup();
-    render(<StorefrontDrawer />);
-
-    const fab = screen.getByRole('button', { name: 'Open SmartDiscovery AI chat' });
-    await user.click(fab);
-
-    expect(screen.getByRole('tab', { name: 'Chat' })).toBeDefined();
-    expect(screen.getByRole('tab', { name: 'History' })).toBeDefined();
-    expect(screen.getByRole('tab', { name: 'Saved' })).toBeDefined();
-  });
-
-  it('Escape key closes the drawer', async () => {
-    const user = userEvent.setup();
-    render(<StorefrontDrawer />);
-
-    // Open drawer
-    const fab = screen.getByRole('button', { name: 'Open SmartDiscovery AI chat' });
-    await user.click(fab);
-    expect(screen.getByRole('complementary')).toBeDefined();
-
-    // Press Escape
-    await user.keyboard('{Escape}');
-    expect(screen.queryByRole('complementary')).toBeNull();
-  });
-
-  it('close button has aria-label "Close chat drawer"', async () => {
-    const user = userEvent.setup();
-    render(<StorefrontDrawer />);
-
-    const fab = screen.getByRole('button', { name: 'Open SmartDiscovery AI chat' });
-    await user.click(fab);
-
-    const closeButton = screen.getByRole('button', { name: 'Close chat drawer' });
-    expect(closeButton).toBeDefined();
-  });
-
-  it('close button click closes the drawer', async () => {
-    const user = userEvent.setup();
-    render(<StorefrontDrawer />);
-
-    const fab = screen.getByRole('button', { name: 'Open SmartDiscovery AI chat' });
-    await user.click(fab);
-    expect(screen.getByRole('complementary')).toBeDefined();
-
-    const closeButton = screen.getByRole('button', { name: 'Close chat drawer' });
-    await user.click(closeButton);
-    expect(screen.queryByRole('complementary')).toBeNull();
-  });
-
-  it('FAB click when drawer is open toggles it closed', async () => {
-    const user = userEvent.setup();
-    render(<StorefrontDrawer />);
-
-    const fab = screen.getByRole('button', { name: 'Open SmartDiscovery AI chat' });
-    await user.click(fab); // open
-    expect(screen.getByRole('complementary')).toBeDefined();
-
-    await user.click(fab); // close
-    expect(screen.queryByRole('complementary')).toBeNull();
-  });
-
-  // --- Composition assertions (RED: fail until Task 2 wires DrawerBody) ---
-
-  it('composes ChatPane on the Chat tab when shop+visitorId are passed', async () => {
-    const user = userEvent.setup();
-    render(<StorefrontDrawer shop="test.myshopify.com" visitorId="v-test-1" />);
-
-    const fab = screen.getByRole('button', { name: 'Open SmartDiscovery AI chat' });
-    await user.click(fab);
-
-    // Chat tab is active by default. DrawerBody is React.lazy — await its resolution.
-    await waitFor(() => expect(screen.getByTestId('chat-pane')).toBeDefined());
-  });
-
-  it('composes HistoryPanel on the History tab when shop+visitorId are passed', async () => {
-    const user = userEvent.setup();
-    render(<StorefrontDrawer shop="test.myshopify.com" visitorId="v-test-1" />);
-
-    const fab = screen.getByRole('button', { name: 'Open SmartDiscovery AI chat' });
-    await user.click(fab);
-
-    const historyTab = screen.getByRole('tab', { name: 'History' });
-    await user.click(historyTab);
-
-    await waitFor(() => expect(screen.getByTestId('history-panel')).toBeDefined());
-  });
-
-  it('composes SavedProductsPanel on the Saved tab when shop+visitorId are passed', async () => {
-    const user = userEvent.setup();
-    render(<StorefrontDrawer shop="test.myshopify.com" visitorId="v-test-1" />);
-
-    const fab = screen.getByRole('button', { name: 'Open SmartDiscovery AI chat' });
-    await user.click(fab);
-
-    const savedTab = screen.getByRole('tab', { name: 'Saved' });
-    await user.click(savedTab);
-
-    await waitFor(() => expect(screen.getByTestId('saved-products-panel')).toBeDefined());
-  });
-
-  it('history resume switches the active tab back to chat (Task 14 wiring)', async () => {
-    const user = userEvent.setup();
-    render(<StorefrontDrawer shop="test.myshopify.com" visitorId="v-test-1" />);
-
-    const fab = screen.getByRole('button', { name: 'Open SmartDiscovery AI chat' });
-    await user.click(fab);
-
-    const historyTab = screen.getByRole('tab', { name: 'History' });
-    await user.click(historyTab);
-    await waitFor(() => expect(screen.getByTestId('history-panel')).toBeDefined());
-
-    await user.click(screen.getByRole('button', { name: 'resume-row' }));
-
-    // DrawerBody's onSwitchToChat callback flips the parent's tab state.
-    await waitFor(() => expect(screen.getByTestId('chat-pane')).toBeDefined());
-    expect(screen.getByRole('tab', { name: 'Chat' }).getAttribute('aria-selected')).toBe('true');
-  });
-
-  it('hides the FAB and drawer when the merchant kill-switch is off (drawerEnabled:false)', async () => {
-    // DrawerBody (lazy) fetches the settings bundle, sees drawerEnabled:false,
-    // and notifies the parent via onDisabled — FAB and drawer both unmount.
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockResolvedValue({ ok: true, json: async () => ({ drawerEnabled: false }) }),
+    await waitFor(() =>
+      expect(screen.getByTestId('sd-drawer-scrim').getAttribute('data-position')).toBe(
+        'center-modal',
+      ),
     );
-    const user = userEvent.setup();
-    render(<StorefrontDrawer shop="test.myshopify.com" visitorId="v-test-1" />);
+  });
 
-    await user.click(screen.getByRole('button', { name: 'Open SmartDiscovery AI chat' }));
+  it('defaults to the side panel', async () => {
+    const user = userEvent.setup();
+    render(<StorefrontDrawer {...baseProps} />);
+
+    await openDrawer(user);
+    expect(screen.getByTestId('sd-drawer-scrim').getAttribute('data-position')).toBe('side');
+  });
+});
+
+describe('StorefrontDrawer — header (prototype DrawerInner)', () => {
+  it('shows "Ask {shopName}" with the green-dot subline', async () => {
+    const user = userEvent.setup();
+    render(<StorefrontDrawer {...baseProps} shopName="Field & Form" />);
+
+    await openDrawer(user);
+
+    const dialog = screen.getByRole('dialog');
+    expect(within(dialog).getByText('Ask Field & Form')).toBeInTheDocument();
+    expect(
+      within(dialog).getByText('AI-powered · usually replies instantly'),
+    ).toBeInTheDocument();
+  });
+
+  it('falls back to "Ask us" when no shop name is provided', async () => {
+    const user = userEvent.setup();
+    render(<StorefrontDrawer {...baseProps} />);
+
+    await openDrawer(user);
+    expect(within(screen.getByRole('dialog')).getByText('Ask us')).toBeInTheDocument();
+  });
+
+  it('close button has aria-label "Close chat drawer" and closes the drawer', async () => {
+    const user = userEvent.setup();
+    render(<StorefrontDrawer {...baseProps} />);
+
+    await openDrawer(user);
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Close chat drawer' }));
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+});
+
+describe('StorefrontDrawer — tabs with badges', () => {
+  it('renders Chat/History/Saved tabs, chat selected by default', async () => {
+    const user = userEvent.setup();
+    render(<StorefrontDrawer {...baseProps} />);
+
+    await openDrawer(user);
+
+    expect(screen.getByRole('tab', { name: /Chat/ }).getAttribute('aria-selected')).toBe('true');
+    expect(screen.getByRole('tab', { name: /History/ })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /Saved/ })).toBeInTheDocument();
+  });
+
+  it('switching tab re-renders DrawerBody with the new activeTab', async () => {
+    const user = userEvent.setup();
+    render(<StorefrontDrawer {...baseProps} />);
+
+    await openDrawer(user);
+    await waitFor(() => expect(screen.getByTestId('drawer-body')).toBeInTheDocument());
+
+    await user.click(screen.getByRole('tab', { name: /History/ }));
+    expect(screen.getByTestId('drawer-body').getAttribute('data-active-tab')).toBe('history');
+  });
+
+  it('shows history/saved badges from DrawerBody onCountsChange', async () => {
+    const user = userEvent.setup();
+    render(<StorefrontDrawer {...baseProps} />);
+
+    await openDrawer(user);
+    await waitFor(() => expect(screen.getByTestId('drawer-body')).toBeInTheDocument());
+
+    // No counts yet — no badges.
+    expect(screen.getByRole('tab', { name: /History/ }).textContent).toBe('History');
+    expect(screen.getByRole('tab', { name: /Saved/ }).textContent).toBe('Saved');
+
+    await user.click(screen.getByRole('button', { name: 'emit-counts' }));
+
+    expect(screen.getByRole('tab', { name: /History/ }).textContent).toContain('3');
+    expect(screen.getByRole('tab', { name: /Saved/ }).textContent).toContain('2');
+  });
+
+  it('history resume switches the active tab back to chat', async () => {
+    const user = userEvent.setup();
+    render(<StorefrontDrawer {...baseProps} />);
+
+    await openDrawer(user);
+    await waitFor(() => expect(screen.getByTestId('drawer-body')).toBeInTheDocument());
+
+    await user.click(screen.getByRole('tab', { name: /History/ }));
+    await user.click(screen.getByRole('button', { name: 'switch-to-chat' }));
+
+    expect(screen.getByRole('tab', { name: /Chat/ }).getAttribute('aria-selected')).toBe('true');
+    expect(screen.getByTestId('drawer-body').getAttribute('data-active-tab')).toBe('chat');
+  });
+});
+
+describe('StorefrontDrawer — kill-switch (settings owned by the shell)', () => {
+  it('drawerEnabled:false renders null (no FAB) without needing the drawer open', async () => {
+    stubSettings({ drawerEnabled: false });
+    render(<StorefrontDrawer {...baseProps} />);
 
     await waitFor(() =>
       expect(screen.queryByRole('button', { name: /SmartDiscovery AI chat/ })).toBeNull(),
     );
-    expect(screen.queryByRole('complementary')).toBeNull();
   });
 
-  it('renders placeholder copy (no DbBacked hook invocation) when rendered with no props', async () => {
-    const user = userEvent.setup();
+  it('design mode + editorPreviewVisible:false hides the FAB', async () => {
+    vi.stubGlobal('Shopify', { designMode: true });
+    stubSettings({ editorPreviewVisible: false });
+    render(<StorefrontDrawer {...baseProps} />);
 
-    // Should not throw even though DbBacked stores require non-empty visitorId
-    expect(() => render(<StorefrontDrawer />)).not.toThrow();
+    await waitFor(() =>
+      expect(screen.queryByRole('button', { name: /SmartDiscovery AI chat/ })).toBeNull(),
+    );
+  });
+
+  it('design mode with editorPreviewVisible:true keeps the FAB but blocks click-open', async () => {
+    vi.stubGlobal('Shopify', { designMode: true });
+    stubSettings({ editorPreviewVisible: true });
+    const user = userEvent.setup();
+    render(<StorefrontDrawer {...baseProps} />);
 
     const fab = screen.getByRole('button', { name: 'Open SmartDiscovery AI chat' });
     await user.click(fab);
+    // STR-07: designMode click guard — drawer must not open in the editor.
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
 
-    // Placeholder strings visible for the propless path
-    expect(screen.getByText('Chat coming up…')).toBeDefined();
+  it('storefront (non-design-mode) ignores editorPreviewVisible:false', async () => {
+    stubSettings({ editorPreviewVisible: false });
+    const user = userEvent.setup();
+    render(<StorefrontDrawer {...baseProps} />);
 
-    // ChatPane should NOT be in the DOM in the propless path
-    expect(screen.queryByTestId('chat-pane')).toBeNull();
+    await openDrawer(user);
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+  });
+});
+
+describe('StorefrontDrawer — interaction contract (preserved behaviors)', () => {
+  it('FAB click toggles the drawer open and closed', async () => {
+    const user = userEvent.setup();
+    render(<StorefrontDrawer {...baseProps} />);
+
+    expect(screen.queryByRole('dialog')).toBeNull();
+
+    await openDrawer(user);
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Close SmartDiscovery AI chat' }));
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  it('Escape closes the drawer and returns focus to the FAB', async () => {
+    const user = userEvent.setup();
+    render(<StorefrontDrawer {...baseProps} />);
+
+    await openDrawer(user);
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+
+    await user.keyboard('{Escape}');
+    expect(screen.queryByRole('dialog')).toBeNull();
+
+    await waitFor(() =>
+      expect(document.activeElement).toBe(
+        screen.getByRole('button', { name: 'Open SmartDiscovery AI chat' }),
+      ),
+    );
+  });
+
+  it('registerToggle exposes an imperative toggle that opens the drawer', async () => {
+    let toggle: (() => void) | null = null;
+    render(<StorefrontDrawer {...baseProps} registerToggle={(fn) => (toggle = fn)} />);
+
+    expect(toggle).not.toBeNull();
+    act(() => toggle!());
+    await waitFor(() => expect(screen.getByRole('dialog')).toBeInTheDocument());
+  });
+
+  it('renders placeholder copy (no DrawerBody) when rendered with no props', async () => {
+    const user = userEvent.setup();
+    expect(() => render(<StorefrontDrawer />)).not.toThrow();
+
+    await openDrawer(user);
+
+    expect(screen.getByText('Chat coming up…')).toBeInTheDocument();
+    expect(screen.queryByTestId('drawer-body')).toBeNull();
+  });
+
+  it('threads shop/visitorId/customerId and the fetched settings into DrawerBody', async () => {
+    stubSettings({ drawerAccent: '#008060' });
+    const user = userEvent.setup();
+    render(<StorefrontDrawer {...baseProps} customerId="123" />);
+
+    await openDrawer(user);
+    await waitFor(() => expect(screen.getByTestId('drawer-body')).toBeInTheDocument());
+
+    const props = bodyProps[bodyProps.length - 1];
+    expect(props.shop).toBe('test.myshopify.com');
+    expect(props.visitorId).toBe('v-test-1');
+    expect(props.customerId).toBe('123');
+    expect(props.settings.drawerAccent).toBe('#008060');
   });
 });

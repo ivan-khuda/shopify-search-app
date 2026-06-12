@@ -11,6 +11,7 @@
  * Accent comes from `var(--sd-accent,#5B4FE9)` — the drawer wrapper sets the
  * var from merchant settings; this component never hardcodes a merchant color.
  */
+import type * as React from 'react';
 import type { FabStyle } from '@/lib/settings/contract';
 
 interface FabProps {
@@ -20,6 +21,8 @@ interface FabProps {
   /** Open/close label supplied by the owner (toggles with drawer state). */
   ariaLabel: string;
   onClick: () => void;
+  /** React 19 ref-as-prop — the owner focuses the FAB on drawer close. */
+  ref?: React.Ref<HTMLButtonElement>;
 }
 
 /** Search-loupe + four-point spark, stroke inherits currentColor. */
@@ -43,10 +46,11 @@ function SearchSparkIcon({ size }: { size: number }) {
   );
 }
 
-export function Fab({ fabStyle = 'circle', shopName, ariaLabel, onClick }: FabProps) {
+export function Fab({ fabStyle = 'circle', shopName, ariaLabel, onClick, ref }: FabProps) {
   if (fabStyle === 'pill') {
     return (
       <button
+        ref={ref}
         type="button"
         aria-label={ariaLabel}
         onClick={onClick}
@@ -75,6 +79,7 @@ export function Fab({ fabStyle = 'circle', shopName, ariaLabel, onClick }: FabPr
   if (fabStyle === 'labeled') {
     return (
       <button
+        ref={ref}
         type="button"
         aria-label={ariaLabel}
         onClick={onClick}
@@ -96,6 +101,7 @@ export function Fab({ fabStyle = 'circle', shopName, ariaLabel, onClick }: FabPr
   // circle (default)
   return (
     <button
+      ref={ref}
       type="button"
       aria-label={ariaLabel}
       onClick={onClick}
