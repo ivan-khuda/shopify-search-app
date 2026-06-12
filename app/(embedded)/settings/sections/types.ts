@@ -33,3 +33,7 @@ export interface ModelSectionProps {
   catalog: CatalogResult;
   activeModel: ActiveChatModel;
 }
+
+export interface DrawerSectionProps {
+  settings: ShopSettingsBundle;
+}

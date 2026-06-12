@@ -17,6 +17,7 @@ import { useState, type CSSProperties } from 'react';
 import { cn } from '@/lib/utils';
 import { SD_ACCENT } from '@/lib/chat-ui/appearance';
 import { ModelSection } from './sections/model-section';
+import { DrawerSection } from './sections/drawer-section';
 import type { SettingsShellProps } from './sections/types';
 
 const NAV_ITEMS = [
@@ -135,7 +136,7 @@ export function SettingsShell(props: SettingsShellProps) {
         {section === 'model' && (
           <ModelSection catalog={props.catalog} activeModel={props.activeModel} />
         )}
-        {section === 'drawer' && <PlaceholderSection heading="Drawer styling" />}
+        {section === 'drawer' && <DrawerSection settings={props.settings} />}
         {section === 'limits' && <PlaceholderSection heading="Usage & limits" />}
         {section === 'webhooks' && <PlaceholderSection heading="Sync & webhooks" />}
         {section === 'general' && <PlaceholderSection heading="General" />}
