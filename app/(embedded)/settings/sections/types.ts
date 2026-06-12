@@ -46,3 +46,7 @@ export interface WebhooksSectionProps {
   webhooks: WebhookLastFiredMap;
   lastSync: LastSyncSummary | null;
 }
+
+export interface GeneralSectionProps {
+  settings: ShopSettingsBundle;
+}

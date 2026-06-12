@@ -8,10 +8,6 @@
  * (200px nav / 1fr content), 28px gutters, 80px bottom padding. The accent
  * var `--sd-accent` is set on the shell root (mirrors chat-shell.tsx) so
  * every section can reference `var(--sd-accent,#5B4FE9)`.
- *
- * Sections land incrementally (Tasks 9–13); until a section ships it renders
- * a placeholder carrying its prototype heading so nav switching is real from
- * day one.
  */
 import { useState, type CSSProperties } from 'react';
 import { cn } from '@/lib/utils';
@@ -20,6 +16,7 @@ import { ModelSection } from './sections/model-section';
 import { DrawerSection } from './sections/drawer-section';
 import { LimitsSection } from './sections/limits-section';
 import { WebhooksSection } from './sections/webhooks-section';
+import { GeneralSection } from './sections/general-section';
 import type { SettingsShellProps } from './sections/types';
 
 const NAV_ITEMS = [
@@ -87,17 +84,6 @@ export function SettingsIcon({ name, size = 14 }: { name: IconName; size?: numbe
   }
 }
 
-/** Placeholder until the real section lands (Tasks 9–13). */
-function PlaceholderSection({ heading }: { heading: string }) {
-  return (
-    <div>
-      <h2 className="m-0 text-lg font-[650] tracking-[-0.01em] text-[#202223]">
-        {heading}
-      </h2>
-    </div>
-  );
-}
-
 export function SettingsShell(props: SettingsShellProps) {
   const [section, setSection] = useState<SectionId>('model');
 
@@ -143,7 +129,7 @@ export function SettingsShell(props: SettingsShellProps) {
         {section === 'webhooks' && (
           <WebhooksSection webhooks={props.webhooks} lastSync={props.lastSync} />
         )}
-        {section === 'general' && <PlaceholderSection heading="General" />}
+        {section === 'general' && <GeneralSection settings={props.settings} />}
       </div>
     </div>
   );
