@@ -1,5 +1,5 @@
 /**
- * GET /api/proxy/_meta/appearance — HMAC-verified presentation-settings read
+ * GET /api/proxy/meta/appearance — HMAC-verified presentation-settings read
  * for the storefront drawer.
  *
  * Same auth boundary as bundle-url discovery; response carries no shop

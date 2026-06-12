@@ -77,7 +77,7 @@ describe('StorefrontDrawer — settings fetch (lifted from DrawerBody)', () => {
     const { rerender } = render(<StorefrontDrawer {...baseProps} />);
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    expect(fetchMock).toHaveBeenCalledWith('/apps/smartdiscovery/_meta/appearance');
+    expect(fetchMock).toHaveBeenCalledWith('/apps/smartdiscovery/meta/appearance');
 
     rerender(<StorefrontDrawer {...baseProps} />);
     expect(fetchMock).toHaveBeenCalledTimes(1);
@@ -150,7 +150,7 @@ describe('StorefrontDrawer — initialSettings from the loader (no first-open fl
     render(<StorefrontDrawer {...baseProps} />);
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    expect(fetchMock).toHaveBeenCalledWith('/apps/smartdiscovery/_meta/appearance');
+    expect(fetchMock).toHaveBeenCalledWith('/apps/smartdiscovery/meta/appearance');
   });
 });
 

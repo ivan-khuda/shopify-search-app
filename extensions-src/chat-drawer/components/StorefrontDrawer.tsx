@@ -5,7 +5,7 @@
  * Owns the per-shop settings bundle: seeded from the loader's already-fetched
  * appearance JSON when entry.tsx passes it (initialSettings — no refetch, no
  * default-settings flash), otherwise a single mount-time fetch of the
- * HMAC-verified app-proxy meta endpoint (`/apps/smartdiscovery/_meta/appearance`)
+ * HMAC-verified app-proxy meta endpoint (`/apps/smartdiscovery/meta/appearance`)
  * decoded via parseShopSettings (fail-open: network errors keep
  * DEFAULT_SHOP_SETTINGS so the drawer always renders). The settings bundle
  * drives:
@@ -58,7 +58,7 @@ interface StorefrontDrawerProps {
    *  side as the loader's synchronous paint. */
   fabPosition?: 'bottom_right' | 'bottom_left';
   /**
-   * Loader-fetched /_meta/appearance JSON handed through by entry.tsx. When
+   * Loader-fetched /meta/appearance JSON handed through by entry.tsx. When
    * present it seeds the settings state (via parseShopSettings) and the
    * drawer SKIPS its own mount-time fetch — no DEFAULT_SHOP_SETTINGS flash
    * (pill FAB snapping to circle, position jump) on first open. When absent
@@ -105,7 +105,7 @@ export function StorefrontDrawer(props: StorefrontDrawerProps = {}): React.React
   React.useEffect(() => {
     if (hasInitialSettings) return;
     let cancelled = false;
-    fetch('/apps/smartdiscovery/_meta/appearance')
+    fetch('/apps/smartdiscovery/meta/appearance')
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
         if (!cancelled && data) setSettings(parseShopSettings(data));

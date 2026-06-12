@@ -1,5 +1,5 @@
 /**
- * RED: Tests for GET /api/proxy/_meta/visitor (CR-03 Task 2 — mint endpoint).
+ * RED: Tests for GET /api/proxy/meta/visitor (CR-03 Task 2 — mint endpoint).
  * Will fail until route.ts is created.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -16,7 +16,7 @@ vi.mock('@/lib/rate-limit/memory', () => ({
   rateLimit: vi.fn().mockReturnValue({ ok: true }),
 }));
 
-import { GET } from '@/app/api/proxy/_meta/visitor/route';
+import { GET } from '@/app/api/proxy/meta/visitor/route';
 import { shopifyClient } from '@/lib/shopify/client';
 import { rateLimit } from '@/lib/rate-limit/memory';
 import { verifyVisitorId } from '@/lib/identity/visitor-signature';
@@ -36,7 +36,7 @@ function signParams(params: Record<string, string>): string {
 function makeRequest(searchParams: Record<string, string> = {}): Request {
   const params = { shop: SHOP, ...searchParams };
   const signature = signParams(params);
-  const url = new URL(`http://${SHOP}/apps/smartdiscovery/_meta/visitor`);
+  const url = new URL(`http://${SHOP}/apps/smartdiscovery/meta/visitor`);
   for (const [k, v] of Object.entries({ ...params, signature })) {
     url.searchParams.set(k, v);
   }
@@ -50,9 +50,9 @@ beforeEach(() => {
   vi.mocked(rateLimit).mockReturnValue({ ok: true });
 });
 
-describe('GET /api/proxy/_meta/visitor', () => {
+describe('GET /api/proxy/meta/visitor', () => {
   it('returns 401 without HMAC signature', async () => {
-    const url = new URL(`http://${SHOP}/apps/smartdiscovery/_meta/visitor`);
+    const url = new URL(`http://${SHOP}/apps/smartdiscovery/meta/visitor`);
     url.searchParams.set('shop', SHOP);
     const req = new Request(url.toString());
     const response = await GET(req);

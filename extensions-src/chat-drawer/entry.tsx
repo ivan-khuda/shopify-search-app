@@ -58,7 +58,7 @@ interface MountOpts {
   accent: string;
   position: 'bottom_right' | 'bottom_left';
   /**
-   * Loader-fetched /_meta/appearance JSON, handed through so the drawer can
+   * Loader-fetched /meta/appearance JSON, handed through so the drawer can
    * seed its settings state without a second fetch (no DEFAULT_SHOP_SETTINGS
    * flash on first open). Optional — older cached loaders don't send it and
    * StorefrontDrawer falls back to fetching itself.
@@ -125,7 +125,7 @@ async function mount(opts: MountOpts): Promise<void> {
 
   // CR-03: resolve signed visitor token before first render so DrawerBody
   // has it immediately. On failure degrade to empty string — server returns
-  // 401 on first use, client re-mints via /_meta/visitor, subsequent
+  // 401 on first use, client re-mints via /meta/visitor, subsequent
   // requests succeed. Drawer always mounts (WR-10 mount-survival guarantee).
   let visitorId = '';
   try {

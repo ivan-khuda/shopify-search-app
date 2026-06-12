@@ -27,7 +27,7 @@ vi.mock('@/lib/shopify/app-proxy-auth', () => ({
 
 import { GET } from '../route';
 
-describe('GET /api/proxy/_meta/appearance', () => {
+describe('GET /api/proxy/meta/appearance', () => {
   it('returns the storefront presentation bundle as JSON', async () => {
     const res = await GET(new Request('http://x'));
     expect(res.status).toBe(200);

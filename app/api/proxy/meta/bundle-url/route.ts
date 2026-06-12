@@ -1,5 +1,5 @@
 /**
- * GET /api/proxy/_meta/bundle-url — Bundle-URL discovery (D-13).
+ * GET /api/proxy/meta/bundle-url — Bundle-URL discovery (D-13).
  *
  * The loader.js IIFE (extensions/chat-drawer/assets/loader.js) hits this
  * endpoint via App Proxy to resolve the absolute URL of the latest

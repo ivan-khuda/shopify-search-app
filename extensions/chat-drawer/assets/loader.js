@@ -5,7 +5,7 @@
  * on first click. Vanilla JS only — no TypeScript, no React, no library
  * imports. Stays well under the 100KB Liquid asset cap (Pitfall 8).
  *
- * Bundle URL is resolved at click time via /apps/smartdiscovery/_meta/bundle-url
+ * Bundle URL is resolved at click time via /apps/smartdiscovery/meta/bundle-url
  * — the App Proxy boundary owns app-host knowledge so the loader does not
  * need to know the app's external host at deploy time.
  */
@@ -74,7 +74,7 @@
   // Theme Editor preview toggle (editorPreviewVisible) BEFORE the bundle ever
   // loads. Non-blocking — the FAB paints synchronously first; if the lookup
   // fails the FAB stays (fail-open, matches the drawer's tolerant decoding).
-  fetch('/apps/smartdiscovery/_meta/appearance', { method: 'GET', cache: 'no-store' })
+  fetch('/apps/smartdiscovery/meta/appearance', { method: 'GET', cache: 'no-store' })
     .then(function (r) {
       if (!r.ok) throw new Error('appearance request failed: ' + r.status);
       return r.json();
@@ -108,7 +108,7 @@
     loaded = true;
     document.body.classList.add('sd-skeleton-open');
 
-    fetch('/apps/smartdiscovery/_meta/bundle-url', { method: 'GET', cache: 'no-store' })
+    fetch('/apps/smartdiscovery/meta/bundle-url', { method: 'GET', cache: 'no-store' })
       .then(function (r) {
         // WR-04: surface non-2xx (429/500) responses to the .catch instead
         // of letting them die as a JSON parse error.

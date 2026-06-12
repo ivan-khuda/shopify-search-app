@@ -92,7 +92,7 @@ describe('loader.js — STR-07 designMode guard', () => {
     }
 
     // Loader source should reference the App Proxy bundle-url path (B-2 fix)
-    expect(loaderText).toMatch(/_meta\/bundle-url/);
+    expect(loaderText).toMatch(/meta\/bundle-url/);
   });
 
   it('D-15: paints skeleton container with class sd-skeleton-open before bundle resolves', async () => {
@@ -189,7 +189,7 @@ describe('loader.js — kill-switch + editor preview visibility', () => {
   // FAB (fail-open). String-level assertions — same pattern as above.
   it('fetches the App Proxy appearance meta endpoint after painting the FAB', () => {
     const loaderText = readFileSync(LOADER_PATH, 'utf-8');
-    expect(loaderText).toMatch(/_meta\/appearance/);
+    expect(loaderText).toMatch(/meta\/appearance/);
   });
 
   it('removes the FAB when drawerEnabled === false', () => {
