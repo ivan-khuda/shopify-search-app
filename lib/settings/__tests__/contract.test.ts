@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
   DRAWER_ACCENT_PALETTE,
   DEFAULT_SHOP_SETTINGS,
+  FAB_STYLES,
+  DRAWER_POSITIONS,
   MAX_SUGGESTED_PROMPTS,
   parseShopSettings,
 } from '../contract';
@@ -52,5 +54,18 @@ describe('shop settings contract', () => {
     const parsed = parseShopSettings({ suggestedPrompts: [...prompts, { bad: true }] });
     expect(parsed.suggestedPrompts).toHaveLength(6);
     expect(parsed.suggestedPrompts[0]).toEqual({ icon: '✨', text: 'p0' });
+  });
+
+  it('exposes fab and position unions with defaults', () => {
+    expect(FAB_STYLES).toEqual(['circle', 'pill', 'labeled']);
+    expect(DRAWER_POSITIONS).toEqual(['side', 'bottom-sheet', 'center-modal']);
+    expect(DEFAULT_SHOP_SETTINGS).toMatchObject({ fabStyle: 'circle', drawerPosition: 'side' });
+  });
+
+  it('sanitises unknown fab/position values', () => {
+    expect(parseShopSettings({ fabStyle: 'pill', drawerPosition: 'center-modal' }))
+      .toMatchObject({ fabStyle: 'pill', drawerPosition: 'center-modal' });
+    expect(parseShopSettings({ fabStyle: 'blob', drawerPosition: 'left' }))
+      .toMatchObject({ fabStyle: 'circle', drawerPosition: 'side' });
   });
 });
