@@ -22,7 +22,7 @@
  */
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
-import { DEFAULT_MODEL_ID } from '@/services/chat/getActiveChatModel';
+import { DEFAULT_MODEL_ID } from '@/services/chat/default-model-id';
 import type { CatalogModel } from '@/services/chat/model-catalog';
 import type { ModelSectionProps } from './types';
 

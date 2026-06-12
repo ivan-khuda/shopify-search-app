@@ -64,6 +64,7 @@
  */
 import { prisma } from '@/lib/db/client';
 import { fetchModelCatalog } from './model-catalog';
+import { DEFAULT_MODEL_ID } from './default-model-id';
 
 export interface ActiveChatModel {
   id: string;
@@ -76,7 +77,7 @@ export interface ActiveChatModel {
  * resolver. Module-level immutability convention (mirrors EMBEDDING_MODEL
  * pattern); the id literal still appears exactly once in this module.
  */
-export const DEFAULT_MODEL_ID = 'google/gemini-2.5-flash';
+export { DEFAULT_MODEL_ID } from './default-model-id';
 
 const DEFAULT_MODEL: ActiveChatModel = {
   id: DEFAULT_MODEL_ID,
