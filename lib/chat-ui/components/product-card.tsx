@@ -10,6 +10,8 @@ interface ProductCardProps {
   isSaved: boolean;
   onSave: () => void;
   density?: CardDensity;
+  productUrlBase?: string;
+  linkTarget?: '_blank' | '_self';
 }
 
 function SaveButton({
@@ -51,7 +53,7 @@ function CardImage({ product }: { product: ChatProduct }) {
   );
 }
 
-export function ProductCard({ product, isSaved, onSave, density = 'standard' }: ProductCardProps) {
+export function ProductCard({ product, isSaved, onSave, density = 'standard', productUrlBase = '', linkTarget = '_self' }: ProductCardProps) {
   if (density === 'hero') {
     return (
       <div className="grid grid-cols-[200px_1fr] overflow-hidden rounded-[14px] border border-[#e1e3e5] bg-white">
@@ -69,12 +71,23 @@ export function ProductCard({ product, isSaved, onSave, density = 'standard' }: 
           </p>
           <div className="mt-2.5 flex items-center justify-between">
             <span className="text-[17px] font-semibold text-[#202223]">{product.price}</span>
-            <button
-              type="button"
-              className="rounded-[7px] border-none bg-[var(--sd-accent,#5B4FE9)] px-3 py-1.5 text-xs font-semibold text-white"
-            >
-              View product →
-            </button>
+            {product.handle ? (
+              <a
+                href={`${productUrlBase}/products/${product.handle}`}
+                target={linkTarget}
+                {...(linkTarget === '_blank' ? { rel: 'noopener noreferrer' } : {})}
+                className="rounded-[7px] border-none bg-[var(--sd-accent,#5B4FE9)] px-3 py-1.5 text-xs font-semibold text-white no-underline"
+              >
+                View product →
+              </a>
+            ) : (
+              <button
+                type="button"
+                className="rounded-[7px] border-none bg-[var(--sd-accent,#5B4FE9)] px-3 py-1.5 text-xs font-semibold text-white"
+              >
+                View product →
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -111,9 +124,20 @@ export function ProductCard({ product, isSaved, onSave, density = 'standard' }: 
             {product.price}
           </span>
           {!compact && (
-            <span className="text-[10.5px] font-bold tracking-[0.04em] text-[var(--sd-accent,#5B4FE9)]">
-              VIEW →
-            </span>
+            product.handle ? (
+              <a
+                href={`${productUrlBase}/products/${product.handle}`}
+                target={linkTarget}
+                {...(linkTarget === '_blank' ? { rel: 'noopener noreferrer' } : {})}
+                className="text-[10.5px] font-bold tracking-[0.04em] text-[var(--sd-accent,#5B4FE9)] no-underline"
+              >
+                VIEW →
+              </a>
+            ) : (
+              <span className="text-[10.5px] font-bold tracking-[0.04em] text-[var(--sd-accent,#5B4FE9)]">
+                VIEW →
+              </span>
+            )
           )}
         </div>
       </div>

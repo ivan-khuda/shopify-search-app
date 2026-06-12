@@ -150,6 +150,8 @@ interface ChatPaneProps {
      * otherwise re-submit the stale query.
      */
     onAutoSubmitConsumed?: () => void;
+    productUrlBase?: string;
+    linkTarget?: '_blank' | '_self';
 }
 
 export function ChatPane({
@@ -165,6 +167,8 @@ export function ChatPane({
     prompts,
     autoSubmitQuery,
     onAutoSubmitConsumed,
+    productUrlBase,
+    linkTarget,
 }: ChatPaneProps) {
     const transport = useMemo(
         () => new DefaultChatTransport({
@@ -255,6 +259,8 @@ export function ChatPane({
                                 groundedCount={groundedCountFor(message)}
                                 savedProductIds={savedProductIds}
                                 onToggleSave={onToggleSave}
+                                productUrlBase={productUrlBase}
+                                linkTarget={linkTarget}
                             />
                         ))}
                         {showThinking && <ThinkingBubble />}
