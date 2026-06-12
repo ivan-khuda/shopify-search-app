@@ -16,6 +16,7 @@
 import { useState, type CSSProperties } from 'react';
 import { cn } from '@/lib/utils';
 import { SD_ACCENT } from '@/lib/chat-ui/appearance';
+import { ModelSection } from './sections/model-section';
 import type { SettingsShellProps } from './sections/types';
 
 const NAV_ITEMS = [
@@ -96,9 +97,6 @@ function PlaceholderSection({ heading }: { heading: string }) {
 
 export function SettingsShell(props: SettingsShellProps) {
   const [section, setSection] = useState<SectionId>('model');
-  // Placeholder sections don't consume props yet — the real sections
-  // (Tasks 9–13) replace this reference as they land.
-  void props;
 
   return (
     <div
@@ -134,7 +132,9 @@ export function SettingsShell(props: SettingsShellProps) {
 
       {/* Content */}
       <div>
-        {section === 'model' && <PlaceholderSection heading="AI model" />}
+        {section === 'model' && (
+          <ModelSection catalog={props.catalog} activeModel={props.activeModel} />
+        )}
         {section === 'drawer' && <PlaceholderSection heading="Drawer styling" />}
         {section === 'limits' && <PlaceholderSection heading="Usage & limits" />}
         {section === 'webhooks' && <PlaceholderSection heading="Sync & webhooks" />}

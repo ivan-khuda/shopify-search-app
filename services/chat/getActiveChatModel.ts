@@ -70,10 +70,16 @@ export interface ActiveChatModel {
   displayName: string;
 }
 
-// Private — not exported so callers cannot bypass the resolver. Module-level
-// immutability convention (mirrors EMBEDDING_MODEL pattern).
+/**
+ * Exported id-only so the settings page can mark the "Recommended" card.
+ * The full DEFAULT_MODEL object stays private so callers cannot bypass the
+ * resolver. Module-level immutability convention (mirrors EMBEDDING_MODEL
+ * pattern); the id literal still appears exactly once in this module.
+ */
+export const DEFAULT_MODEL_ID = 'google/gemini-2.5-flash';
+
 const DEFAULT_MODEL: ActiveChatModel = {
-  id: 'google/gemini-2.5-flash',
+  id: DEFAULT_MODEL_ID,
   displayName: 'Gemini 2.5 Flash',
 };
 
