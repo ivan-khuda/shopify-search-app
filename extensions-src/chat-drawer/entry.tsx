@@ -57,6 +57,13 @@ interface MountOpts {
   // these fields stay so older cached loaders keep calling mount() safely.
   accent: string;
   position: 'bottom_right' | 'bottom_left';
+  /**
+   * Loader-fetched /_meta/appearance JSON, handed through so the drawer can
+   * seed its settings state without a second fetch (no DEFAULT_SHOP_SETTINGS
+   * flash on first open). Optional — older cached loaders don't send it and
+   * StorefrontDrawer falls back to fetching itself.
+   */
+  settings?: unknown;
 }
 
 let reactRoot: Root | null = null;
@@ -78,6 +85,7 @@ function renderDrawer(opts: MountOpts, visitorId: string, initialOpen: boolean):
       customerId={opts.customerId}
       shopName={lastShopName}
       fabPosition={opts.position}
+      initialSettings={opts.settings}
       initialOpen={initialOpen}
       registerToggle={(fn) => {
         drawerToggle = fn;

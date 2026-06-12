@@ -2,10 +2,12 @@
 /**
  * StorefrontDrawer — storefront chat drawer shell (drawer-redesign Task 8).
  *
- * Owns the per-shop settings bundle: a single mount-time fetch of the
+ * Owns the per-shop settings bundle: seeded from the loader's already-fetched
+ * appearance JSON when entry.tsx passes it (initialSettings — no refetch, no
+ * default-settings flash), otherwise a single mount-time fetch of the
  * HMAC-verified app-proxy meta endpoint (`/apps/smartdiscovery/_meta/appearance`)
  * decoded via parseShopSettings (fail-open: network errors keep
- * DEFAULT_SHOP_SETTINGS so the drawer always renders). The fetched bundle
+ * DEFAULT_SHOP_SETTINGS so the drawer always renders). The settings bundle
  * drives:
  *   - Fab variant (settings.fabStyle) — fixed bottom-right per the handoff;
  *     the legacy bottom_left position only applies to the loader's paint.
@@ -54,6 +56,14 @@ interface StorefrontDrawerProps {
   /** Theme-embed FAB corner — forwarded so the React FAB stays on the same
    *  side as the loader's synchronous paint. */
   fabPosition?: 'bottom_right' | 'bottom_left';
+  /**
+   * Loader-fetched /_meta/appearance JSON handed through by entry.tsx. When
+   * present it seeds the settings state (via parseShopSettings) and the
+   * drawer SKIPS its own mount-time fetch — no DEFAULT_SHOP_SETTINGS flash
+   * (pill FAB snapping to circle, position jump) on first open. When absent
+   * (older cached loaders) the drawer fetches as before.
+   */
+  initialSettings?: unknown;
   initialOpen?: boolean;
   /**
    * WR-03: registers an imperative toggle so the bundle entry (entry.tsx)
@@ -65,17 +75,34 @@ interface StorefrontDrawerProps {
 }
 
 export function StorefrontDrawer(props: StorefrontDrawerProps = {}): React.ReactElement | null {
-  const { shop, visitorId, customerId, shopName, fabPosition, initialOpen = false, registerToggle } = props;
+  const {
+    shop,
+    visitorId,
+    customerId,
+    shopName,
+    fabPosition,
+    initialSettings,
+    initialOpen = false,
+    registerToggle,
+  } = props;
   const [isOpen, setIsOpen] = React.useState(initialOpen);
   const [activeTab, setActiveTab] = React.useState<TabId>('chat');
-  const [settings, setSettings] = React.useState<ShopSettingsBundle>(DEFAULT_SHOP_SETTINGS);
+  const [settings, setSettings] = React.useState<ShopSettingsBundle>(() =>
+    initialSettings != null ? parseShopSettings(initialSettings) : DEFAULT_SHOP_SETTINGS,
+  );
   const [counts, setCounts] = React.useState({ history: 0, saved: 0 });
   const fabRef = React.useRef<HTMLButtonElement>(null);
   const closeRef = React.useRef<HTMLButtonElement>(null);
 
   // Single mount-time settings fetch (lifted from DrawerBody so the Fab and
   // DrawerShell can use it before the lazy body ever loads). Fail-open.
+  // Skipped entirely when the loader already handed us its fetched settings
+  // (initialSettings) — refetching here caused a visible flash of
+  // DEFAULT_SHOP_SETTINGS on first open. The fetch stays as a fallback for
+  // older cached loaders that don't pass settings through.
+  const hasInitialSettings = initialSettings != null;
   React.useEffect(() => {
+    if (hasInitialSettings) return;
     let cancelled = false;
     fetch('/apps/smartdiscovery/_meta/appearance')
       .then((r) => (r.ok ? r.json() : null))
@@ -86,7 +113,7 @@ export function StorefrontDrawer(props: StorefrontDrawerProps = {}): React.React
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [hasInitialSettings]);
 
   const closeDrawer = React.useCallback(() => {
     setIsOpen(false);

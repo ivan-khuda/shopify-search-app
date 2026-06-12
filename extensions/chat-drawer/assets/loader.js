@@ -18,6 +18,11 @@
   var shop = root.dataset.shop;
   var customerId = root.dataset.customerId || null;
   var loaded = false;
+  // Settings flash fix: the appearance JSON fetched below is handed through
+  // to the bundle at mount time so the React drawer can seed its settings
+  // state instead of refetching and flashing DEFAULT_SHOP_SETTINGS (pill FAB
+  // snapping to circle, drawer position jumping) on first open.
+  var settingsData = null;
 
   var fab = document.createElement('button');
   fab.className = 'sd-fab sd-fab--' + position;
@@ -75,6 +80,7 @@
       return r.json();
     })
     .then(function (data) {
+      settingsData = data;
       var inEditor = window.Shopify && window.Shopify.designMode === true;
       if (
         data.drawerEnabled === false ||
@@ -121,7 +127,8 @@
             shop: shop,
             customerId: customerId,
             accent: accent,
-            position: position
+            position: position,
+            settings: settingsData
           });
         }
       })

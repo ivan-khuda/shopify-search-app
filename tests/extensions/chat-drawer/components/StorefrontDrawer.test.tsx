@@ -101,6 +101,59 @@ describe('StorefrontDrawer — settings fetch (lifted from DrawerBody)', () => {
   });
 });
 
+describe('StorefrontDrawer — initialSettings from the loader (no first-open flash)', () => {
+  it('SKIPS the appearance fetch when initialSettings is provided', async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+    render(<StorefrontDrawer {...baseProps} initialSettings={{ fabStyle: 'pill' }} />);
+
+    // Synchronous first render already has the parsed settings — and no
+    // network round-trip ever fires.
+    await waitFor(() => expect(fetchMock).not.toHaveBeenCalled());
+  });
+
+  it('renders the variant from initialSettings on the FIRST paint (no default flash)', () => {
+    vi.stubGlobal('fetch', vi.fn());
+    render(
+      <StorefrontDrawer
+        {...baseProps}
+        shopName="Field & Form"
+        initialSettings={{ fabStyle: 'pill', drawerAccent: '#008060' }}
+      />,
+    );
+
+    // No waitFor: the pill FAB and accent must be there synchronously.
+    const fab = screen.getByRole('button', { name: 'Open SmartDiscovery AI chat' });
+    expect(fab.textContent).toContain('Ask Field & Form');
+    const root = document.querySelector('.sd-root') as HTMLElement;
+    expect(root.style.getPropertyValue('--sd-accent')).toBe('#008060');
+  });
+
+  it('runs initialSettings through parseShopSettings (garbage falls back to defaults)', () => {
+    vi.stubGlobal('fetch', vi.fn());
+    render(<StorefrontDrawer {...baseProps} initialSettings={{ fabStyle: 'bogus' }} />);
+
+    // Defaults applied, still no fetch — invalid fields are sanitized, not refetched.
+    const fab = screen.getByRole('button', { name: 'Open SmartDiscovery AI chat' });
+    expect(fab.textContent).not.toContain('Find anything');
+  });
+
+  it('honors the kill-switch from initialSettings without any fetch', () => {
+    vi.stubGlobal('fetch', vi.fn());
+    render(<StorefrontDrawer {...baseProps} initialSettings={{ drawerEnabled: false }} />);
+
+    expect(screen.queryByRole('button', { name: /SmartDiscovery AI chat/ })).toBeNull();
+  });
+
+  it('still fetches when initialSettings is absent (older cached loaders)', async () => {
+    const fetchMock = stubSettings({});
+    render(<StorefrontDrawer {...baseProps} />);
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock).toHaveBeenCalledWith('/apps/smartdiscovery/_meta/appearance');
+  });
+});
+
 describe('StorefrontDrawer — FAB variants from settings', () => {
   it('renders the pill FAB with "Ask {shopName}" when fabStyle is pill', async () => {
     stubSettings({ fabStyle: 'pill' });

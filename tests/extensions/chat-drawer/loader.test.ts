@@ -158,6 +158,31 @@ describe('loader.js — FAB restyle per merchant settings (drawer-redesign Task 
   });
 });
 
+describe('loader.js — settings pass-through to the bundle (no first-open flash)', () => {
+  // The loader hands the appearance JSON it already fetched through to
+  // window.smartdiscovery.mount() so the React drawer seeds its settings
+  // state instead of refetching and flashing DEFAULT_SHOP_SETTINGS.
+  it('stores the fetched appearance JSON in settingsData', () => {
+    const loaderText = readFileSync(LOADER_PATH, 'utf-8');
+    expect(loaderText).toMatch(/var settingsData = null/);
+    expect(loaderText).toMatch(/settingsData = data/);
+  });
+
+  it('includes settings: settingsData in the mount opts', () => {
+    const loaderText = readFileSync(LOADER_PATH, 'utf-8');
+    expect(loaderText).toMatch(/settings:\s*settingsData/);
+  });
+
+  it('assigns settingsData before the kill-switch early-return', () => {
+    const loaderText = readFileSync(LOADER_PATH, 'utf-8');
+    const assignIdx = loaderText.indexOf('settingsData = data');
+    const killSwitchIdx = loaderText.indexOf('data.drawerEnabled === false');
+    expect(assignIdx).toBeGreaterThan(-1);
+    expect(killSwitchIdx).toBeGreaterThan(-1);
+    expect(assignIdx).toBeLessThan(killSwitchIdx);
+  });
+});
+
 describe('loader.js — kill-switch + editor preview visibility', () => {
   // Settings-redesign: after painting the FAB the loader fires a non-blocking
   // appearance lookup and removes the FAB when the merchant disabled the
