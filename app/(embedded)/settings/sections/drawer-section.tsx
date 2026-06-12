@@ -379,7 +379,7 @@ export function DrawerSection({ settings }: DrawerSectionProps) {
 
       <SettingsCard
         title="Product card density"
-        description="How much detail each product result shows."
+        description="How much detail each product result shows in the admin playground. The storefront drawer uses its own compact rows."
       >
         <div
           role="radiogroup"
