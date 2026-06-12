@@ -78,3 +78,21 @@ describe('Fab — shared affordances', () => {
     },
   );
 });
+
+describe('Fab position', () => {
+  it('renders on the left when the theme embed sets bottom_left', () => {
+    const { container } = render(
+      <Fab fabStyle="circle" position="bottom_left" ariaLabel="Open" onClick={() => {}} />,
+    );
+    const btn = container.querySelector('button')!;
+    expect(btn.className).toContain('left-6');
+    expect(btn.className).not.toContain('right-6');
+  });
+
+  it('defaults to bottom-right with dialog haspopup', () => {
+    const { container } = render(<Fab ariaLabel="Open" onClick={() => {}} />);
+    const btn = container.querySelector('button')!;
+    expect(btn.className).toContain('right-6');
+    expect(btn).toHaveAttribute('aria-haspopup', 'dialog');
+  });
+});

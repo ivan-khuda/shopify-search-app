@@ -51,6 +51,7 @@ function renderDrawer(opts: MountOpts, visitorId: string, initialOpen: boolean):
       visitorId={visitorId}
       customerId={opts.customerId}
       shopName={lastShopName}
+      fabPosition={opts.position}
       initialOpen={initialOpen}
       registerToggle={(fn) => {
         drawerToggle = fn;

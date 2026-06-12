@@ -16,6 +16,9 @@ import type { FabStyle } from '@/lib/settings/contract';
 
 interface FabProps {
   fabStyle?: FabStyle;
+  /** Theme-embed FAB corner (data-fab-position) — keeps the React FAB on the
+   *  same side as the loader's synchronous paint, no jump on first open. */
+  position?: 'bottom_right' | 'bottom_left';
   /** Storefront shop name — pill copy "Ask {shopName}", falls back to "Ask us". */
   shopName?: string | null;
   /** Open/close label supplied by the owner (toggles with drawer state). */
@@ -46,7 +49,8 @@ function SearchSparkIcon({ size }: { size: number }) {
   );
 }
 
-export function Fab({ fabStyle = 'circle', shopName, ariaLabel, onClick, ref }: FabProps) {
+export function Fab({ fabStyle = 'circle', position = 'bottom_right', shopName, ariaLabel, onClick, ref }: FabProps) {
+  const corner = position === 'bottom_left' ? 'left-6' : 'right-6';
   if (fabStyle === 'pill') {
     return (
       <button
@@ -54,7 +58,8 @@ export function Fab({ fabStyle = 'circle', shopName, ariaLabel, onClick, ref }: 
         type="button"
         aria-label={ariaLabel}
         onClick={onClick}
-        className="fixed right-6 bottom-6 z-[2002] flex cursor-pointer items-center gap-[9px] rounded-full border-none bg-[#1a1a1a] px-[18px] py-3 text-sm font-medium text-white shadow-[0_10px_30px_rgba(0,0,0,0.18),0_2px_6px_rgba(0,0,0,0.08)]"
+        className={`fixed ${corner} bottom-6 z-[2002] flex cursor-pointer items-center gap-[9px] rounded-full border-none bg-[#1a1a1a] px-[18px] py-3 text-sm font-medium text-white shadow-[0_10px_30px_rgba(0,0,0,0.18),0_2px_6px_rgba(0,0,0,0.08)]`}
+        aria-haspopup="dialog"
       >
         <span className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-[var(--sd-accent,#5B4FE9)]">
           <svg
@@ -83,7 +88,8 @@ export function Fab({ fabStyle = 'circle', shopName, ariaLabel, onClick, ref }: 
         type="button"
         aria-label={ariaLabel}
         onClick={onClick}
-        className="fixed right-6 bottom-6 z-[2002] flex h-14 cursor-pointer items-center rounded-2xl border-none bg-[var(--sd-accent,#5B4FE9)] pl-1.5 text-white shadow-[0_12px_30px_color-mix(in_srgb,var(--sd-accent,#5B4FE9)_35%,transparent),0_2px_6px_rgba(0,0,0,0.08)]"
+        className={`fixed ${corner} bottom-6 z-[2002] flex h-14 cursor-pointer items-center rounded-2xl border-none bg-[var(--sd-accent,#5B4FE9)] pl-1.5 text-white shadow-[0_12px_30px_color-mix(in_srgb,var(--sd-accent,#5B4FE9)_35%,transparent),0_2px_6px_rgba(0,0,0,0.08)]`}
+        aria-haspopup="dialog"
       >
         <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/[0.16]">
           <SearchSparkIcon size={20} />
@@ -105,7 +111,8 @@ export function Fab({ fabStyle = 'circle', shopName, ariaLabel, onClick, ref }: 
       type="button"
       aria-label={ariaLabel}
       onClick={onClick}
-      className="fixed right-6 bottom-6 z-[2002] flex h-14 w-14 cursor-pointer items-center justify-center rounded-full border-none bg-[var(--sd-accent,#5B4FE9)] text-white shadow-[0_12px_30px_color-mix(in_srgb,var(--sd-accent,#5B4FE9)_35%,transparent),0_2px_6px_rgba(0,0,0,0.1)]"
+      className={`fixed ${corner} bottom-6 z-[2002] flex h-14 w-14 cursor-pointer items-center justify-center rounded-full border-none bg-[var(--sd-accent,#5B4FE9)] text-white shadow-[0_12px_30px_color-mix(in_srgb,var(--sd-accent,#5B4FE9)_35%,transparent),0_2px_6px_rgba(0,0,0,0.1)]`}
+      aria-haspopup="dialog"
     >
       <SearchSparkIcon size={24} />
     </button>

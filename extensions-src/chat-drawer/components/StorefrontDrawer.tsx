@@ -51,6 +51,9 @@ interface StorefrontDrawerProps {
   customerId?: string | null;
   /** Storefront shop display name — header "Ask {shopName}" + pill FAB copy. */
   shopName?: string | null;
+  /** Theme-embed FAB corner — forwarded so the React FAB stays on the same
+   *  side as the loader's synchronous paint. */
+  fabPosition?: 'bottom_right' | 'bottom_left';
   initialOpen?: boolean;
   /**
    * WR-03: registers an imperative toggle so the bundle entry (entry.tsx)
@@ -62,7 +65,7 @@ interface StorefrontDrawerProps {
 }
 
 export function StorefrontDrawer(props: StorefrontDrawerProps = {}): React.ReactElement | null {
-  const { shop, visitorId, customerId, shopName, initialOpen = false, registerToggle } = props;
+  const { shop, visitorId, customerId, shopName, fabPosition, initialOpen = false, registerToggle } = props;
   const [isOpen, setIsOpen] = React.useState(initialOpen);
   const [activeTab, setActiveTab] = React.useState<TabId>('chat');
   const [settings, setSettings] = React.useState<ShopSettingsBundle>(DEFAULT_SHOP_SETTINGS);
@@ -137,6 +140,7 @@ export function StorefrontDrawer(props: StorefrontDrawerProps = {}): React.React
       <Fab
         ref={fabRef}
         fabStyle={settings.fabStyle}
+        position={fabPosition}
         shopName={shopName}
         ariaLabel={isOpen ? 'Close SmartDiscovery AI chat' : 'Open SmartDiscovery AI chat'}
         onClick={handleFabClick}
