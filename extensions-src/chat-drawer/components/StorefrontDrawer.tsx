@@ -9,8 +9,9 @@
  * decoded via parseShopSettings (fail-open: network errors keep
  * DEFAULT_SHOP_SETTINGS so the drawer always renders). The settings bundle
  * drives:
- *   - Fab variant (settings.fabStyle) — fixed bottom-right per the handoff;
- *     the legacy bottom_left position only applies to the loader's paint.
+ *   - Fab variant (settings.fabStyle); the FAB corner comes from the theme
+ *     embed's fabPosition prop (forwarded by entry.tsx) so the React FAB
+ *     stays on the same side as the loader's synchronous paint.
  *   - DrawerShell position (settings.drawerPosition).
  *   - `--sd-accent` on the root wrapper (settings.drawerAccent).
  *   - Kill-switch: drawerEnabled:false (or Theme Editor preview hidden)

@@ -19,11 +19,9 @@ const LOADER_PATH = resolve(
   '../../../extensions/chat-drawer/assets/loader.js'
 );
 
-let importMock: ReturnType<typeof vi.fn>;
 let fetchMock: ReturnType<typeof vi.fn>;
 
 beforeEach(() => {
-  importMock = vi.fn().mockResolvedValue({});
   fetchMock = vi.fn().mockResolvedValue(
     new Response(
       JSON.stringify({ bundle: '/storefront-bundle-abc123.js', version: 'abc123' }),

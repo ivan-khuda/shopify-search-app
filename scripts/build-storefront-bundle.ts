@@ -49,7 +49,7 @@ async function main(): Promise<void> {
   const manifestPath = path.join('public', 'storefront-manifest.json');
   const previousFiles = new Set<string>();
   try {
-    const prev = JSON.parse(require('node:fs').readFileSync(manifestPath, 'utf8'));
+    const prev = JSON.parse(readFileSync(manifestPath, 'utf8'));
     if (typeof prev.bundle === 'string') previousFiles.add(prev.bundle.replace(/^\//, ''));
     if (typeof prev.styles === 'string') previousFiles.add(prev.styles.replace(/^\//, ''));
     if (Array.isArray(prev.chunks)) {

@@ -6,7 +6,7 @@
  * REAL useChatController drives submit/auto-submit/scroll semantics.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ChatIdentityAdapter } from '@/lib/chat-ui';
 
@@ -133,6 +133,20 @@ describe('DrawerChat — composer', () => {
     expect(sendMessage).toHaveBeenCalledWith({ text: 'linen apron' });
     expect(props.onHistoryAdd).toHaveBeenCalledTimes(1);
     expect(input).toHaveValue('');
+  });
+
+  it('does NOT send on Enter while an IME composition is in progress', async () => {
+    const user = userEvent.setup();
+    render(<DrawerChat {...baseProps()} />);
+
+    const input = screen.getByPlaceholderText('Ask anything…');
+    await user.type(input, 'ラーメン');
+
+    // Enter mid-composition confirms the IME candidate — never the message.
+    fireEvent.keyDown(input, { key: 'Enter', isComposing: true });
+
+    expect(sendMessage).not.toHaveBeenCalled();
+    expect(input).toHaveValue('ラーメン');
   });
 
   it('send button submits the typed query', async () => {

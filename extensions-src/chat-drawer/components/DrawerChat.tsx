@@ -97,6 +97,9 @@ export function DrawerChat({
             onChange={(event) => setInput(event.target.value)}
             onKeyDown={(event) => {
               if (event.key === 'Enter') {
+                // IME guard: Enter while composing (Japanese/Chinese/Korean
+                // input methods) confirms the composition, not the message.
+                if (event.nativeEvent.isComposing) return;
                 event.preventDefault();
                 send(input);
               }
