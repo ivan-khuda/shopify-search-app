@@ -155,6 +155,43 @@ describe('mapToUpsertInput (SYN-02)', () => {
     expect(result.variants?.[0].compareAtPrice).toBeCloseTo(29.99);
   });
 
+  it('derives product priceMin/priceMax from variant prices', () => {
+    const multiVariant: ShopifyProductNode = {
+      ...baseNode,
+      variants: {
+        nodes: [
+          { id: 'gid://shopify/ProductVariant/1', title: 'S', price: '19.99', selectedOptions: [] },
+          { id: 'gid://shopify/ProductVariant/2', title: 'M', price: '24.50', selectedOptions: [] },
+          { id: 'gid://shopify/ProductVariant/3', title: 'L', price: '34.00', selectedOptions: [] },
+        ],
+      },
+    };
+    const result = mapToUpsertInput(multiVariant);
+    expect(result.priceMin).toBeCloseTo(19.99);
+    expect(result.priceMax).toBeCloseTo(34.0);
+  });
+
+  it('priceMin equals priceMax for a single variant', () => {
+    const result = mapToUpsertInput(baseNode);
+    expect(result.priceMin).toBeCloseTo(19.99);
+    expect(result.priceMax).toBeCloseTo(19.99);
+  });
+
+  it('leaves priceMin/priceMax null when no variant has a parseable price', () => {
+    const noPrices: ShopifyProductNode = {
+      ...baseNode,
+      variants: { nodes: [{ id: 'gid://shopify/ProductVariant/1', title: 'X', selectedOptions: [] }] },
+    };
+    const result = mapToUpsertInput(noPrices);
+    expect(result.priceMin).toBeNull();
+    expect(result.priceMax).toBeNull();
+
+    const noVariants: ShopifyProductNode = { ...baseNode, variants: { nodes: [] } };
+    const empty = mapToUpsertInput(noVariants);
+    expect(empty.priceMin).toBeNull();
+    expect(empty.priceMax).toBeNull();
+  });
+
   it('maps variant.price (MoneyV2 shape) correctly — Q1 RESOLVED', () => {
     const moneyV2Node: ShopifyProductNode = {
       ...baseNode,
