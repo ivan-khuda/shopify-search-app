@@ -16,7 +16,7 @@
  * Zero `console.*` (CLAUDE.md).
  */
 import { useState } from 'react';
-import { SettingsIcon } from '../settings-shell';
+import { SettingsIcon } from './settings-icon';
 import { SectionHeader, SettingsCard } from './settings-card';
 import type { WebhooksSectionProps } from './types';
 
