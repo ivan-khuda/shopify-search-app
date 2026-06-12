@@ -37,3 +37,7 @@ export interface ModelSectionProps {
 export interface DrawerSectionProps {
   settings: ShopSettingsBundle;
 }
+
+export interface LimitsSectionProps {
+  usage: UsageSnapshot;
+}
