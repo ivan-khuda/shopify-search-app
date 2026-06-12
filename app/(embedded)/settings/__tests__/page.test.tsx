@@ -1,11 +1,22 @@
-// Phase 7 Wave 0 RED scaffold for app/(embedded)/settings/page.tsx.
-// Pins the Server Component contract from D-04 (table columns), D-06
-// (pre-selection + warning banner), D-03 (cached + cold-start banners),
-// and Phase 4 shop-undefined parity with /chat. Implementation lands in
-// Plan 08.
+// Settings-redesign Task 8 — Server Component contract for the rebuilt
+// /settings page. Pins the parallel SSR data assembly (catalog, active model,
+// shop settings bundle, usage snapshot, webhook last-fired map, last
+// successful sync) plus WR-01 shop validation parity with /chat.
 import { render } from '@testing-library/react';
 import type React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+const { webhookGroupBy, syncRunFindFirst } = vi.hoisted(() => ({
+  webhookGroupBy: vi.fn(),
+  syncRunFindFirst: vi.fn(),
+}));
+
+vi.mock('@/lib/db/client', () => ({
+  prisma: {
+    webhookEvent: { groupBy: webhookGroupBy },
+    syncRun: { findFirst: syncRunFindFirst },
+  },
+}));
 
 vi.mock('@/services/chat/getActiveChatModel', () => ({
   getActiveChatModel: vi.fn(),
@@ -15,41 +26,32 @@ vi.mock('@/services/chat/model-catalog', () => ({
   fetchModelCatalog: vi.fn(),
 }));
 
-vi.mock('@/services/chat/getShopAppearance', () => ({
-  getShopAppearance: vi.fn(),
+vi.mock('@/services/settings/getShopSettings', () => ({
+  getShopSettings: vi.fn(),
 }));
 
-// Stub the client SettingsForm — this suite asserts the SSR layer only.
-vi.mock('../settings-form', () => ({
-  SettingsForm: ({
-    catalog,
-    activeId,
-    saveDisabled,
-    appearance,
-  }: {
-    catalog: Array<{ id: string }>;
-    activeId: string | null;
-    saveDisabled?: boolean;
-    appearance?: { emptyStateVariant: string; cardDensity: string };
-  }) => (
-    <div
-      data-testid="settings-form-stub"
-      data-catalog-count={String(catalog.length)}
-      data-active-id={activeId ?? ''}
-      data-save-disabled={saveDisabled ? 'true' : 'false'}
-      data-appearance={appearance ? JSON.stringify(appearance) : ''}
-    />
+vi.mock('@/services/settings/getUsageSnapshot', () => ({
+  getUsageSnapshot: vi.fn(),
+}));
+
+// Stub the client shell — this suite asserts the SSR data layer only.
+vi.mock('../settings-shell', () => ({
+  SettingsShell: (props: Record<string, unknown>) => (
+    <div data-testid="settings-shell-stub" data-props={JSON.stringify(props)} />
   ),
 }));
 
 import { getActiveChatModel } from '@/services/chat/getActiveChatModel';
 import { fetchModelCatalog } from '@/services/chat/model-catalog';
-import { getShopAppearance } from '@/services/chat/getShopAppearance';
+import { getShopSettings } from '@/services/settings/getShopSettings';
+import { getUsageSnapshot } from '@/services/settings/getUsageSnapshot';
+import { DEFAULT_SHOP_SETTINGS } from '@/lib/settings/contract';
 import SettingsPage from '@/app/(embedded)/settings/page';
 
 const getActiveMock = getActiveChatModel as ReturnType<typeof vi.fn>;
 const fetchCatalogMock = fetchModelCatalog as ReturnType<typeof vi.fn>;
-const getAppearanceMock = getShopAppearance as ReturnType<typeof vi.fn>;
+const getSettingsMock = getShopSettings as ReturnType<typeof vi.fn>;
+const getUsageMock = getUsageSnapshot as ReturnType<typeof vi.fn>;
 
 const baseCatalog = {
   models: [
@@ -76,6 +78,15 @@ const baseCatalog = {
   coldStartFallback: false,
 };
 
+const baseUsage = {
+  used: 1284,
+  adminUsed: 182,
+  storefrontUsed: 1102,
+  cap: 2000,
+  periodLabel: 'June 2026',
+  resetsAt: '2026-07-01T00:00:00.000Z',
+};
+
 beforeEach(() => {
   vi.clearAllMocks();
   fetchCatalogMock.mockResolvedValue(baseCatalog);
@@ -83,10 +94,10 @@ beforeEach(() => {
     id: 'google/gemini-2.5-flash',
     displayName: 'Gemini 2.5 Flash',
   });
-  getAppearanceMock.mockResolvedValue({
-    emptyStateVariant: 'cards',
-    cardDensity: 'standard',
-  });
+  getSettingsMock.mockResolvedValue(DEFAULT_SHOP_SETTINGS);
+  getUsageMock.mockResolvedValue(baseUsage);
+  webhookGroupBy.mockResolvedValue([]);
+  syncRunFindFirst.mockResolvedValue(null);
 });
 
 async function renderPage(searchParams: Record<string, string | undefined>) {
@@ -96,112 +107,97 @@ async function renderPage(searchParams: Record<string, string | undefined>) {
   return render(tree as React.ReactElement);
 }
 
-describe('SettingsPage — SSR catalog rendering (SC1, D-04)', () => {
-  it('renders all 7 column headers in the locked order', async () => {
-    const { container } = await renderPage({ shop: 'demo.myshopify.com' });
-    const text = container.textContent ?? '';
-    expect(text).toContain('Model name');
-    expect(text).toContain('Provider');
-    expect(text).toContain('Context window');
-    expect(text).toContain('$ / M input tokens');
-    expect(text).toContain('$ / M output tokens');
-    expect(text).toContain('Best for');
-    expect(text).toContain('Active');
+function shellProps(getByTestId: (id: string) => HTMLElement) {
+  return JSON.parse(
+    getByTestId('settings-shell-stub').getAttribute('data-props') ?? '{}',
+  ) as Record<string, unknown>;
+}
+
+describe('SettingsPage — SSR data assembly', () => {
+  it('loads catalog, active model, settings, and usage for the validated shop', async () => {
+    const { getByTestId } = await renderPage({ shop: 'demo.myshopify.com' });
+
+    expect(fetchCatalogMock).toHaveBeenCalledTimes(1);
+    expect(getActiveMock).toHaveBeenCalledWith('demo.myshopify.com');
+    expect(getSettingsMock).toHaveBeenCalledWith('demo.myshopify.com');
+    expect(getUsageMock).toHaveBeenCalledWith('demo.myshopify.com');
+
+    const props = shellProps(getByTestId);
+    expect(props.shop).toBe('demo.myshopify.com');
+    expect(props.catalog).toEqual(baseCatalog);
+    expect(props.activeModel).toEqual({
+      id: 'google/gemini-2.5-flash',
+      displayName: 'Gemini 2.5 Flash',
+    });
+    expect(props.settings).toEqual(DEFAULT_SHOP_SETTINGS);
+    expect(props.usage).toEqual(baseUsage);
   });
 
-  it('passes the full catalog (count + ids) through to the client form', async () => {
+  it('builds the webhook last-fired map from the shop-scoped groupBy', async () => {
+    webhookGroupBy.mockResolvedValue([
+      { topic: 'products/update', _max: { receivedAt: new Date('2026-06-12T10:00:00.000Z') } },
+      { topic: 'products/delete', _max: { receivedAt: null } },
+    ]);
+
     const { getByTestId } = await renderPage({ shop: 'demo.myshopify.com' });
-    const stub = getByTestId('settings-form-stub');
-    expect(stub.getAttribute('data-catalog-count')).toBe('2');
+
+    expect(webhookGroupBy).toHaveBeenCalledWith({
+      by: ['topic'],
+      where: { shop: 'demo.myshopify.com' },
+      _max: { receivedAt: true },
+    });
+    expect(shellProps(getByTestId).webhooks).toEqual({
+      'products/update': '2026-06-12T10:00:00.000Z',
+    });
+  });
+
+  it('passes the last successful sync summary when one exists', async () => {
+    syncRunFindFirst.mockResolvedValue({
+      startedAt: new Date('2026-06-12T16:14:00.000Z'),
+      finishedAt: new Date('2026-06-12T16:18:12.000Z'),
+      processedCount: 15,
+    });
+
+    const { getByTestId } = await renderPage({ shop: 'demo.myshopify.com' });
+
+    expect(syncRunFindFirst).toHaveBeenCalledWith({
+      where: { shop: 'demo.myshopify.com', state: 'succeeded' },
+      orderBy: { finishedAt: 'desc' },
+    });
+    expect(shellProps(getByTestId).lastSync).toEqual({
+      startedAt: '2026-06-12T16:14:00.000Z',
+      finishedAt: '2026-06-12T16:18:12.000Z',
+      processedCount: 15,
+    });
+  });
+
+  it('passes lastSync: null when no successful sync exists', async () => {
+    const { getByTestId } = await renderPage({ shop: 'demo.myshopify.com' });
+    expect(shellProps(getByTestId).lastSync).toBeNull();
   });
 });
 
-describe('SettingsPage — active row pre-selection (SC3, D-06)', () => {
-  it('passes activeId to the client form when the active id is present in catalog', async () => {
-    const { getByTestId } = await renderPage({ shop: 'demo.myshopify.com' });
-    const stub = getByTestId('settings-form-stub');
-    expect(stub.getAttribute('data-active-id')).toBe('google/gemini-2.5-flash');
-  });
-
-  it('does NOT crash when searchParams.shop is undefined; passes empty shop to resolver', async () => {
+describe('SettingsPage — WR-01 shop validation', () => {
+  it('does NOT crash when searchParams.shop is undefined; passes empty shop to resolvers', async () => {
     const { getByTestId } = await renderPage({});
-    expect(getByTestId('settings-form-stub')).toBeInTheDocument();
+    expect(getByTestId('settings-shell-stub')).toBeInTheDocument();
     expect(getActiveMock).toHaveBeenCalledWith('');
+    expect(getSettingsMock).toHaveBeenCalledWith('');
+    expect(getUsageMock).toHaveBeenCalledWith('');
+    expect(webhookGroupBy).not.toHaveBeenCalled();
+    expect(syncRunFindFirst).not.toHaveBeenCalled();
   });
 
   // WR-01 parity with /chat: searchParams.shop is attacker-controllable on
   // direct navigation — a non-.myshopify.com value must never reach the
-  // shop-scoped resolvers.
-  it('rejects an invalid searchParams.shop and passes empty shop to resolvers', async () => {
+  // shop-scoped resolvers or DB queries.
+  it('rejects an invalid searchParams.shop and passes empty shop everywhere', async () => {
     const { getByTestId } = await renderPage({ shop: 'evil.example.com' });
-    expect(getByTestId('settings-form-stub')).toBeInTheDocument();
+    expect(shellProps(getByTestId).shop).toBe('');
     expect(getActiveMock).toHaveBeenCalledWith('');
-    expect(getAppearanceMock).toHaveBeenCalledWith('');
+    expect(getSettingsMock).toHaveBeenCalledWith('');
+    expect(getUsageMock).toHaveBeenCalledWith('');
+    expect(webhookGroupBy).not.toHaveBeenCalled();
+    expect(syncRunFindFirst).not.toHaveBeenCalled();
   });
 });
-
-describe('SettingsPage — appearance load (chat-redesign Task 13)', () => {
-  it('loads getShopAppearance(shop) and passes appearance to the form', async () => {
-    getAppearanceMock.mockResolvedValue({
-      emptyStateVariant: 'hero',
-      cardDensity: 'compact',
-    });
-
-    const { getByTestId } = await renderPage({ shop: 'demo.myshopify.com' });
-    expect(getAppearanceMock).toHaveBeenCalledWith('demo.myshopify.com');
-    expect(getByTestId('settings-form-stub').getAttribute('data-appearance')).toBe(
-      JSON.stringify({ emptyStateVariant: 'hero', cardDensity: 'compact' }),
-    );
-  });
-});
-
-describe('SettingsPage — D-06 warning banner', () => {
-  it('renders a warning banner when active id is not in catalog (previously-selected model unavailable)', async () => {
-    getActiveMock.mockResolvedValue({
-      id: 'removed/old-model',
-      displayName: 'old-model',
-    });
-
-    const { container } = await renderPage({ shop: 'demo.myshopify.com' });
-    const banner = container.querySelector('s-banner[tone="warning"]');
-    expect(banner).not.toBeNull();
-    expect((banner?.textContent ?? '').toLowerCase()).toContain('no longer available');
-  });
-});
-
-describe('SettingsPage — D-03 catalog availability banners', () => {
-  it('renders a cached-banner when catalogResult.stale === true', async () => {
-    fetchCatalogMock.mockResolvedValue({ ...baseCatalog, stale: true });
-
-    const { container } = await renderPage({ shop: 'demo.myshopify.com' });
-    const banner = container.querySelector('s-banner[tone="warning"]');
-    expect(banner).not.toBeNull();
-    expect((banner?.textContent ?? '').toLowerCase()).toContain('cached');
-  });
-
-  it('renders a critical banner + sets saveDisabled when coldStartFallback === true', async () => {
-    fetchCatalogMock.mockResolvedValue({
-      models: [
-        {
-          id: 'google/gemini-2.5-flash',
-          displayName: 'Gemini 2.5 Flash',
-          provider: 'Google',
-          contextWindow: 1_048_576,
-          inputPricePerMillion: 0.3,
-          outputPricePerMillion: 2.5,
-          bestFor: 'Fastest, low cost — great default',
-        },
-      ],
-      stale: false,
-      coldStartFallback: true,
-    });
-
-    const { container, getByTestId } = await renderPage({ shop: 'demo.myshopify.com' });
-    const banner = container.querySelector('s-banner[tone="critical"]');
-    expect(banner).not.toBeNull();
-    expect((banner?.textContent ?? '').toLowerCase()).toContain('unavailable');
-    expect(getByTestId('settings-form-stub').getAttribute('data-save-disabled')).toBe('true');
-  });
-});
-
-// RED: implementation lands in Plan 08 (app/(embedded)/settings/page.tsx).
