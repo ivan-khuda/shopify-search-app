@@ -4,7 +4,7 @@
 // context label), "Recommended" badge only on the default model, click to
 // select, dark Save button → PATCH /api/settings/model with Bearer token.
 // fetch/idToken mock idiom ported from the retired settings-form test.
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { ModelSection } from '../sections/model-section';
@@ -143,9 +143,8 @@ describe('ModelSection — Save flow', () => {
     render(<ModelSection {...makeProps()} />);
     fireEvent.click(screen.getByRole('radio', { name: /claude sonnet 4\.5/i }));
     fireEvent.click(screen.getByRole('button', { name: /save changes/i }));
-    await new Promise<void>((r) => setTimeout(r, 0));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
 
-    expect(fetchMock).toHaveBeenCalledTimes(1);
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
     expect(url).toBe('/api/settings/model');
     expect(init.method).toBe('PATCH');
@@ -164,10 +163,10 @@ describe('ModelSection — Save flow', () => {
 
     fireEvent.click(screen.getByRole('radio', { name: /claude sonnet 4\.5/i }));
     fireEvent.click(screen.getByRole('button', { name: /save changes/i }));
-    await new Promise<void>((r) => setTimeout(r, 0));
-
-    expect(screen.getByText(/currently active:/i).textContent).toContain(
-      'Claude Sonnet 4.5',
+    await waitFor(() =>
+      expect(screen.getByText(/currently active:/i).textContent).toContain(
+        'Claude Sonnet 4.5',
+      ),
     );
     expect(shopifyToastShow).toHaveBeenCalledWith(
       expect.stringContaining('Claude Sonnet 4.5'),
@@ -184,9 +183,9 @@ describe('ModelSection — Save flow', () => {
     render(<ModelSection {...makeProps()} />);
     fireEvent.click(screen.getByRole('radio', { name: /claude sonnet 4\.5/i }));
     fireEvent.click(screen.getByRole('button', { name: /save changes/i }));
-    await new Promise<void>((r) => setTimeout(r, 0));
-
-    expect(screen.getByRole('alert').textContent).toContain('unknown_model_id');
+    await waitFor(() =>
+      expect(screen.getByRole('alert').textContent).toContain('unknown_model_id'),
+    );
     expect(shopifyToastShow).not.toHaveBeenCalled();
   });
 
@@ -196,9 +195,9 @@ describe('ModelSection — Save flow', () => {
     render(<ModelSection {...makeProps()} />);
     fireEvent.click(screen.getByRole('radio', { name: /claude sonnet 4\.5/i }));
     fireEvent.click(screen.getByRole('button', { name: /save changes/i }));
-    await new Promise<void>((r) => setTimeout(r, 0));
-
-    expect(screen.getByRole('alert').textContent).toContain('network_error');
+    await waitFor(() =>
+      expect(screen.getByRole('alert').textContent).toContain('network_error'),
+    );
   });
 
   it('Save stays disabled on cold-start fallback catalogs', () => {
@@ -211,6 +210,34 @@ describe('ModelSection — Save flow', () => {
     );
     fireEvent.click(screen.getByRole('radio', { name: /claude sonnet 4\.5/i }));
     expect(screen.getByRole('button', { name: /save changes/i })).toBeDisabled();
+  });
+});
+
+describe('ModelSection — catalog degradation notice', () => {
+  const NOTICE =
+    'Model catalog is temporarily unavailable — showing cached list.';
+
+  it('renders a muted status notice when the catalog is stale', () => {
+    render(
+      <ModelSection
+        {...makeProps({ catalog: { models, stale: true, coldStartFallback: false } })}
+      />,
+    );
+    expect(screen.getByRole('status').textContent).toContain(NOTICE);
+  });
+
+  it('renders the notice on cold-start fallback catalogs', () => {
+    render(
+      <ModelSection
+        {...makeProps({ catalog: { models, stale: false, coldStartFallback: true } })}
+      />,
+    );
+    expect(screen.getByRole('status').textContent).toContain(NOTICE);
+  });
+
+  it('renders no notice on a healthy catalog', () => {
+    render(<ModelSection {...makeProps()} />);
+    expect(screen.queryByRole('status')).toBeNull();
   });
 });
 

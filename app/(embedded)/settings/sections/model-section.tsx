@@ -104,6 +104,15 @@ export function ModelSection({ catalog, activeModel }: ModelSectionProps) {
         </p>
       </div>
 
+      {(catalog.stale || catalog.coldStartFallback) && (
+        <div
+          role="status"
+          className="mb-3 rounded-lg border border-[#ebebeb] bg-[#fafbfb] px-3 py-2 text-[12.5px] text-[#8c9196]"
+        >
+          Model catalog is temporarily unavailable — showing cached list.
+        </div>
+      )}
+
       <div className="flex flex-col gap-2" role="radiogroup" aria-label="AI model">
         {catalog.models.map((m: CatalogModel) => {
           const isSelected = m.id === selectedId;
