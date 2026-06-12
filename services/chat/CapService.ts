@@ -44,6 +44,11 @@ function readCap(): number {
   return parsed;
 }
 
+/** Operator default cap (env override or 2000) — the ceiling merchants may lower under. */
+export function readEffectiveDefaultCap(): number {
+  return readCap();
+}
+
 export async function tryConsumeRequest(shop: string): Promise<{ allowed: boolean }> {
   const period = getCurrentPeriod();
   const cap = readCap();

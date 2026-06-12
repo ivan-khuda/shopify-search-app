@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/db/client';
-import type { ShopSettings } from '@/app/generated/prisma/client';
+import type { Prisma, ShopSettings } from '@/app/generated/prisma/client';
 
 /**
  * ShopSettingsRepository — thin Prisma wrapper for the `shop_settings` table.
@@ -44,10 +44,23 @@ export class ShopSettingsRepository {
     shop: string,
     fields: { emptyStateVariant?: string; cardDensity?: string },
   ): Promise<ShopSettings> {
+    return this.upsertFields(shop, fields);
+  }
+
+  /**
+   * Generalised partial upsert for the settings-page write path (PATCH
+   * /api/settings/shop). Callers MUST validate `fields` (zod-strict body)
+   * before reaching this layer — the repository trusts its input shape.
+   * A create leaves untouched columns at their schema defaults.
+   */
+  async upsertFields(
+    shop: string,
+    fields: Record<string, unknown>,
+  ): Promise<ShopSettings> {
     return prisma.shopSettings.upsert({
       where: { shop },
-      create: { shop, ...fields },
-      update: { ...fields },
+      create: { shop, ...fields } as Prisma.ShopSettingsUncheckedCreateInput,
+      update: fields as Prisma.ShopSettingsUncheckedUpdateInput,
     });
   }
 }
