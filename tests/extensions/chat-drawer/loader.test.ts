@@ -112,6 +112,52 @@ describe('loader.js — STR-07 designMode guard', () => {
   });
 });
 
+describe('loader.js — FAB restyle per merchant settings (drawer-redesign Task 9)', () => {
+  const CSS_PATH = resolve(
+    __dirname,
+    '../../../extensions/chat-drawer/assets/loader.css'
+  );
+
+  it('has a restyleFab path keyed on data.fabStyle, reachable from the meta .then', () => {
+    const loaderText = readFileSync(LOADER_PATH, 'utf-8');
+    expect(loaderText).toMatch(/restyleFab/);
+    expect(loaderText).toMatch(/data\.fabStyle/);
+  });
+
+  it('pill: dark pill markup with the shop name from root.dataset.shopName', () => {
+    const loaderText = readFileSync(LOADER_PATH, 'utf-8');
+    expect(loaderText).toMatch(/sd-fab--pill/);
+    expect(loaderText).toMatch(/dataset\.shopName/);
+    expect(loaderText).toMatch(/Ask /);
+  });
+
+  it('labeled: accent block markup with the two-line label', () => {
+    const loaderText = readFileSync(LOADER_PATH, 'utf-8');
+    expect(loaderText).toMatch(/sd-fab--labeled/);
+    expect(loaderText).toMatch(/Powered by AI/);
+    expect(loaderText).toMatch(/Find anything/);
+  });
+
+  it('overrides the dataset accent with data.drawerAccent via --sd-accent', () => {
+    const loaderText = readFileSync(LOADER_PATH, 'utf-8');
+    expect(loaderText).toMatch(/data\.drawerAccent/);
+    expect(loaderText).toMatch(/setProperty\('--sd-accent'/);
+  });
+
+  it('loader.css ships the pill/labeled FAB classes', () => {
+    const cssText = readFileSync(CSS_PATH, 'utf-8');
+    expect(cssText).toMatch(/\.sd-fab--pill/);
+    expect(cssText).toMatch(/\.sd-fab--labeled/);
+  });
+
+  it('both assets stay well under the 100KB Liquid asset cap', () => {
+    const loaderBytes = Buffer.byteLength(readFileSync(LOADER_PATH, 'utf-8'));
+    const cssBytes = Buffer.byteLength(readFileSync(CSS_PATH, 'utf-8'));
+    expect(loaderBytes).toBeLessThan(100 * 1024);
+    expect(cssBytes).toBeLessThan(100 * 1024);
+  });
+});
+
 describe('loader.js — kill-switch + editor preview visibility', () => {
   // Settings-redesign: after painting the FAB the loader fires a non-blocking
   // appearance lookup and removes the FAB when the merchant disabled the

@@ -104,6 +104,11 @@ describe('app_embed.liquid — STR-02 schema settings', () => {
     expect(optionValues).toContain('bottom_left');
   });
 
+  it('emits data-shop-name with the escaped shop name (drawer-redesign Task 9)', () => {
+    const content = readFileSync(LIQUID_PATH, 'utf-8');
+    expect(content).toMatch(/data-shop-name="\{\{ shop\.name \| escape \}\}"/);
+  });
+
   it('schema has exactly 3 settings (enabled, accent_color, fab_position) — D-16', () => {
     let content: string;
     try {
