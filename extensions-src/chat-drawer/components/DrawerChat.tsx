@@ -10,8 +10,10 @@
  * PromptInputMessage.
  */
 import { useState } from 'react';
-import { useChatController } from '@/lib/chat-ui';
-import type { ChatIdentityAdapter } from '@/lib/chat-ui';
+// Sub-path imports (NOT the `@/lib/chat-ui` barrel) — the barrel drags
+// next/image into the storefront bundle (see DrawerBody.tsx).
+import { useChatController } from '@/lib/chat-ui/use-chat-controller';
+import type { ChatIdentityAdapter } from '@/lib/chat-ui/adapters/types';
 import type { ChatHistoryItem, ChatProduct } from '@/types/product';
 import type { SuggestedPrompt } from '@/lib/settings/contract';
 import { DrawerEmpty } from './DrawerEmpty';

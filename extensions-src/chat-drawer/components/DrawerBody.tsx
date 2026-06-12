@@ -28,10 +28,15 @@
  * Default export is required by React.lazy.
  */
 import * as React from 'react';
+// Sub-path import (NOT the `@/lib/chat-ui` barrel): the barrel re-exports
+// ProductCard/ChatMessage which pull in next/image — its module-scope
+// `process.env.*` reads crash the storefront bundle in the browser
+// ("process is not defined") and bloat the chunk. The build script's
+// process.env guard enforces this.
 import {
   useDbBackedHistoryStore,
   useDbBackedSavedProductsStore,
-} from '@/lib/chat-ui';
+} from '@/lib/chat-ui/stores/hooks';
 import type { ShopSettingsBundle } from '@/lib/settings/contract';
 import { StorefrontAdapter } from '@/lib/chat-ui/adapters/storefront';
 import { DrawerChat } from './DrawerChat';

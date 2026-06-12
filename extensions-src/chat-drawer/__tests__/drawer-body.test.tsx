@@ -52,7 +52,7 @@ vi.mock('@/extensions-src/chat-drawer/components/DrawerSaved', () => ({
 let historyItems: ChatHistoryItem[] = [];
 let savedItems: ChatProduct[] = [];
 
-vi.mock('@/lib/chat-ui', () => ({
+vi.mock('@/lib/chat-ui/stores/hooks', () => ({
   useDbBackedHistoryStore: () => ({
     items: historyItems,
     add: vi.fn(),

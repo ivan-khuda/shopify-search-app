@@ -4,7 +4,9 @@
  * Translated 1:1 from the design handoff (storefront.jsx DrawerThinking,
  * 729–746). sd-bounce keyframes are injected by DrawerShell.
  */
-import { SDLogo } from '@/lib/chat-ui';
+// Sub-path import (NOT the `@/lib/chat-ui` barrel) — the barrel drags
+// next/image into the storefront bundle (see DrawerBody.tsx).
+import { SDLogo } from '@/lib/chat-ui/components/sd-logo';
 
 export function DrawerThinking() {
   return (

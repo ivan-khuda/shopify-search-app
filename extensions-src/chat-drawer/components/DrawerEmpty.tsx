@@ -10,7 +10,9 @@
  * Gradient end color #4b41bf follows the shade(-18) precedent from the
  * shared SDLogo/hero tiles — do NOT recompute per-merchant.
  */
-import { SUGGESTED_PROMPTS } from '@/lib/chat-ui';
+// Sub-path import (NOT the `@/lib/chat-ui` barrel) — the barrel drags
+// next/image into the storefront bundle (see DrawerBody.tsx).
+import { SUGGESTED_PROMPTS } from '@/lib/chat-ui/components/empty-chat';
 import type { SuggestedPrompt } from '@/lib/settings/contract';
 
 export const DRAWER_BUILTIN_GREETING =

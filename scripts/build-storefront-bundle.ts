@@ -113,6 +113,23 @@ async function main(): Promise<void> {
     jsx: 'automatic',
   });
 
+  // Guard: the bundle runs in merchant storefronts where `process` does not
+  // exist. Any surviving `process.env` reference (e.g. next/image pulled in
+  // via the lib/chat-ui barrel) throws "process is not defined" at module
+  // scope and kills the drawer. `define` only rewrites the keys listed above,
+  // so anything else must be caught here.
+  for (const outPath of Object.keys(result.metafile.outputs)) {
+    if (!outPath.endsWith('.js')) continue;
+    const code = readFileSync(outPath, 'utf8');
+    if (/\bprocess\.env\b/.test(code)) {
+      throw new Error(
+        `${path.basename(outPath)} references process.env — a Node-only module ` +
+          'leaked into the storefront bundle (import via sub-paths, not the ' +
+          'lib/chat-ui barrel). Refusing to ship.'
+      );
+    }
+  }
+
   const entryOutput = Object.entries(result.metafile.outputs).find(
     ([, info]) => info.entryPoint === 'extensions-src/chat-drawer/entry.tsx'
   );

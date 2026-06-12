@@ -15,7 +15,9 @@
  * intentionally not exported from the barrel).
  */
 import type { UIMessage } from 'ai';
-import { SDLogo } from '@/lib/chat-ui';
+// Sub-path import (NOT the `@/lib/chat-ui` barrel) — the barrel drags
+// next/image into the storefront bundle (see DrawerBody.tsx).
+import { SDLogo } from '@/lib/chat-ui/components/sd-logo';
 import type { ChatProduct } from '@/types/product';
 import { DrawerProductRow } from './DrawerProductRow';
 
