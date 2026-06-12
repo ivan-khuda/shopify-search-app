@@ -111,3 +111,30 @@ describe('loader.js — STR-07 designMode guard', () => {
     expect(loaderText).toMatch(/sd-skeleton-open/);
   });
 });
+
+describe('loader.js — kill-switch + editor preview visibility', () => {
+  // Settings-redesign: after painting the FAB the loader fires a non-blocking
+  // appearance lookup and removes the FAB when the merchant disabled the
+  // drawer (drawerEnabled === false) or hid the editor preview
+  // (designMode && editorPreviewVisible === false). Network failure keeps the
+  // FAB (fail-open). String-level assertions — same pattern as above.
+  it('fetches the App Proxy appearance meta endpoint after painting the FAB', () => {
+    const loaderText = readFileSync(LOADER_PATH, 'utf-8');
+    expect(loaderText).toMatch(/_meta\/appearance/);
+  });
+
+  it('removes the FAB when drawerEnabled === false', () => {
+    const loaderText = readFileSync(LOADER_PATH, 'utf-8');
+    expect(loaderText).toMatch(/data\.drawerEnabled === false/);
+    expect(loaderText).toMatch(/fab\.remove\(\)/);
+  });
+
+  it('removes the FAB in the Theme Editor when editorPreviewVisible === false', () => {
+    const loaderText = readFileSync(LOADER_PATH, 'utf-8');
+    expect(loaderText).toMatch(/data\.editorPreviewVisible === false/);
+    // Guarded by the designMode check so storefront visitors are unaffected.
+    expect(loaderText).toMatch(
+      /window\.Shopify && window\.Shopify\.designMode === true/
+    );
+  });
+});
