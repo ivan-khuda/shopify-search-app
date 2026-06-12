@@ -8,6 +8,7 @@
 //     (`@/lib/chat-ui/adapters/embedded` / `@/lib/chat-ui/adapters/storefront`).
 
 export { ChatPane } from './components/chat-pane';
+export { useChatController, type ChatControllerOptions } from './use-chat-controller';
 export { ChatMessage } from './components/chat-message';
 export { ProductCard } from './components/product-card';
 export { HistoryPanel } from './components/history-panel';
