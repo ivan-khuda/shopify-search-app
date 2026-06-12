@@ -102,7 +102,7 @@ export const POST = withAppProxyHmac(async ({ shop, query, req }) => {
   }
 
   // D-21 step 4 / D-14: hard cap (CAP-02/03). Last gate before AI Gateway.
-  const consume = await tryConsumeRequest(shop);
+  const consume = await tryConsumeRequest(shop, 'storefront');
   if (!consume.allowed) return capReachedResponse();
 
   // D-21 steps 6 + 7: conversation lifecycle + merge.

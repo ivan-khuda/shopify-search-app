@@ -260,11 +260,18 @@ model VisitorCustomerLink {
 // Empty by design (D-09) — getActiveChatModel falls back to DEFAULT_MODEL
 // when no row exists. First /settings Save creates the row.
 model ShopSettings {
-  shop              String   @id
-  activeChatModelId String?  // nullable: appearance-only saves may create the row
-  emptyStateVariant String   @default("cards")
-  cardDensity       String   @default("standard")
-  updatedAt         DateTime @updatedAt
+  shop                 String   @id
+  activeChatModelId    String?
+  emptyStateVariant    String   @default("cards")
+  cardDensity          String   @default("standard")
+  drawerAccent         String   @default("#5B4FE9")
+  greetingMessage      String?  @db.VarChar(200)
+  suggestedPrompts     Json     @default("[]")
+  monthlyCapRequests   Int?
+  notificationEmail    String?
+  drawerEnabled        Boolean  @default(true)
+  editorPreviewVisible Boolean  @default(true)
+  updatedAt            DateTime @updatedAt
 
   @@map("shop_settings")
 }
@@ -273,10 +280,11 @@ model ShopSettings {
 // Empty by design — first chat request of a (shop, period) INSERTs the row
 // via the atomic upsert primitive in RequestCounterRepository.tryConsume.
 model RequestCounter {
-  shop         String
-  period       String // YYYY-MM UTC — D-12
-  requestCount Int      @default(0)
-  updatedAt    DateTime @updatedAt
+  shop              String
+  period            String // YYYY-MM UTC — D-12
+  requestCount      Int      @default(0)
+  adminRequestCount Int      @default(0)
+  updatedAt         DateTime @updatedAt
 
   @@id([shop, period])
   @@map("request_counter")

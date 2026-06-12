@@ -232,10 +232,10 @@ describe('POST /api/chat', () => {
  * never invoked (and the route reaches streamText regardless of cap state).
  */
 describe('POST /api/chat — Phase 8 hard cap (CAP-02, CAP-03, D-13, D-14)', () => {
-  it('calls tryConsumeRequest with shop derived from withShopifySession ctx (NOT body/query)', async () => {
+  it("calls tryConsumeRequest with shop from withShopifySession ctx and the 'admin' surface", async () => {
     await POST(makeRequest({ Authorization: 'Bearer good' }));
     expect(tryConsumeRequestMock).toHaveBeenCalledTimes(1);
-    expect(tryConsumeRequestMock).toHaveBeenCalledWith('example-shop.myshopify.com');
+    expect(tryConsumeRequestMock).toHaveBeenCalledWith('example-shop.myshopify.com', 'admin');
   });
 
   it('allowed: true → reaches streamText (normal flow)', async () => {

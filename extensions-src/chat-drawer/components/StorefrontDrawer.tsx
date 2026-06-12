@@ -36,12 +36,20 @@ interface StorefrontDrawerProps {
   registerToggle?: (toggle: () => void) => void;
 }
 
-export function StorefrontDrawer(props: StorefrontDrawerProps = {}): React.ReactElement {
+export function StorefrontDrawer(props: StorefrontDrawerProps = {}): React.ReactElement | null {
   const { shop, visitorId, customerId, accent = '#008060', position = 'bottom_right', initialOpen = false, registerToggle } = props;
   const [isOpen, setIsOpen] = React.useState(initialOpen);
   const [activeTab, setActiveTab] = React.useState<'chat' | 'history' | 'saved'>('chat');
+  // Merchant kill-switch (settings-redesign Task 6): DrawerBody fetches the
+  // settings bundle and reports drawerEnabled:false (or design-mode preview
+  // hidden) via onDisabled — hide the FAB and the drawer shell entirely.
+  const [merchantDisabled, setMerchantDisabled] = React.useState(false);
   const fabRef = React.useRef<HTMLButtonElement>(null);
   const closeRef = React.useRef<HTMLButtonElement>(null);
+
+  const handleDisabled = React.useCallback(() => {
+    setMerchantDisabled(true);
+  }, []);
 
   const closeDrawer = React.useCallback(() => {
     setIsOpen(false);
@@ -71,6 +79,8 @@ export function StorefrontDrawer(props: StorefrontDrawerProps = {}): React.React
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [isOpen, closeDrawer]);
+
+  if (merchantDisabled) return null;
 
   return (
     <div className="sd-root">
@@ -183,6 +193,7 @@ export function StorefrontDrawer(props: StorefrontDrawerProps = {}): React.React
                   visitorId={visitorId}
                   customerId={customerId ?? null}
                   onSwitchToChat={() => setActiveTab('chat')}
+                  onDisabled={handleDisabled}
                 />
               </React.Suspense>
             ) : (

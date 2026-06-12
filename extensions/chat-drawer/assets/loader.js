@@ -29,6 +29,28 @@
   fab.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.582a.5.5 0 0 1 0 .962L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/></svg>';
   root.appendChild(fab);
 
+  // Settings-redesign: honor the merchant kill-switch (drawerEnabled) and the
+  // Theme Editor preview toggle (editorPreviewVisible) BEFORE the bundle ever
+  // loads. Non-blocking — the FAB paints synchronously first; if the lookup
+  // fails the FAB stays (fail-open, matches the drawer's tolerant decoding).
+  fetch('/apps/smartdiscovery/_meta/appearance', { method: 'GET', cache: 'no-store' })
+    .then(function (r) {
+      if (!r.ok) throw new Error('appearance request failed: ' + r.status);
+      return r.json();
+    })
+    .then(function (data) {
+      var inEditor = window.Shopify && window.Shopify.designMode === true;
+      if (
+        data.drawerEnabled === false ||
+        (inEditor && data.editorPreviewVisible === false)
+      ) {
+        fab.remove();
+      }
+    })
+    .catch(function () {
+      // Fail-open: keep the FAB when the appearance lookup fails.
+    });
+
   fab.addEventListener('click', function () {
     // STR-07 / Pitfall 5: check designMode at CLICK time, not at mount.
     if (window.Shopify && window.Shopify.designMode === true) return;

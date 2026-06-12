@@ -1,27 +1,30 @@
 /**
- * Phase 7 Plan 08 — /settings Server Component.
+ * Settings-redesign Task 8 — /settings Server Component.
  *
- * No `'use client'` directive: this file runs server-side. It SSR-fetches the
- * AI Gateway model catalog and the per-shop active model in parallel, then
- * renders the embedded admin shell (`<s-page>` + `<s-section>`) plus the D-03
- * availability banners and the D-06 "previously-selected model no longer
- * available" warning. The interactive table + radio + Save flow lives in the
- * sibling Client Component `settings-form.tsx`.
+ * No `'use client'` directive: this file runs server-side. It SSR-fetches in
+ * parallel everything the side-nav shell's five sections need — model catalog,
+ * per-shop active model, the full ShopSettings bundle, the usage snapshot
+ * (shared with GET /api/settings/usage via getUsageSnapshot), the webhook
+ * last-fired map, and the last successful sync run — then hands the bundle to
+ * the client shell (`settings-shell.tsx`).
  *
  * T-04-25 (Phase 4 deferred) — `searchParams.shop` ↔ `session.shop` asymmetry:
- *   This page reads `searchParams.shop` for display only (mirrors the
- *   `/chat` Server Component verbatim). The PATCH write path
- *   (`/api/settings/model`, Plan 07) is session-bound — shop is derived
- *   strictly from `withShopifySession`, never from query/body. This
- *   asymmetry is the resolution Phase 4 flagged: SSR display from
- *   searchParams is acceptable; writes are session-bound.
+ *   This page reads `searchParams.shop` to scope the SSR reads only (mirrors
+ *   the `/chat` Server Component verbatim). All write paths
+ *   (`/api/settings/model`, `/api/settings/shop`, `/api/settings/appearance`)
+ *   are session-bound — shop is derived strictly from `withShopifySession`,
+ *   never from query/body. SSR reads from searchParams are acceptable;
+ *   writes are session-bound.
  *
- * Constraints (CLAUDE.md): zero `console.*`, Polaris s-* primitives only.
+ * Constraints (CLAUDE.md): zero `console.*`.
  */
+import { prisma } from '@/lib/db/client';
 import { fetchModelCatalog } from '@/services/chat/model-catalog';
 import { getActiveChatModel } from '@/services/chat/getActiveChatModel';
-import { getShopAppearance } from '@/services/chat/getShopAppearance';
-import { SettingsForm } from './settings-form';
+import { getShopSettings } from '@/services/settings/getShopSettings';
+import { getUsageSnapshot } from '@/services/settings/getUsageSnapshot';
+import { SettingsShell } from './settings-shell';
+import type { LastSyncSummary, WebhookLastFiredMap } from './sections/types';
 
 export default async function SettingsPage({
   searchParams,
@@ -32,67 +35,58 @@ export default async function SettingsPage({
   // WR-01: searchParams.shop is attacker-controllable on direct navigation.
   // Mirror the `.myshopify.com` hostname validation that the session-token
   // path applies (lib/shopify/server-resolve-shop.ts) before letting the
-  // query value drive shop-scoped reads (model lookup, appearance lookup).
+  // query value drive shop-scoped reads (model, settings, usage, webhooks,
+  // sync history).
   const shop =
     shopFromQuery && /^[a-zA-Z0-9][a-zA-Z0-9-]*\.myshopify\.com$/.test(shopFromQuery)
       ? shopFromQuery
       : '';
-  const [catalogResult, activeModel, appearance] = await Promise.all([
-    fetchModelCatalog(),
-    getActiveChatModel(shop),
-    getShopAppearance(shop),
-  ]);
 
-  // The catalog client returns the full language-model slice (per Plan 04
-  // deviation — BEST_FOR curation lives at the call site). For the V1
-  // settings page the curation is intentionally a pass-through: render every
-  // language model the catalog client returns plus surface the active model
-  // if it falls outside that slice. This keeps the page table aligned with
-  // whatever the catalog client decides to return, including future curation
-  // changes there.
-  const curated = catalogResult.models;
+  const [catalog, activeModel, settings, usage, webhookRows, lastSyncRow] =
+    await Promise.all([
+      fetchModelCatalog(),
+      getActiveChatModel(shop),
+      getShopSettings(shop),
+      getUsageSnapshot(shop),
+      shop
+        ? prisma.webhookEvent.groupBy({
+            by: ['topic'],
+            where: { shop },
+            _max: { receivedAt: true },
+          })
+        : Promise.resolve([]),
+      shop
+        ? prisma.syncRun.findFirst({
+            where: { shop, state: 'succeeded' },
+            orderBy: { finishedAt: 'desc' },
+          })
+        : Promise.resolve(null),
+    ]);
 
-  const activeMissingFromCatalog = !catalogResult.models.some(
-    (m) => m.id === activeModel.id,
-  );
+  // Webhook topic → ISO last-fired. Serialized to strings at the RSC boundary.
+  const webhooks: WebhookLastFiredMap = {};
+  for (const row of webhookRows) {
+    if (row._max.receivedAt) {
+      webhooks[row.topic] = row._max.receivedAt.toISOString();
+    }
+  }
+
+  const lastSync: LastSyncSummary | null = lastSyncRow?.finishedAt
+    ? {
+        startedAt: lastSyncRow.startedAt.toISOString(),
+        finishedAt: lastSyncRow.finishedAt.toISOString(),
+        processedCount: lastSyncRow.processedCount,
+      }
+    : null;
 
   return (
-    <s-page heading="Settings">
-      {/*
-        Static column descriptor: the locked D-04 column order is announced
-        here at the SSR boundary so the contract is visible without parsing
-        the (client-rendered) interactive table. The column labels match the
-        headers rendered inside <SettingsForm> verbatim — the order MUST
-        stay in lockstep with that file's <thead> when D-04 evolves.
-        Note: s-section is a page-level primitive (child of s-page). The two
-        sections ("AI chat model" and "Appearance") are rendered as siblings
-        inside <SettingsForm> to avoid nesting s-section elements.
-      */}
-      <s-text>
-        Columns: Model name · Provider · Context window · $ / M input tokens · $ / M output tokens · Best for · Active
-      </s-text>
-      {catalogResult.coldStartFallback && (
-        <s-banner tone="critical">
-          Model catalog unavailable — showing default only.
-        </s-banner>
-      )}
-      {catalogResult.stale && (
-        <s-banner tone="warning">
-          Showing cached models — live catalog unavailable.
-        </s-banner>
-      )}
-      {activeMissingFromCatalog && (
-        <s-banner tone="warning">
-          Your previously-selected model is no longer available — pick a replacement.
-        </s-banner>
-      )}
-      <SettingsForm
-        catalog={curated}
-        activeId={activeModel.id}
-        activeDisplayName={activeModel.displayName}
-        saveDisabled={catalogResult.coldStartFallback}
-        appearance={appearance}
-      />
-    </s-page>
+    <SettingsShell
+      catalog={catalog}
+      activeModel={activeModel}
+      settings={settings}
+      usage={usage}
+      webhooks={webhooks}
+      lastSync={lastSync}
+    />
   );
 }

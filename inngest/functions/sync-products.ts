@@ -13,10 +13,26 @@ import { embedBatch, EMBEDDING_MODEL } from '@/services/embeddings/EmbeddingServ
 import { buildSearchableText } from '@/services/search/searchableText';
 import { sendSyncSuccess, sendSyncFailure } from '@/services/email/EmailService';
 import { fetchShopContactEmail } from '@/services/shopify/ShopifyShopService';
+import { getShopSettings } from '@/services/settings/getShopSettings';
+import type { Session } from '@shopify/shopify-api';
 
 interface SyncEventData {
   syncRunId: string;
   shop: string;
+}
+
+/**
+ * Notification recipient (settings-redesign Task 7): the merchant's
+ * ShopSettings.notificationEmail override wins; null falls back to the
+ * shop's Shopify contact email (D-05). getShopSettings never throws —
+ * a settings outage degrades to the existing fallback path.
+ */
+async function resolveNotificationEmail(
+  shop: string,
+  session: Session,
+): Promise<string | null> {
+  const settings = await getShopSettings(shop);
+  return settings.notificationEmail ?? (await fetchShopContactEmail(session));
 }
 
 interface UpsertError {
@@ -57,8 +73,9 @@ export const syncProductsFunction = inngest.createFunction(
         const session = await sessionStorage.loadSession(offlineId);
         if (!session) return;
 
-        // D-05: graceful skip when shop has no contactEmail.
-        const contactEmail = await fetchShopContactEmail(session);
+        // D-05: graceful skip when shop has no notification email
+        // (override or contactEmail fallback).
+        const contactEmail = await resolveNotificationEmail(original.shop, session);
         if (!contactEmail) return;
 
         // D-06: deep link to the existing onboarding "Retry sync" affordance.
@@ -112,7 +129,7 @@ export const syncProductsFunction = inngest.createFunction(
       const run = await prisma.syncRun.findUnique({ where: { id: syncRunId } });
       if (!run || run.emailSentAt) return; // D-04 idempotency
 
-      const contactEmail = await fetchShopContactEmail(session);
+      const contactEmail = await resolveNotificationEmail(shop, session);
       if (!contactEmail) return; // D-05
 
       // D-06: deep link to the existing onboarding "Retry sync" affordance.
@@ -296,9 +313,10 @@ export const syncProductsFunction = inngest.createFunction(
       // (defensive — the success branch must not send if upstream judged failure).
       if (!run || run.emailSentAt || run.state === 'failed') return;
 
-      // D-05: graceful skip when shop has no contactEmail. Never throw —
-      // notifications are auxiliary; the sync result is the contract.
-      const contactEmail = await fetchShopContactEmail(session);
+      // D-05: graceful skip when shop has no notification email (override or
+      // contactEmail fallback). Never throw — notifications are auxiliary;
+      // the sync result is the contract.
+      const contactEmail = await resolveNotificationEmail(shop, session);
       if (!contactEmail) return;
 
       // Build admin URL from server-side env (Assumption A1 defensive fallback,

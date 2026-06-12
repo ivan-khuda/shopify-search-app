@@ -13,11 +13,12 @@ import {
     Attachments,
 } from "@/components/ai-elements/attachments";
 import { GlobeIcon, PaperclipIcon } from "lucide-react";
-import { memo, useCallback, useEffect, useMemo, useRef, type CSSProperties } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef } from "react";
 import { ChatMessage } from './chat-message';
 import { EmptyChat } from './empty-chat';
 import { SDLogo } from './sd-logo';
-import { SD_ACCENT, type CardDensity, type EmptyStateVariant } from '../appearance';
+import { type CardDensity, type EmptyStateVariant } from '../appearance';
+import type { SuggestedPrompt } from '@/lib/settings/contract';
 import type { ChatHistoryItem, ChatProduct } from '@/types/product';
 import type { ChatIdentityAdapter } from '../adapters/types';
 
@@ -136,6 +137,10 @@ interface ChatPaneProps {
     catalogCount?: number;
     /** Hero-variant live badge. */
     modelName?: string;
+    /** Merchant greeting — passed through to EmptyChat. */
+    greeting?: string | null;
+    /** Merchant suggested prompts — passed through to EmptyChat. */
+    prompts?: SuggestedPrompt[] | null;
     /** History-resume: submitted once per id change. */
     autoSubmitQuery?: { id: number; query: string } | null;
     /**
@@ -156,6 +161,8 @@ export function ChatPane({
     emptyStateVariant = 'cards',
     catalogCount,
     modelName,
+    greeting,
+    prompts,
     autoSubmitQuery,
     onAutoSubmitConsumed,
 }: ChatPaneProps) {
@@ -222,10 +229,11 @@ export function ChatPane({
     const isBusy = status === 'submitted' || status === 'streaming';
 
     return (
-        <div
-            className="flex h-full min-h-0 w-full flex-col"
-            style={{ '--sd-accent': SD_ACCENT } as CSSProperties}
-        >
+        // --sd-accent is NOT set here: the owning surface provides it
+        // (admin chat-shell hardcodes SD_ACCENT; the storefront DrawerBody
+        // wrapper applies the merchant's drawerAccent). Every usage below
+        // carries the #5B4FE9 fallback for standalone renders.
+        <div className="flex h-full min-h-0 w-full flex-col">
             <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto bg-[#fafbfb]">
                 {messages.length === 0 ? (
                     <EmptyChat
@@ -233,6 +241,8 @@ export function ChatPane({
                         onPick={submitText}
                         catalogCount={catalogCount}
                         modelName={modelName}
+                        greeting={greeting}
+                        prompts={prompts}
                     />
                 ) : (
                     <div className="mx-auto flex w-full max-w-[780px] flex-col gap-4 px-6 py-5">

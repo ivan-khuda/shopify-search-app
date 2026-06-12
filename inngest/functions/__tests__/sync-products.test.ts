@@ -23,6 +23,8 @@ const {
   sendSyncSuccessMock,
   sendSyncFailureMock,
   fetchShopContactEmailMock,
+  // Settings-redesign Task 7 — notification email override
+  getShopSettingsMock,
 } = vi.hoisted(() => ({
   syncRunUpdate: vi.fn(),
   syncRunFindUnique: vi.fn(),
@@ -39,6 +41,7 @@ const {
   sendSyncSuccessMock: vi.fn(),
   sendSyncFailureMock: vi.fn(),
   fetchShopContactEmailMock: vi.fn(),
+  getShopSettingsMock: vi.fn(),
 }));
 
 vi.mock('@/lib/db/client', () => ({
@@ -99,6 +102,11 @@ vi.mock('@/services/shopify/ShopifyShopService', () => ({
   fetchShopContactEmail: fetchShopContactEmailMock,
 }));
 
+// Settings-redesign Task 7 — per-shop notification email override.
+vi.mock('@/services/settings/getShopSettings', () => ({
+  getShopSettings: getShopSettingsMock,
+}));
+
 import { syncProductsFunction } from '../sync-products';
 
 beforeEach(() => {
@@ -119,6 +127,8 @@ beforeEach(() => {
   fetchShopContactEmailMock.mockResolvedValue('owner@example.com');
   sendSyncSuccessMock.mockResolvedValue(undefined);
   sendSyncFailureMock.mockResolvedValue(undefined);
+  // Settings-redesign Task 7 default — no override configured.
+  getShopSettingsMock.mockResolvedValue({ notificationEmail: null });
 });
 
 describe('syncProductsFunction (SYN-03, SYN-06)', () => {
@@ -586,6 +596,7 @@ describe('syncProductsFunction — Phase 8 completion emails (NOT-01, NOT-02, D-
     sendSyncSuccessMock.mockResolvedValue(undefined);
     sendSyncFailureMock.mockResolvedValue(undefined);
     syncRunUpdate.mockResolvedValue({});
+    getShopSettingsMock.mockResolvedValue({ notificationEmail: null });
 
     fetchTotalCountMock.mockResolvedValueOnce(1);
     fetchBatchMock.mockResolvedValueOnce({
@@ -608,5 +619,86 @@ describe('syncProductsFunction — Phase 8 completion emails (NOT-01, NOT-02, D-
     });
     expect(sendSyncFailureMock).toHaveBeenCalledTimes(1);
     expect(sendSyncSuccessMock).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * Settings-redesign Task 7 — merchant notification email override.
+ * ShopSettings.notificationEmail, when set, wins over the shop's Shopify
+ * contact email at every send site; null falls back to the existing
+ * fetchShopContactEmail(session) behavior.
+ */
+describe('syncProductsFunction — notification email override (settings-redesign Task 7)', () => {
+  function setupHappyBatch(syncRunId: string) {
+    fetchTotalCountMock.mockResolvedValueOnce(1);
+    fetchBatchMock.mockResolvedValueOnce({
+      products: [{ id: 'gid://shopify/Product/1' }],
+      endCursor: null,
+      hasNextPage: false,
+    });
+    upsertMock.mockResolvedValueOnce({ id: 1 });
+    syncRunFindUnique.mockResolvedValue({
+      id: syncRunId,
+      processedCount: 1,
+      errors: [],
+      state: 'running',
+      emailSentAt: null,
+    });
+  }
+
+  it('success email goes to the override and skips fetchShopContactEmail', async () => {
+    getShopSettingsMock.mockResolvedValue({ notificationEmail: 'ops@x.com' });
+    setupHappyBatch('sr_override_001');
+
+    const engine = new InngestTestEngine({ function: syncProductsFunction });
+    await engine.execute({
+      events: [{ name: 'shopify/product.sync', data: { syncRunId: 'sr_override_001', shop: 'test.myshopify.com' } }],
+    });
+
+    expect(sendSyncSuccessMock).toHaveBeenCalledTimes(1);
+    expect(sendSyncSuccessMock.mock.calls[0][0].to).toBe('ops@x.com');
+    expect(getShopSettingsMock).toHaveBeenCalledWith('test.myshopify.com');
+    expect(fetchShopContactEmailMock).not.toHaveBeenCalled();
+  });
+
+  it('failure email goes to the override and skips fetchShopContactEmail', async () => {
+    getShopSettingsMock.mockResolvedValue({ notificationEmail: 'ops@x.com' });
+    fetchTotalCountMock.mockResolvedValueOnce(1);
+    fetchBatchMock.mockResolvedValueOnce({
+      products: [{ id: 'gid://shopify/Product/1' }],
+      endCursor: null,
+      hasNextPage: false,
+    });
+    upsertMock.mockRejectedValueOnce(new Error('db down'));
+    syncRunFindUnique.mockResolvedValue({
+      id: 'sr_override_fail_001',
+      processedCount: 0,
+      errors: [],
+      state: 'failed',
+      emailSentAt: null,
+    });
+
+    const engine = new InngestTestEngine({ function: syncProductsFunction });
+    await engine.execute({
+      events: [{ name: 'shopify/product.sync', data: { syncRunId: 'sr_override_fail_001', shop: 'test.myshopify.com' } }],
+    });
+
+    expect(sendSyncFailureMock).toHaveBeenCalledTimes(1);
+    expect(sendSyncFailureMock.mock.calls[0][0].to).toBe('ops@x.com');
+    expect(fetchShopContactEmailMock).not.toHaveBeenCalled();
+  });
+
+  it('null override falls back to the Shopify contact email', async () => {
+    getShopSettingsMock.mockResolvedValue({ notificationEmail: null });
+    setupHappyBatch('sr_override_fallback_001');
+
+    const engine = new InngestTestEngine({ function: syncProductsFunction });
+    await engine.execute({
+      events: [{ name: 'shopify/product.sync', data: { syncRunId: 'sr_override_fallback_001', shop: 'test.myshopify.com' } }],
+    });
+
+    expect(fetchShopContactEmailMock).toHaveBeenCalled();
+    expect(sendSyncSuccessMock).toHaveBeenCalledTimes(1);
+    expect(sendSyncSuccessMock.mock.calls[0][0].to).toBe('owner@example.com');
   });
 });

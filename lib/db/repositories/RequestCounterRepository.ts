@@ -43,18 +43,30 @@ import { prisma } from '@/lib/db/client';
  * Multi-tenancy: the composite PK `(shop, period)` makes cross-shop counter
  * mutation structurally impossible — every UPDATE targets exactly the row for
  * the bound `(shop, period)` tuple.
+ *
+ * Surface split (settings redesign): `surface` tells the counter which chat
+ * entry point consumed the request. `requestCount` stays the single
+ * cap-gated total; `adminRequestCount` is a sub-tally incremented by the same
+ * atomic statement (bound increment 1 for 'admin', 0 for 'storefront') so the
+ * usage endpoint can report storefront vs admin without a second write. The
+ * cap predicate gates ONLY on `requestCount` — CAP-01 semantics unchanged.
  */
+export type ChatSurface = 'storefront' | 'admin';
+
 export class RequestCounterRepository {
   async tryConsume(
     shop: string,
     period: string,
     cap: number,
+    surface: ChatSurface,
   ): Promise<{ allowed: true; requestCount: number } | { allowed: false }> {
+    const adminIncrement = surface === 'admin' ? 1 : 0;
     const rows = await prisma.$queryRaw<{ requestCount: number }[]>`
-      INSERT INTO request_counter (shop, period, "requestCount", "updatedAt")
-      VALUES (${shop}, ${period}, 1, NOW())
+      INSERT INTO request_counter (shop, period, "requestCount", "adminRequestCount", "updatedAt")
+      VALUES (${shop}, ${period}, 1, ${adminIncrement}, NOW())
       ON CONFLICT (shop, period) DO UPDATE
         SET "requestCount" = request_counter."requestCount" + 1,
+            "adminRequestCount" = request_counter."adminRequestCount" + ${adminIncrement},
             "updatedAt" = NOW()
         WHERE request_counter."requestCount" < ${cap}
       RETURNING "requestCount"

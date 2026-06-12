@@ -181,6 +181,24 @@ describe('StorefrontDrawer — UI-SPEC copywriting and interaction contract', ()
     expect(screen.getByRole('tab', { name: 'Chat' }).getAttribute('aria-selected')).toBe('true');
   });
 
+  it('hides the FAB and drawer when the merchant kill-switch is off (drawerEnabled:false)', async () => {
+    // DrawerBody (lazy) fetches the settings bundle, sees drawerEnabled:false,
+    // and notifies the parent via onDisabled — FAB and drawer both unmount.
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({ ok: true, json: async () => ({ drawerEnabled: false }) }),
+    );
+    const user = userEvent.setup();
+    render(<StorefrontDrawer shop="test.myshopify.com" visitorId="v-test-1" />);
+
+    await user.click(screen.getByRole('button', { name: 'Open SmartDiscovery AI chat' }));
+
+    await waitFor(() =>
+      expect(screen.queryByRole('button', { name: /SmartDiscovery AI chat/ })).toBeNull(),
+    );
+    expect(screen.queryByRole('complementary')).toBeNull();
+  });
+
   it('renders placeholder copy (no DbBacked hook invocation) when rendered with no props', async () => {
     const user = userEvent.setup();
 

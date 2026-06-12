@@ -349,7 +349,7 @@ describe('POST /api/proxy/chat — D-19 onFinish DB write', () => {
  * AI Gateway call. Implementation lands in Plan 08-09.
  */
 describe('POST /api/proxy/chat — Phase 8 hard cap (CAP-02, CAP-03, D-13, D-14)', () => {
-  it('calls tryConsumeRequest with shop derived from HMAC ctx (NOT body/raw query)', async () => {
+  it("calls tryConsumeRequest with shop from HMAC ctx and the 'storefront' surface", async () => {
     const req = makeRequest({ visitor_id: VISITOR_ID }, {
       visitor_id: VISITOR_ID,
       conversation_id: 'conv-existing',
@@ -357,7 +357,7 @@ describe('POST /api/proxy/chat — Phase 8 hard cap (CAP-02, CAP-03, D-13, D-14)
     });
     await POST(req);
     expect(tryConsumeRequestMock).toHaveBeenCalledTimes(1);
-    expect(tryConsumeRequestMock).toHaveBeenCalledWith(SHOP);
+    expect(tryConsumeRequestMock).toHaveBeenCalledWith(SHOP, 'storefront');
   });
 
   it('allowed: true → reaches the streaming response (normal flow)', async () => {

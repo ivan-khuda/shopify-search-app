@@ -177,8 +177,19 @@ export async function fetchTotalCount(session: Session): Promise<number | null> 
 }
 
 export function mapToUpsertInput(node: ShopifyProductNode): ProductUpsertInput {
+  // Product-level price range across variants — feeds SearchService's
+  // formatPriceRange ("$min – $max" on chat product cards). Null when no
+  // variant carries a parseable price (formatter renders nothing).
+  const variantPrices = (node.variants?.nodes ?? [])
+    .map((v) => toDecimal(v.price))
+    .filter((p) => Number.isFinite(p));
+  const priceMin = variantPrices.length ? Math.min(...variantPrices) : null;
+  const priceMax = variantPrices.length ? Math.max(...variantPrices) : null;
+
   return {
     shopifyId: gidToBigInt(node.id),
+    priceMin,
+    priceMax,
     title: node.title,
     handle: node.handle,
     description: node.description ?? null,

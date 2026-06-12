@@ -33,7 +33,7 @@ describe.skipIf(!INTEGRATION_DB_URL)('RequestCounterRepository — race conditio
 
   let prismaClient: { $queryRaw: (...args: unknown[]) => Promise<unknown[]>; $disconnect: () => Promise<void> } | null = null;
   let tryConsumeFn:
-    | ((shop: string, period: string, cap: number) => Promise<{ allowed: true; requestCount: number } | { allowed: false }>)
+    | ((shop: string, period: string, cap: number, surface: 'storefront' | 'admin') => Promise<{ allowed: true; requestCount: number } | { allowed: false }>)
     | null = null;
 
   beforeAll(async () => {
@@ -43,8 +43,6 @@ describe.skipIf(!INTEGRATION_DB_URL)('RequestCounterRepository — race conditio
     // resolve the (not-yet-existing) module specifier at transform time.
     const repoSpec = '@/lib/db/repositories/' + 'RequestCounterRepository';
     const dbSpec = '@/lib/db/' + 'client';
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-expect-error — RED scaffold: module does not exist yet (Plan 08-07).
     const repoMod = await import(/* @vite-ignore */ repoSpec);
     tryConsumeFn = repoMod.requestCounterRepository.tryConsume.bind(
       repoMod.requestCounterRepository,
@@ -79,7 +77,7 @@ describe.skipIf(!INTEGRATION_DB_URL)('RequestCounterRepository — race conditio
 
     // Fire CONCURRENCY parallel attempts.
     const results = await Promise.all(
-      Array.from({ length: CONCURRENCY }, () => tryConsumeFn!(TEST_SHOP, TEST_PERIOD, CAP)),
+      Array.from({ length: CONCURRENCY }, () => tryConsumeFn!(TEST_SHOP, TEST_PERIOD, CAP, 'storefront')),
     );
 
     const winners = results.filter((r) => r.allowed === true);

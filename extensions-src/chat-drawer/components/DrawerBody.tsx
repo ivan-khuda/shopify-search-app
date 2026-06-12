@@ -6,10 +6,18 @@
  * (constructors throw on empty visitorId — Pitfall 3 — so this module is only
  * mounted when shop + visitorId are both truthy).
  *
- * Appearance (chat-redesign Task 14): one-shot fetch of the HMAC-verified
+ * Settings (settings-redesign Task 6): one-shot fetch of the HMAC-verified
  * app-proxy meta endpoint (`/apps/smartdiscovery/_meta/appearance` — the
- * `/apps/smartdiscovery` prefix matches shopify.app.toml [app_proxy]).
- * Failures are silent — DEFAULT_APPEARANCE keeps the drawer rendering.
+ * `/apps/smartdiscovery` prefix matches shopify.app.toml [app_proxy]). The
+ * response is the full presentation bundle (appearance + accent + greeting +
+ * prompts + visibility flags), decoded via parseShopSettings. Failures are
+ * silent — DEFAULT_SHOP_SETTINGS keeps the drawer rendering. Bundle note:
+ * @/lib/settings/contract pulls only the pure @/lib/chat-ui/appearance module,
+ * so the split-chunk cost is negligible.
+ *
+ * Kill-switch: `drawerEnabled: false` (or Theme Editor design mode with
+ * `editorPreviewVisible: false`) renders null AND fires `onDisabled` so the
+ * parent (StorefrontDrawer) can hide the FAB + drawer shell too.
  *
  * Resume: history rows re-run their query in the chat tab. The parent
  * (StorefrontDrawer) owns the tab state, so DrawerBody keeps the pending
@@ -30,10 +38,10 @@ import {
   useDbBackedSavedProductsStore,
 } from '@/lib/chat-ui';
 import {
-  DEFAULT_APPEARANCE,
-  parseAppearance,
-  type ShopAppearance,
-} from '@/lib/chat-ui/appearance';
+  DEFAULT_SHOP_SETTINGS,
+  parseShopSettings,
+  type ShopSettingsBundle,
+} from '@/lib/settings/contract';
 import { StorefrontAdapter } from '@/lib/chat-ui/adapters/storefront';
 
 interface DrawerBodyProps {
@@ -43,6 +51,8 @@ interface DrawerBodyProps {
   customerId: string | null;
   /** Asks the tab-owning parent to switch to the chat tab (history resume). */
   onSwitchToChat?: () => void;
+  /** Fired when the merchant kill-switch hides the drawer (FAB included). */
+  onDisabled?: () => void;
 }
 
 function DrawerBody({
@@ -51,7 +61,8 @@ function DrawerBody({
   visitorId,
   customerId,
   onSwitchToChat,
-}: DrawerBodyProps): React.ReactElement {
+  onDisabled,
+}: DrawerBodyProps): React.ReactElement | null {
   const adapter = React.useMemo(() => new StorefrontAdapter(), []);
   const history = useDbBackedHistoryStore({ shop, visitorId, customerId });
   const saved = useDbBackedSavedProductsStore({ shop, visitorId, customerId });
@@ -60,7 +71,7 @@ function DrawerBody({
     [saved.items],
   );
 
-  const [appearance, setAppearance] = React.useState<ShopAppearance>(DEFAULT_APPEARANCE);
+  const [settings, setSettings] = React.useState<ShopSettingsBundle>(DEFAULT_SHOP_SETTINGS);
   const [resume, setResume] = React.useState<{ id: number; query: string } | null>(null);
 
   React.useEffect(() => {
@@ -68,7 +79,7 @@ function DrawerBody({
     fetch('/apps/smartdiscovery/_meta/appearance')
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
-        if (!cancelled && data) setAppearance(parseAppearance(data));
+        if (!cancelled && data) setSettings(parseShopSettings(data));
       })
       .catch(() => {});
     return () => {
@@ -91,29 +102,56 @@ function DrawerBody({
     setResume(null);
   }, []);
 
+  // Kill-switch: merchant disabled the drawer outright, or we are in the
+  // Theme Editor preview (window.Shopify.designMode) with the preview
+  // toggle off. Notify the parent so the FAB disappears too.
+  const designMode =
+    typeof window !== 'undefined' &&
+    (window as unknown as { Shopify?: { designMode?: boolean } }).Shopify?.designMode === true;
+  const hidden = !settings.drawerEnabled || (designMode && !settings.editorPreviewVisible);
+
+  React.useEffect(() => {
+    if (hidden) onDisabled?.();
+  }, [hidden, onDisabled]);
+
+  if (hidden) return null;
+
+  let body: React.ReactElement;
   if (activeTab === 'chat') {
-    return (
+    body = (
       <ChatPane
         adapter={adapter}
         savedProductIds={savedProductIds}
         onToggleSave={saved.toggle}
         onHistoryAdd={history.add}
-        density={appearance.cardDensity}
-        emptyStateVariant={appearance.emptyStateVariant}
+        density={settings.cardDensity}
+        emptyStateVariant={settings.emptyStateVariant}
+        greeting={settings.greetingMessage}
+        prompts={settings.suggestedPrompts}
         autoSubmitQuery={resume}
         onAutoSubmitConsumed={handleAutoSubmitConsumed}
       />
     );
+  } else if (activeTab === 'history') {
+    body = (
+      <HistoryPanel items={history.items} onClear={history.clear} onResume={handleResume} />
+    );
+  } else {
+    body = (
+      <SavedProductsPanel
+        products={saved.items}
+        onToggleSave={saved.toggle}
+        density={settings.cardDensity}
+      />
+    );
   }
-  if (activeTab === 'history') {
-    return <HistoryPanel items={history.items} onClear={history.clear} onResume={handleResume} />;
-  }
+
+  // Pane wrapper: carries the merchant accent so every var(--sd-accent, …)
+  // inside the panes resolves to the configured palette color.
   return (
-    <SavedProductsPanel
-      products={saved.items}
-      onToggleSave={saved.toggle}
-      density={appearance.cardDensity}
-    />
+    <div style={{ height: '100%', '--sd-accent': settings.drawerAccent } as React.CSSProperties}>
+      {body}
+    </div>
   );
 }
 

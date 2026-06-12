@@ -64,16 +64,23 @@
  */
 import { prisma } from '@/lib/db/client';
 import { fetchModelCatalog } from './model-catalog';
+import { DEFAULT_MODEL_ID } from './default-model-id';
 
 export interface ActiveChatModel {
   id: string;
   displayName: string;
 }
 
-// Private — not exported so callers cannot bypass the resolver. Module-level
-// immutability convention (mirrors EMBEDDING_MODEL pattern).
+/**
+ * Exported id-only so the settings page can mark the "Recommended" card.
+ * The full DEFAULT_MODEL object stays private so callers cannot bypass the
+ * resolver. Module-level immutability convention (mirrors EMBEDDING_MODEL
+ * pattern); the id literal still appears exactly once in this module.
+ */
+export { DEFAULT_MODEL_ID } from './default-model-id';
+
 const DEFAULT_MODEL: ActiveChatModel = {
-  id: 'google/gemini-2.5-flash',
+  id: DEFAULT_MODEL_ID,
   displayName: 'Gemini 2.5 Flash',
 };
 
