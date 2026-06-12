@@ -63,7 +63,7 @@ import { getActiveChatModel } from '@/services/chat/getActiveChatModel';
 import { hybridSearch } from '@/services/search/SearchService';
 
 export const POST = withShopifySession(async ({ shop, req }) => {
-  const consume = await tryConsumeRequest(shop);
+  const consume = await tryConsumeRequest(shop, 'admin');
   if (!consume.allowed) return capReachedResponse();
 
   const { messages }: { messages: UIMessage[] } = await req.json();
