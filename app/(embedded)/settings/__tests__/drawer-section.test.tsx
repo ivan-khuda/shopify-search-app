@@ -203,6 +203,46 @@ describe('DrawerSection — save guard + errors', () => {
   });
 });
 
+describe('DrawerSection — FAB style and drawer position pickers', () => {
+  it('renders "FAB style" card with Circle/Pill/Labeled buttons', () => {
+    render(<DrawerSection settings={makeSettings()} />);
+    // The card title
+    expect(screen.getByText('FAB style')).toBeInTheDocument();
+    // The three option buttons
+    expect(screen.getByRole('button', { name: 'FAB style Circle' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'FAB style Pill' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'FAB style Labeled' })).toBeInTheDocument();
+    // Default is circle
+    expect(screen.getByRole('button', { name: 'FAB style Circle' })).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('renders "Drawer position" card with Side/Bottom sheet/Center modal buttons', () => {
+    render(<DrawerSection settings={makeSettings()} />);
+    expect(screen.getByText('Drawer position')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Drawer position Side' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Drawer position Bottom-sheet' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Drawer position Center-modal' })).toBeInTheDocument();
+    // Default is side
+    expect(screen.getByRole('button', { name: 'Drawer position Side' })).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('selecting Pill and saving PATCHes only { fabStyle: "pill" }', async () => {
+    render(<DrawerSection settings={makeSettings()} />);
+    fireEvent.click(screen.getByRole('button', { name: 'FAB style Pill' }));
+    fireEvent.click(screen.getByRole('button', { name: /save changes/i }));
+    const body = await lastShopPatchBody();
+    expect(body).toEqual({ fabStyle: 'pill' });
+  });
+
+  it('selecting Bottom sheet and saving PATCHes only { drawerPosition: "bottom-sheet" }', async () => {
+    render(<DrawerSection settings={makeSettings()} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Drawer position Bottom-sheet' }));
+    fireEvent.click(screen.getByRole('button', { name: /save changes/i }));
+    const body = await lastShopPatchBody();
+    expect(body).toEqual({ drawerPosition: 'bottom-sheet' });
+  });
+});
+
 describe('DrawerSection — appearance (ported from settings-form)', () => {
   it('renders both radio groups with every option', () => {
     render(<DrawerSection settings={makeSettings()} />);

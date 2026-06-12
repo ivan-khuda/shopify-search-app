@@ -28,6 +28,8 @@ export const GET = withAppProxyHmac(async ({ shop }) => {
       suggestedPrompts: settings.suggestedPrompts,
       drawerEnabled: settings.drawerEnabled,
       editorPreviewVisible: settings.editorPreviewVisible,
+      fabStyle: settings.fabStyle,
+      drawerPosition: settings.drawerPosition,
     },
     { headers: { 'cache-control': 'private, max-age=60' } },
   );

@@ -11,6 +11,8 @@ const { getShopSettings } = vi.hoisted(() => ({
     notificationEmail: 'ops@example.com',
     drawerEnabled: false,
     editorPreviewVisible: false,
+    fabStyle: 'pill',
+    drawerPosition: 'bottom-sheet',
   }),
 }));
 vi.mock('@/services/settings/getShopSettings', () => ({ getShopSettings }));
@@ -37,6 +39,8 @@ describe('GET /api/proxy/_meta/appearance', () => {
       suggestedPrompts: [{ icon: '☕', text: 'coffee' }],
       drawerEnabled: false,
       editorPreviewVisible: false,
+      fabStyle: 'pill',
+      drawerPosition: 'bottom-sheet',
     });
     expect(getShopSettings).toHaveBeenCalledWith('test.myshopify.com');
     expect(res.headers.get('cache-control')).toBe('private, max-age=60');
