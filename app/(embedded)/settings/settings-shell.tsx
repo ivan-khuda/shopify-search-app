@@ -19,6 +19,7 @@ import { SD_ACCENT } from '@/lib/chat-ui/appearance';
 import { ModelSection } from './sections/model-section';
 import { DrawerSection } from './sections/drawer-section';
 import { LimitsSection } from './sections/limits-section';
+import { WebhooksSection } from './sections/webhooks-section';
 import type { SettingsShellProps } from './sections/types';
 
 const NAV_ITEMS = [
@@ -139,7 +140,9 @@ export function SettingsShell(props: SettingsShellProps) {
         )}
         {section === 'drawer' && <DrawerSection settings={props.settings} />}
         {section === 'limits' && <LimitsSection usage={props.usage} />}
-        {section === 'webhooks' && <PlaceholderSection heading="Sync & webhooks" />}
+        {section === 'webhooks' && (
+          <WebhooksSection webhooks={props.webhooks} lastSync={props.lastSync} />
+        )}
         {section === 'general' && <PlaceholderSection heading="General" />}
       </div>
     </div>

@@ -41,3 +41,8 @@ export interface DrawerSectionProps {
 export interface LimitsSectionProps {
   usage: UsageSnapshot;
 }
+
+export interface WebhooksSectionProps {
+  webhooks: WebhookLastFiredMap;
+  lastSync: LastSyncSummary | null;
+}
