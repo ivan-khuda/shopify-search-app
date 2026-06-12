@@ -115,6 +115,72 @@ describe('DrawerBody — appearance fetch (Task 14)', () => {
   });
 });
 
+describe('DrawerBody — settings bundle (settings-redesign Task 6)', () => {
+  it('applies the fetched drawerAccent as --sd-accent on the pane wrapper', async () => {
+    render(<DrawerBody activeTab="chat" {...baseProps} />);
+
+    // Default accent before the fetch resolves.
+    let wrapper = screen.getByTestId('chat-pane').parentElement as HTMLElement;
+    expect(wrapper.style.getPropertyValue('--sd-accent')).toBe('#5B4FE9');
+
+    await resolveAppearance({ drawerAccent: '#008060' });
+
+    wrapper = screen.getByTestId('chat-pane').parentElement as HTMLElement;
+    expect(wrapper.style.getPropertyValue('--sd-accent')).toBe('#008060');
+  });
+
+  it('threads greeting and prompts into ChatPane', async () => {
+    render(<DrawerBody activeTab="chat" {...baseProps} />);
+
+    await resolveAppearance({
+      greetingMessage: 'Welcome to Acme!',
+      suggestedPrompts: [{ icon: '☕', text: 'coffee' }],
+    });
+
+    const props = chatPaneProps[chatPaneProps.length - 1];
+    expect(props.greeting).toBe('Welcome to Acme!');
+    expect(props.prompts).toEqual([{ icon: '☕', text: 'coffee' }]);
+  });
+
+  it('drawerEnabled:false renders nothing and notifies the parent', async () => {
+    const onDisabled = vi.fn();
+    render(<DrawerBody activeTab="chat" {...baseProps} onDisabled={onDisabled} />);
+
+    await resolveAppearance({ drawerEnabled: false });
+
+    expect(screen.queryByTestId('chat-pane')).not.toBeInTheDocument();
+    expect(onDisabled).toHaveBeenCalledTimes(1);
+  });
+
+  it('design mode + editorPreviewVisible:false hides the drawer body', async () => {
+    vi.stubGlobal('Shopify', { designMode: true });
+    const onDisabled = vi.fn();
+    render(<DrawerBody activeTab="chat" {...baseProps} onDisabled={onDisabled} />);
+
+    await resolveAppearance({ editorPreviewVisible: false });
+
+    expect(screen.queryByTestId('chat-pane')).not.toBeInTheDocument();
+    expect(onDisabled).toHaveBeenCalled();
+  });
+
+  it('design mode with editorPreviewVisible:true keeps the drawer body', async () => {
+    vi.stubGlobal('Shopify', { designMode: true });
+    render(<DrawerBody activeTab="chat" {...baseProps} />);
+
+    await resolveAppearance({ editorPreviewVisible: true });
+
+    expect(screen.getByTestId('chat-pane')).toBeInTheDocument();
+  });
+
+  it('storefront (non-design-mode) ignores editorPreviewVisible:false', async () => {
+    render(<DrawerBody activeTab="chat" {...baseProps} />);
+
+    await resolveAppearance({ editorPreviewVisible: false });
+
+    expect(screen.getByTestId('chat-pane')).toBeInTheDocument();
+  });
+});
+
 describe('DrawerBody — history resume (Task 14)', () => {
   it('resume asks the parent for the chat tab and auto-submits the query', async () => {
     const user = userEvent.setup();

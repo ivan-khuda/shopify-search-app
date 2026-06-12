@@ -4,6 +4,7 @@
 
 import { SDLogo } from './sd-logo';
 import type { EmptyStateVariant } from '../appearance';
+import type { SuggestedPrompt } from '@/lib/settings/contract';
 
 export const SUGGESTED_PROMPTS = [
   { icon: '☕', text: 'Something to drink coffee out of' },
@@ -17,23 +18,37 @@ interface EmptyChatProps {
   onPick: (text: string) => void;
   catalogCount?: number;
   modelName?: string;
+  /** Merchant greeting — overrides the cards headline and the minimal heading. */
+  greeting?: string | null;
+  /** Merchant prompts — replace the built-ins when non-empty. */
+  prompts?: SuggestedPrompt[] | null;
 }
 
-export function EmptyChat({ variant, onPick, catalogCount, modelName }: EmptyChatProps) {
+export function EmptyChat({
+  variant,
+  onPick,
+  catalogCount,
+  modelName,
+  greeting,
+  prompts,
+}: EmptyChatProps) {
+  const activePrompts: readonly SuggestedPrompt[] =
+    prompts && prompts.length > 0 ? prompts : SUGGESTED_PROMPTS;
+
   if (variant === 'minimal') {
     return (
       <div className="mx-auto max-w-[600px] px-6 pt-[60px] pb-10">
         <div className="mb-7 text-center">
           <SDLogo size={44} />
           <h2 className="mt-3.5 mb-1.5 text-[22px] font-semibold tracking-[-0.01em] text-[#202223]">
-            Ask anything about your catalog
+            {greeting ?? 'Ask anything about your catalog'}
           </h2>
           <p className="m-0 text-sm text-[#6d7175]">
             Natural language. Hybrid semantic + keyword search.
           </p>
         </div>
         <div className="grid gap-2">
-          {SUGGESTED_PROMPTS.map((p) => (
+          {activePrompts.map((p) => (
             <button
               key={p.text}
               type="button"
@@ -80,7 +95,7 @@ export function EmptyChat({ variant, onPick, catalogCount, modelName }: EmptyCha
             Try one
           </div>
           <div className="grid grid-cols-2 gap-2">
-            {SUGGESTED_PROMPTS.map((p) => (
+            {activePrompts.map((p) => (
               <button
                 key={p.text}
                 type="button"
@@ -104,7 +119,7 @@ export function EmptyChat({ variant, onPick, catalogCount, modelName }: EmptyCha
         <SDLogo size={40} />
         <div className="flex-1">
           <h2 className="m-0 text-xl font-semibold tracking-[-0.01em] text-[#202223]">
-            Hi there 👋 I&apos;m your SmartDiscovery assistant.
+            {greeting ?? <>Hi there 👋 I&apos;m your SmartDiscovery assistant.</>}
           </h2>
           <p className="mt-1.5 mb-0 text-[13.5px] leading-[1.55] text-[#5c5f62]">
             I&apos;ve indexed all{' '}
@@ -115,7 +130,7 @@ export function EmptyChat({ variant, onPick, catalogCount, modelName }: EmptyCha
       </div>
 
       <div className="grid grid-cols-2 gap-2.5">
-        {SUGGESTED_PROMPTS.map((p) => (
+        {activePrompts.map((p) => (
           <button
             key={p.text}
             type="button"
