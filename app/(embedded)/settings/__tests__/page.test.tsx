@@ -123,7 +123,6 @@ describe('SettingsPage — SSR data assembly', () => {
     expect(getUsageMock).toHaveBeenCalledWith('demo.myshopify.com');
 
     const props = shellProps(getByTestId);
-    expect(props.shop).toBe('demo.myshopify.com');
     expect(props.catalog).toEqual(baseCatalog);
     expect(props.activeModel).toEqual({
       id: 'google/gemini-2.5-flash',
@@ -193,7 +192,7 @@ describe('SettingsPage — WR-01 shop validation', () => {
   // shop-scoped resolvers or DB queries.
   it('rejects an invalid searchParams.shop and passes empty shop everywhere', async () => {
     const { getByTestId } = await renderPage({ shop: 'evil.example.com' });
-    expect(shellProps(getByTestId).shop).toBe('');
+    expect(getByTestId('settings-shell-stub')).toBeInTheDocument();
     expect(getActiveMock).toHaveBeenCalledWith('');
     expect(getSettingsMock).toHaveBeenCalledWith('');
     expect(getUsageMock).toHaveBeenCalledWith('');

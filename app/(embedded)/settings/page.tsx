@@ -9,11 +9,11 @@
  * the client shell (`settings-shell.tsx`).
  *
  * T-04-25 (Phase 4 deferred) — `searchParams.shop` ↔ `session.shop` asymmetry:
- *   This page reads `searchParams.shop` for display only (mirrors the
- *   `/chat` Server Component verbatim). All write paths
+ *   This page reads `searchParams.shop` to scope the SSR reads only (mirrors
+ *   the `/chat` Server Component verbatim). All write paths
  *   (`/api/settings/model`, `/api/settings/shop`, `/api/settings/appearance`)
  *   are session-bound — shop is derived strictly from `withShopifySession`,
- *   never from query/body. SSR display from searchParams is acceptable;
+ *   never from query/body. SSR reads from searchParams are acceptable;
  *   writes are session-bound.
  *
  * Constraints (CLAUDE.md): zero `console.*`.
@@ -81,7 +81,6 @@ export default async function SettingsPage({
 
   return (
     <SettingsShell
-      shop={shop}
       catalog={catalog}
       activeModel={activeModel}
       settings={settings}

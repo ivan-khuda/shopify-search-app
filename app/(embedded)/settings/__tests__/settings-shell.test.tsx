@@ -11,7 +11,6 @@ import { SettingsShell } from '../settings-shell';
 import type { SettingsShellProps } from '../sections/types';
 
 const baseProps: SettingsShellProps = {
-  shop: 'demo.myshopify.com',
   catalog: {
     models: [
       {

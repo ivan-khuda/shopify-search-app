@@ -20,7 +20,6 @@ export interface LastSyncSummary {
 export type WebhookLastFiredMap = Record<string, string>;
 
 export interface SettingsShellProps {
-  shop: string;
   catalog: CatalogResult;
   activeModel: ActiveChatModel;
   settings: ShopSettingsBundle;

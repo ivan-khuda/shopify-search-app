@@ -6,6 +6,14 @@ import { SDLogo } from './sd-logo';
 import type { EmptyStateVariant } from '../appearance';
 import type { SuggestedPrompt } from '@/lib/settings/contract';
 
+/**
+ * Built-in cards-variant greeting headline, exported as a plain string so the
+ * settings Drawer-styling section can reuse it as the greeting input
+ * placeholder (app/(embedded)/settings/sections/drawer-section.tsx) without
+ * duplicating the copy. The cards variant below renders this exact string.
+ */
+export const BUILTIN_GREETING = "Hi there 👋 I'm your SmartDiscovery assistant.";
+
 export const SUGGESTED_PROMPTS = [
   { icon: '☕', text: 'Something to drink coffee out of' },
   { icon: '🌿', text: 'A low-maintenance plant for my office' },
@@ -119,7 +127,7 @@ export function EmptyChat({
         <SDLogo size={40} />
         <div className="flex-1">
           <h2 className="m-0 text-xl font-semibold tracking-[-0.01em] text-[#202223]">
-            {greeting ?? <>Hi there 👋 I&apos;m your SmartDiscovery assistant.</>}
+            {greeting ?? BUILTIN_GREETING}
           </h2>
           <p className="mt-1.5 mb-0 text-[13.5px] leading-[1.55] text-[#5c5f62]">
             I&apos;ve indexed all{' '}

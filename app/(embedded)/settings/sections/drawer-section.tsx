@@ -26,6 +26,7 @@ import {
   type CardDensity,
   type EmptyStateVariant,
 } from '@/lib/chat-ui/appearance';
+import { BUILTIN_GREETING } from '@/lib/chat-ui/components/empty-chat';
 import {
   DRAWER_ACCENT_PALETTE,
   MAX_GREETING,
@@ -42,9 +43,6 @@ import {
   SettingsCard,
 } from './settings-card';
 import type { DrawerSectionProps } from './types';
-
-/** Built-in cards-variant greeting (lib/chat-ui/components/empty-chat.tsx). */
-const BUILTIN_GREETING = "Hi there 👋 I'm your SmartDiscovery assistant.";
 
 const ICON_BUTTON_CLASS =
   'cursor-pointer border-none bg-transparent p-0 text-sm text-[#6d7175]';
