@@ -126,4 +126,30 @@ describe('PATCH /api/settings/shop', () => {
       notificationEmail: null,
     });
   });
+
+  it('accepts a valid fabStyle', async () => {
+    const res = await patch({ fabStyle: 'pill' });
+    expect(res.status).toBe(200);
+    expect(upsertFields).toHaveBeenCalledWith('test.myshopify.com', { fabStyle: 'pill' });
+  });
+
+  it('rejects an unknown fabStyle', async () => {
+    const res = await patch({ fabStyle: 'blob' });
+    expect(res.status).toBe(400);
+    await expect(res.json()).resolves.toEqual({ error: 'invalid_body' });
+    expect(upsertFields).not.toHaveBeenCalled();
+  });
+
+  it('accepts a valid drawerPosition', async () => {
+    const res = await patch({ drawerPosition: 'bottom-sheet' });
+    expect(res.status).toBe(200);
+    expect(upsertFields).toHaveBeenCalledWith('test.myshopify.com', { drawerPosition: 'bottom-sheet' });
+  });
+
+  it('rejects an unknown drawerPosition', async () => {
+    const res = await patch({ drawerPosition: 'left' });
+    expect(res.status).toBe(400);
+    await expect(res.json()).resolves.toEqual({ error: 'invalid_body' });
+    expect(upsertFields).not.toHaveBeenCalled();
+  });
 });

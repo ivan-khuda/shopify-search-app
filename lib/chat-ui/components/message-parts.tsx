@@ -21,6 +21,8 @@ interface MessagePartProps {
    * 'user' renders text plain — ChatMessage supplies the accent bubble.
    */
   variant?: "user" | "assistant";
+  productUrlBase?: string;
+  linkTarget?: '_blank' | '_self';
 }
 
 export const MessageParts = ({
@@ -30,6 +32,8 @@ export const MessageParts = ({
   onToggleSave,
   density = "standard",
   variant = "assistant",
+  productUrlBase,
+  linkTarget,
 }: MessagePartProps) => {
   const messageParts = parts ?? [];
 
@@ -112,6 +116,8 @@ export const MessageParts = ({
                       density={density}
                       isSaved={savedProductIds.has(product.id)}
                       onSave={() => onToggleSave(product)}
+                      productUrlBase={productUrlBase}
+                      linkTarget={linkTarget}
                     />
                   </li>
                 ))}

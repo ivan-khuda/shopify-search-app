@@ -47,6 +47,9 @@ next-env.d.ts
 /app/generated/prisma
 .worktrees/
 
+# graphify knowledge graph output
+graphify-out/
+
 # storefront bundle build artifacts (06-05)
 public/storefront-bundle-*.js
 public/storefront-bundle.*.js
@@ -56,3 +59,4 @@ public/DrawerBody-*.js
 public/chunk-*.js
 public/code-block-*.js
 public/mermaid-*.js
+public/storefront-styles-*.css

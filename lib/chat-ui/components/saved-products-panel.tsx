@@ -9,12 +9,16 @@ interface SavedProductsPanelProps {
   products: ChatProduct[];
   onToggleSave: (product: ChatProduct) => void;
   density?: CardDensity;
+  productUrlBase?: string;
+  linkTarget?: '_blank' | '_self';
 }
 
 export function SavedProductsPanel({
   products,
   onToggleSave,
   density = 'standard',
+  productUrlBase,
+  linkTarget,
 }: SavedProductsPanelProps) {
   const gridClass =
     density === 'compact'
@@ -52,6 +56,8 @@ export function SavedProductsPanel({
               density={cardDensity}
               isSaved
               onSave={() => onToggleSave(product)}
+              productUrlBase={productUrlBase}
+              linkTarget={linkTarget}
             />
           ))}
         </div>

@@ -32,6 +32,7 @@ const bunAvailable = isBunAvailable();
 interface StorefrontManifest {
   bundle: string;
   chunks?: string[];
+  styles?: string;
   version: string;
 }
 
@@ -94,6 +95,55 @@ describe('bundle-build — D-13/D-14 prebuild pipeline', () => {
 
       const sizeKB = readFileSync(bundlePath).length / 1024;
       expect(sizeKB).toBeLessThan(250);
+    }
+  );
+
+  it.skipIf(!bunAvailable)(
+    'manifest names a content-hashed storefront-styles css that exists on disk',
+    () => {
+      const manifest = readManifest();
+      expect(manifest.styles).toMatch(/^\/storefront-styles-[A-Za-z0-9]+\.css$/);
+      const stylesPath = join(ROOT, 'public', manifest.styles!.replace(/^\//, ''));
+      expect(existsSync(stylesPath), `styles file ${manifest.styles} must exist`).toBe(true);
+    }
+  );
+
+  it.skipIf(!bunAvailable)(
+    'compiled css contains drawer utilities (probe: .z-\\[2100\\]) and the bundle embeds the styles filename',
+    () => {
+      const manifest = readManifest();
+      const css = readFileSync(
+        join(ROOT, 'public', manifest.styles!.replace(/^\//, '')),
+        'utf-8'
+      );
+      // DrawerShell's scrim uses z-[2100]; in emitted CSS the selector is
+      // escaped as `.z-\[2100\]`.
+      expect(css).toContain('.z-\\[2100\\]');
+
+      // The entry bundle must reference the hashed css filename (baked via
+      // esbuild define) so it can inject the <link> at mount time.
+      const entry = readFileSync(
+        join(ROOT, 'public', manifest.bundle.replace(/^\//, '')),
+        'utf-8'
+      );
+      expect(entry).toContain(manifest.styles!.replace(/^\//, ''));
+    }
+  );
+
+  it.skipIf(!bunAvailable)(
+    'compiled css ships NO preflight reset — nothing may leak into merchant themes',
+    () => {
+      const manifest = readManifest();
+      const css = readFileSync(
+        join(ROOT, 'public', manifest.styles!.replace(/^\//, '')),
+        'utf-8'
+      );
+      // Preflight's grouped reset selector (`*, ::after, ::before, ...`) and
+      // its box-sizing reset must be absent. The `@layer properties` fallback
+      // block (`*,:before,:after{--tw-*: initial}`) is allowed — it only
+      // initializes inert custom properties.
+      expect(css).not.toMatch(/\*\s*,\s*::?after/);
+      expect(css).not.toContain('box-sizing:border-box');
     }
   );
 

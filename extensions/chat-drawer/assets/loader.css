@@ -34,6 +34,70 @@
   left: 24px;
 }
 
+/* Drawer-redesign Task 9 — pill/labeled FAB variants applied by loader.js
+   after the settings lookup (mirrors prototype storefront.jsx 278–325).
+   Circle is the base .sd-fab paint (no extra class). */
+.sd-fab--pill {
+  width: auto;
+  height: auto;
+  padding: 12px 18px;
+  border-radius: 999px;
+  background: #1a1a1a;
+  font-family: system-ui, sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  gap: 9px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18), 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+.sd-fab--pill .sd-fab__dot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--sd-accent, #008060);
+  flex-shrink: 0;
+}
+.sd-fab--labeled {
+  width: auto;
+  height: 56px;
+  padding: 0 0 0 6px;
+  border-radius: 16px;
+  background: var(--sd-accent, #008060);
+  font-family: system-ui, sans-serif;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25), 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+.sd-fab--labeled .sd-fab__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.16);
+  flex-shrink: 0;
+}
+.sd-fab--labeled .sd-fab__label {
+  padding: 0 18px 0 12px;
+  text-align: left;
+  line-height: 1.1;
+}
+.sd-fab--labeled .sd-fab__kicker {
+  display: block;
+  margin-bottom: 2px;
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.85;
+}
+.sd-fab--labeled .sd-fab__title {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+}
+
 /* D-15 skeleton drawer — painted before the main bundle resolves. */
 body.sd-skeleton-open::after {
   content: "";

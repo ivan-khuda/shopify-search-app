@@ -29,11 +29,15 @@ import {
 import { BUILTIN_GREETING } from '@/lib/chat-ui/components/empty-chat';
 import {
   DRAWER_ACCENT_PALETTE,
+  FAB_STYLES,
+  DRAWER_POSITIONS,
   MAX_GREETING,
   MAX_PROMPT_ICON,
   MAX_PROMPT_TEXT,
   MAX_SUGGESTED_PROMPTS,
   type DrawerAccent,
+  type FabStyle,
+  type DrawerPosition,
   type SuggestedPrompt,
 } from '@/lib/settings/contract';
 import {
@@ -71,12 +75,16 @@ export function DrawerSection({ settings }: DrawerSectionProps) {
     accent: settings.drawerAccent,
     greeting: settings.greetingMessage ?? '',
     prompts: settings.suggestedPrompts,
+    fabStyle: settings.fabStyle,
+    drawerPosition: settings.drawerPosition,
   });
   const [accent, setAccent] = useState<DrawerAccent>(settings.drawerAccent);
   const [greeting, setGreeting] = useState(settings.greetingMessage ?? '');
   const [rows, setRows] = useState<PromptRow[]>(
     settings.suggestedPrompts.map((p) => ({ ...p, editing: false })),
   );
+  const [fabStyle, setFabStyle] = useState<FabStyle>(settings.fabStyle);
+  const [drawerPosition, setDrawerPosition] = useState<DrawerPosition>(settings.drawerPosition);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -84,7 +92,9 @@ export function DrawerSection({ settings }: DrawerSectionProps) {
   const accentDirty = accent !== base.accent;
   const greetingDirty = greeting !== base.greeting;
   const promptsDirty = !samePrompts(prompts, base.prompts);
-  const dirty = accentDirty || greetingDirty || promptsDirty;
+  const fabStyleDirty = fabStyle !== base.fabStyle;
+  const drawerPositionDirty = drawerPosition !== base.drawerPosition;
+  const dirty = accentDirty || greetingDirty || promptsDirty || fabStyleDirty || drawerPositionDirty;
 
   // ── Appearance fields (PATCH /api/settings/appearance) ────────────────
   const [appearanceBase, setAppearanceBase] = useState({
@@ -130,10 +140,12 @@ export function DrawerSection({ settings }: DrawerSectionProps) {
     if (accentDirty) body.drawerAccent = accent;
     if (greetingDirty) body.greetingMessage = greeting;
     if (promptsDirty) body.suggestedPrompts = prompts;
+    if (fabStyleDirty) body.fabStyle = fabStyle;
+    if (drawerPositionDirty) body.drawerPosition = drawerPosition;
 
     const result = await patchWithToken('/api/settings/shop', body);
     if (result.ok) {
-      setBase({ accent, greeting, prompts });
+      setBase({ accent, greeting, prompts, fabStyle, drawerPosition });
       shopify.toast.show('Drawer styling saved');
     } else {
       setError(result.error);
@@ -275,6 +287,56 @@ export function DrawerSection({ settings }: DrawerSectionProps) {
         </div>
       </SettingsCard>
 
+      <SettingsCard
+        title="FAB style"
+        description="How the launcher button appears on your storefront."
+      >
+        <div className="flex gap-2">
+          {FAB_STYLES.map((s) => (
+            <button
+              key={s}
+              type="button"
+              aria-label={`FAB style ${labelOf(s)}`}
+              aria-pressed={s === fabStyle}
+              onClick={() => setFabStyle(s)}
+              className={cn(
+                'rounded-lg border px-3 py-1.5 text-[13px]',
+                s === fabStyle
+                  ? 'border-[#202223] bg-[#202223] font-semibold text-white'
+                  : 'border-[#c9ccd0] bg-white font-medium text-[#202223]',
+              )}
+            >
+              {labelOf(s)}
+            </button>
+          ))}
+        </div>
+      </SettingsCard>
+
+      <SettingsCard
+        title="Drawer position"
+        description="Where the chat opens for desktop shoppers. Mobile always uses the bottom sheet."
+      >
+        <div className="flex gap-2">
+          {DRAWER_POSITIONS.map((p) => (
+            <button
+              key={p}
+              type="button"
+              aria-label={`Drawer position ${labelOf(p)}`}
+              aria-pressed={p === drawerPosition}
+              onClick={() => setDrawerPosition(p)}
+              className={cn(
+                'rounded-lg border px-3 py-1.5 text-[13px]',
+                p === drawerPosition
+                  ? 'border-[#202223] bg-[#202223] font-semibold text-white'
+                  : 'border-[#c9ccd0] bg-white font-medium text-[#202223]',
+              )}
+            >
+              {labelOf(p)}
+            </button>
+          ))}
+        </div>
+      </SettingsCard>
+
       <div className="mb-6 flex items-center gap-2.5">
         <button
           type="button"
@@ -317,7 +379,7 @@ export function DrawerSection({ settings }: DrawerSectionProps) {
 
       <SettingsCard
         title="Product card density"
-        description="How much detail each product result shows."
+        description="How much detail each product result shows in the admin playground. The storefront drawer uses its own compact rows."
       >
         <div
           role="radiogroup"

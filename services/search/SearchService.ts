@@ -249,6 +249,7 @@ function toChatProduct(row: RankedProductRow): ChatProduct {
     title: row.title,
     description: row.description ?? '',
     image: row.image ?? undefined,
+    handle: row.handle,
     category: row.productType ?? undefined,
     tags: row.tags,
     price: formatPriceRange(row.priceMin, row.priceMax),

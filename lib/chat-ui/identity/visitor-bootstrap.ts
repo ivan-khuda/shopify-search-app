@@ -17,7 +17,7 @@
  *   2. localStorage 'smartdiscovery.visitor_id' (survives page reload, may
  *      hold a legacy bare UUID that will be rejected by the server — the server
  *      returns 401 invalid_visitor_signature and the client re-mints then)
- *   3. GET /apps/smartdiscovery/_meta/visitor (server mints a fresh signed token)
+ *   3. GET /apps/smartdiscovery/meta/visitor (server mints a fresh signed token)
  *
  * WR-10 preserved: if localStorage throws (Safari "Block all cookies",
  * embedded webviews, private modes), we degrade to the module-level in-memory
@@ -27,7 +27,7 @@
  */
 
 const STORAGE_KEY = 'smartdiscovery.visitor_id';
-const MINT_PATH = '/apps/smartdiscovery/_meta/visitor';
+const MINT_PATH = '/apps/smartdiscovery/meta/visitor';
 
 /** Module-level in-memory cache — set on first successful resolution. */
 let cachedToken: string | null = null;

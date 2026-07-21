@@ -18,6 +18,8 @@ import { withShopifySession } from '@/lib/shopify/auth';
 import { shopSettingsRepository } from '@/lib/db/repositories/ShopSettingsRepository';
 import {
   DRAWER_ACCENT_PALETTE,
+  FAB_STYLES,
+  DRAWER_POSITIONS,
   MAX_GREETING,
   MAX_PROMPT_ICON,
   MAX_PROMPT_TEXT,
@@ -45,6 +47,8 @@ const Body = z
     notificationEmail: z.email().nullable().optional(),
     drawerEnabled: z.boolean().optional(),
     editorPreviewVisible: z.boolean().optional(),
+    fabStyle: z.enum(FAB_STYLES).optional(),
+    drawerPosition: z.enum(DRAWER_POSITIONS).optional(),
   })
   .strict()
   .refine((b) => Object.keys(b).length > 0);

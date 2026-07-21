@@ -23,15 +23,54 @@ import { createRoot, type Root } from 'react-dom/client';
 import { StorefrontDrawer } from './components/StorefrontDrawer';
 import { resolveSignedVisitorId } from '@/lib/chat-ui/identity/visitor-bootstrap';
 
+// Baked in by scripts/build-storefront-bundle.ts via esbuild `define` — the
+// content-hashed filename of the compiled drawer stylesheet that the build
+// emits next to this bundle under /public. Non-secret. Declared (not
+// assigned) so dev/test loads without the define stay safe behind the
+// `typeof` guard in injectStyles().
+declare const __SD_STYLES_FILE__: string;
+
+const STYLES_LINK_ID = 'smartdiscovery-styles';
+
+/**
+ * Inject the drawer's compiled Tailwind stylesheet once per page. The drawer
+ * components style exclusively with Tailwind utility classes; without this
+ * link the storefront renders unstyled. The href is resolved against this
+ * module's own URL — the entry is an ESM module served from the app host's
+ * /public, and the CSS sits in the same directory.
+ */
+function injectStyles(): void {
+  if (typeof __SD_STYLES_FILE__ !== 'string' || !__SD_STYLES_FILE__) return;
+  if (document.getElementById(STYLES_LINK_ID)) return;
+  const link = document.createElement('link');
+  link.id = STYLES_LINK_ID;
+  link.rel = 'stylesheet';
+  link.href = new URL('./' + __SD_STYLES_FILE__, import.meta.url).href;
+  document.head.appendChild(link);
+}
+
 interface MountOpts {
   shop: string;
   customerId: string | null;
+  // Legacy loader paint settings — the React drawer reads its accent /
+  // position from the fetched settings bundle now (drawer-redesign Task 8);
+  // these fields stay so older cached loaders keep calling mount() safely.
   accent: string;
   position: 'bottom_right' | 'bottom_left';
+  /**
+   * Loader-fetched /meta/appearance JSON, handed through so the drawer can
+   * seed its settings state without a second fetch (no DEFAULT_SHOP_SETTINGS
+   * flash on first open). Optional — older cached loaders don't send it and
+   * StorefrontDrawer falls back to fetching itself.
+   */
+  settings?: unknown;
 }
 
 let reactRoot: Root | null = null;
 let lastOpts: MountOpts | null = null;
+// data-shop-name (Task 9 adds it to app_embed.liquid) — read defensively so
+// the bundle works against themes still serving the older liquid.
+let lastShopName: string | null = null;
 // WR-03: imperative toggle registered by the mounted StorefrontDrawer so
 // `toggle()` can flip the drawer's real open state (re-rendering with a
 // different `initialOpen` is a no-op once mounted).
@@ -44,8 +83,9 @@ function renderDrawer(opts: MountOpts, visitorId: string, initialOpen: boolean):
       shop={opts.shop}
       visitorId={visitorId}
       customerId={opts.customerId}
-      accent={opts.accent}
-      position={opts.position}
+      shopName={lastShopName}
+      fabPosition={opts.position}
+      initialSettings={opts.settings}
       initialOpen={initialOpen}
       registerToggle={(fn) => {
         drawerToggle = fn;
@@ -55,8 +95,12 @@ function renderDrawer(opts: MountOpts, visitorId: string, initialOpen: boolean):
 }
 
 async function mount(opts: MountOpts): Promise<void> {
-  const rootEl = document.querySelector('smartdiscovery-app');
+  const rootEl = document.querySelector<HTMLElement>('smartdiscovery-app');
   if (!rootEl) return;
+
+  injectStyles();
+
+  lastShopName = rootEl.dataset?.shopName || null;
 
   document.body.classList.remove('sd-skeleton-open');
 
@@ -81,7 +125,7 @@ async function mount(opts: MountOpts): Promise<void> {
 
   // CR-03: resolve signed visitor token before first render so DrawerBody
   // has it immediately. On failure degrade to empty string — server returns
-  // 401 on first use, client re-mints via /_meta/visitor, subsequent
+  // 401 on first use, client re-mints via /meta/visitor, subsequent
   // requests succeed. Drawer always mounts (WR-10 mount-survival guarantee).
   let visitorId = '';
   try {

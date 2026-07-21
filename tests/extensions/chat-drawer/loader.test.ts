@@ -19,11 +19,9 @@ const LOADER_PATH = resolve(
   '../../../extensions/chat-drawer/assets/loader.js'
 );
 
-let importMock: ReturnType<typeof vi.fn>;
 let fetchMock: ReturnType<typeof vi.fn>;
 
 beforeEach(() => {
-  importMock = vi.fn().mockResolvedValue({});
   fetchMock = vi.fn().mockResolvedValue(
     new Response(
       JSON.stringify({ bundle: '/storefront-bundle-abc123.js', version: 'abc123' }),
@@ -94,7 +92,7 @@ describe('loader.js — STR-07 designMode guard', () => {
     }
 
     // Loader source should reference the App Proxy bundle-url path (B-2 fix)
-    expect(loaderText).toMatch(/_meta\/bundle-url/);
+    expect(loaderText).toMatch(/meta\/bundle-url/);
   });
 
   it('D-15: paints skeleton container with class sd-skeleton-open before bundle resolves', async () => {
@@ -112,6 +110,77 @@ describe('loader.js — STR-07 designMode guard', () => {
   });
 });
 
+describe('loader.js — FAB restyle per merchant settings (drawer-redesign Task 9)', () => {
+  const CSS_PATH = resolve(
+    __dirname,
+    '../../../extensions/chat-drawer/assets/loader.css'
+  );
+
+  it('has a restyleFab path keyed on data.fabStyle, reachable from the meta .then', () => {
+    const loaderText = readFileSync(LOADER_PATH, 'utf-8');
+    expect(loaderText).toMatch(/restyleFab/);
+    expect(loaderText).toMatch(/data\.fabStyle/);
+  });
+
+  it('pill: dark pill markup with the shop name from root.dataset.shopName', () => {
+    const loaderText = readFileSync(LOADER_PATH, 'utf-8');
+    expect(loaderText).toMatch(/sd-fab--pill/);
+    expect(loaderText).toMatch(/dataset\.shopName/);
+    expect(loaderText).toMatch(/Ask /);
+  });
+
+  it('labeled: accent block markup with the two-line label', () => {
+    const loaderText = readFileSync(LOADER_PATH, 'utf-8');
+    expect(loaderText).toMatch(/sd-fab--labeled/);
+    expect(loaderText).toMatch(/Powered by AI/);
+    expect(loaderText).toMatch(/Find anything/);
+  });
+
+  it('overrides the dataset accent with data.drawerAccent via --sd-accent', () => {
+    const loaderText = readFileSync(LOADER_PATH, 'utf-8');
+    expect(loaderText).toMatch(/data\.drawerAccent/);
+    expect(loaderText).toMatch(/setProperty\('--sd-accent'/);
+  });
+
+  it('loader.css ships the pill/labeled FAB classes', () => {
+    const cssText = readFileSync(CSS_PATH, 'utf-8');
+    expect(cssText).toMatch(/\.sd-fab--pill/);
+    expect(cssText).toMatch(/\.sd-fab--labeled/);
+  });
+
+  it('both assets stay well under the 100KB Liquid asset cap', () => {
+    const loaderBytes = Buffer.byteLength(readFileSync(LOADER_PATH, 'utf-8'));
+    const cssBytes = Buffer.byteLength(readFileSync(CSS_PATH, 'utf-8'));
+    expect(loaderBytes).toBeLessThan(100 * 1024);
+    expect(cssBytes).toBeLessThan(100 * 1024);
+  });
+});
+
+describe('loader.js — settings pass-through to the bundle (no first-open flash)', () => {
+  // The loader hands the appearance JSON it already fetched through to
+  // window.smartdiscovery.mount() so the React drawer seeds its settings
+  // state instead of refetching and flashing DEFAULT_SHOP_SETTINGS.
+  it('stores the fetched appearance JSON in settingsData', () => {
+    const loaderText = readFileSync(LOADER_PATH, 'utf-8');
+    expect(loaderText).toMatch(/var settingsData = null/);
+    expect(loaderText).toMatch(/settingsData = data/);
+  });
+
+  it('includes settings: settingsData in the mount opts', () => {
+    const loaderText = readFileSync(LOADER_PATH, 'utf-8');
+    expect(loaderText).toMatch(/settings:\s*settingsData/);
+  });
+
+  it('assigns settingsData before the kill-switch early-return', () => {
+    const loaderText = readFileSync(LOADER_PATH, 'utf-8');
+    const assignIdx = loaderText.indexOf('settingsData = data');
+    const killSwitchIdx = loaderText.indexOf('data.drawerEnabled === false');
+    expect(assignIdx).toBeGreaterThan(-1);
+    expect(killSwitchIdx).toBeGreaterThan(-1);
+    expect(assignIdx).toBeLessThan(killSwitchIdx);
+  });
+});
+
 describe('loader.js — kill-switch + editor preview visibility', () => {
   // Settings-redesign: after painting the FAB the loader fires a non-blocking
   // appearance lookup and removes the FAB when the merchant disabled the
@@ -120,7 +189,7 @@ describe('loader.js — kill-switch + editor preview visibility', () => {
   // FAB (fail-open). String-level assertions — same pattern as above.
   it('fetches the App Proxy appearance meta endpoint after painting the FAB', () => {
     const loaderText = readFileSync(LOADER_PATH, 'utf-8');
-    expect(loaderText).toMatch(/_meta\/appearance/);
+    expect(loaderText).toMatch(/meta\/appearance/);
   });
 
   it('removes the FAB when drawerEnabled === false', () => {

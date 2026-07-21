@@ -1,10 +1,6 @@
 'use client';
 
 import { PromptInputProvider, PromptInput, PromptInputBody, PromptInputTextarea, PromptInputFooter, PromptInputTools, PromptInputActionMenu, PromptInputActionMenuTrigger, PromptInputActionMenuContent, PromptInputActionAddAttachments, PromptInputButton, PromptInputSubmit, usePromptInputAttachments } from '@/components/ai-elements/prompt-input';
-import { useChat } from '@ai-sdk/react';
-import { DefaultChatTransport } from 'ai';
-import type { UIMessage } from 'ai';
-import type { PromptInputMessage } from "@/components/ai-elements/prompt-input";
 
 import {
     Attachment,
@@ -13,11 +9,12 @@ import {
     Attachments,
 } from "@/components/ai-elements/attachments";
 import { GlobeIcon, PaperclipIcon } from "lucide-react";
-import { memo, useCallback, useEffect, useMemo, useRef } from "react";
+import { memo, useCallback } from "react";
 import { ChatMessage } from './chat-message';
 import { EmptyChat } from './empty-chat';
 import { SDLogo } from './sd-logo';
 import { type CardDensity, type EmptyStateVariant } from '../appearance';
+import { useChatController } from '../use-chat-controller';
 import type { SuggestedPrompt } from '@/lib/settings/contract';
 import type { ChatHistoryItem, ChatProduct } from '@/types/product';
 import type { ChatIdentityAdapter } from '../adapters/types';
@@ -95,22 +92,6 @@ function ThinkingBubble() {
     );
 }
 
-/** Result count from a message's tool-searchCatalog output — drives the action row badge. */
-function groundedCountFor(message: UIMessage): number {
-    return (message.parts ?? []).reduce((count, part) => {
-        if (
-            part.type === 'tool-searchCatalog' &&
-            'state' in part &&
-            part.state === 'output-available' &&
-            'output' in part &&
-            Array.isArray(part.output)
-        ) {
-            return count + part.output.length;
-        }
-        return count;
-    }, 0);
-}
-
 // Restyles the PromptInput compound shell (form > InputGroup) into the
 // handoff composer card without forking the ai-elements components.
 const COMPOSER_CARD_CLASS = [
@@ -150,6 +131,8 @@ interface ChatPaneProps {
      * otherwise re-submit the stale query.
      */
     onAutoSubmitConsumed?: () => void;
+    productUrlBase?: string;
+    linkTarget?: '_blank' | '_self';
 }
 
 export function ChatPane({
@@ -165,64 +148,11 @@ export function ChatPane({
     prompts,
     autoSubmitQuery,
     onAutoSubmitConsumed,
+    productUrlBase,
+    linkTarget,
 }: ChatPaneProps) {
-    const transport = useMemo(
-        () => new DefaultChatTransport({
-            api: adapter.endpoint,
-            headers: () => adapter.getAuthHeaders(),
-            body: () => adapter.getRequestBody(),
-        }),
-        [adapter],
-    );
-    const { messages, sendMessage, status } = useChat({ transport });
-
-    const submitText = useCallback((query: string) => {
-        const trimmed = query.trim();
-        if (!trimmed) return;
-        onHistoryAdd({
-            id: `search-${Date.now()}`,
-            query: trimmed,
-            timestamp: new Date().toLocaleTimeString(),
-            productCount: 0,
-        });
-        sendMessage({ text: trimmed });
-    }, [onHistoryAdd, sendMessage]);
-
-    const handleSubmit = useCallback((message: PromptInputMessage) => {
-        const query = message.text.trim();
-        const hasText = Boolean(query);
-        const hasAttachments = Boolean(message.files?.length);
-
-        if (!(hasText || hasAttachments)) {
-            return;
-        }
-
-        if (hasText) {
-            submitText(query);
-            return;
-        }
-
-        // WR-02: attachments-only submit — forward the files instead of
-        // silently dropping them and posting an empty message.
-        sendMessage({ text: query, files: message.files });
-    }, [submitText, sendMessage]);
-
-    // History-resume: fire exactly once per autoSubmitQuery.id.
-    const lastAutoSubmitIdRef = useRef<number | null>(null);
-    useEffect(() => {
-        if (!autoSubmitQuery) return;
-        if (lastAutoSubmitIdRef.current === autoSubmitQuery.id) return;
-        lastAutoSubmitIdRef.current = autoSubmitQuery.id;
-        submitText(autoSubmitQuery.query);
-        onAutoSubmitConsumed?.();
-    }, [autoSubmitQuery, submitText, onAutoSubmitConsumed]);
-
-    // Keep the newest message in view as the conversation grows/streams.
-    const scrollRef = useRef<HTMLDivElement>(null);
-    useEffect(() => {
-        const el = scrollRef.current;
-        if (el) el.scrollTop = el.scrollHeight;
-    }, [messages, status]);
+    const { messages, status, submitText, handleSubmit, scrollRef, groundedCountFor } =
+        useChatController({ adapter, onHistoryAdd, autoSubmitQuery, onAutoSubmitConsumed });
 
     const lastMessage = messages[messages.length - 1];
     const showThinking = status === 'submitted' && lastMessage?.role === 'user';
@@ -255,6 +185,8 @@ export function ChatPane({
                                 groundedCount={groundedCountFor(message)}
                                 savedProductIds={savedProductIds}
                                 onToggleSave={onToggleSave}
+                                productUrlBase={productUrlBase}
+                                linkTarget={linkTarget}
                             />
                         ))}
                         {showThinking && <ThinkingBubble />}

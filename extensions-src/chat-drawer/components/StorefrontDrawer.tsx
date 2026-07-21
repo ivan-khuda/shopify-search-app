@@ -1,31 +1,70 @@
 'use client';
 /**
- * StorefrontDrawer — storefront chat drawer shell (D-13, STR-01, STR-05).
+ * StorefrontDrawer — storefront chat drawer shell (drawer-redesign Task 8).
  *
- * Renders a FAB-paired drawer. The heavy DrawerBody (ChatPane + panels + Db-backed
- * stores from @/lib/chat-ui) is loaded via React.lazy on first drawer open so the
- * storefront entry chunk stays under the D-14 bundle budget. Falls back to
- * placeholder content for test renders / design-mode preview (no props).
+ * Owns the per-shop settings bundle: seeded from the loader's already-fetched
+ * appearance JSON when entry.tsx passes it (initialSettings — no refetch, no
+ * default-settings flash), otherwise a single mount-time fetch of the
+ * HMAC-verified app-proxy meta endpoint (`/apps/smartdiscovery/meta/appearance`)
+ * decoded via parseShopSettings (fail-open: network errors keep
+ * DEFAULT_SHOP_SETTINGS so the drawer always renders). The settings bundle
+ * drives:
+ *   - Fab variant (settings.fabStyle); the FAB corner comes from the theme
+ *     embed's fabPosition prop (forwarded by entry.tsx) so the React FAB
+ *     stays on the same side as the loader's synchronous paint.
+ *   - DrawerShell position (settings.drawerPosition).
+ *   - `--sd-accent` on the root wrapper (settings.drawerAccent).
+ *   - Kill-switch: drawerEnabled:false (or Theme Editor preview hidden)
+ *     renders null outright — no FAB, no drawer, no DrawerBody mount.
+ *
+ * The heavy DrawerBody (DbBacked stores + useChatController panes) stays
+ * behind React.lazy so the storefront entry chunk holds the D-14 budget; it
+ * receives the settings as a prop and reports history/saved counts back via
+ * onCountsChange for the tab badges.
  *
  * STR-07 / Pitfall 5: designMode check at FAB click time, not at mount.
  *
- * Accessibility:
- *   - FAB toggles aria-label between "Open SmartDiscovery AI chat" and
- *     "Close SmartDiscovery AI chat".
- *   - Drawer is `role="complementary"` so screen readers announce it as an
- *     adjacent region.
- *   - Escape closes the drawer; focus returns to FAB.
+ * Accessibility: FAB aria-label toggles open/close; DrawerShell renders
+ * role="dialog"; Escape closes; focus moves to the close button on open and
+ * returns to the FAB on close.
  */
 import * as React from 'react';
+import { Fab } from './Fab';
+import { DrawerShell } from './DrawerShell';
+import { SDLogo } from '@/lib/chat-ui/components/sd-logo';
+import {
+  DEFAULT_SHOP_SETTINGS,
+  parseShopSettings,
+  type ShopSettingsBundle,
+} from '@/lib/settings/contract';
 
 const DrawerBody = React.lazy(() => import('./DrawerBody'));
+
+type TabId = 'chat' | 'history' | 'saved';
+
+const TABS: ReadonlyArray<{ id: TabId; label: string }> = [
+  { id: 'chat', label: 'Chat' },
+  { id: 'history', label: 'History' },
+  { id: 'saved', label: 'Saved' },
+];
 
 interface StorefrontDrawerProps {
   shop?: string;
   visitorId?: string;
   customerId?: string | null;
-  accent?: string;
-  position?: 'bottom_right' | 'bottom_left';
+  /** Storefront shop display name — header "Ask {shopName}" + pill FAB copy. */
+  shopName?: string | null;
+  /** Theme-embed FAB corner — forwarded so the React FAB stays on the same
+   *  side as the loader's synchronous paint. */
+  fabPosition?: 'bottom_right' | 'bottom_left';
+  /**
+   * Loader-fetched /meta/appearance JSON handed through by entry.tsx. When
+   * present it seeds the settings state (via parseShopSettings) and the
+   * drawer SKIPS its own mount-time fetch — no DEFAULT_SHOP_SETTINGS flash
+   * (pill FAB snapping to circle, position jump) on first open. When absent
+   * (older cached loaders) the drawer fetches as before.
+   */
+  initialSettings?: unknown;
   initialOpen?: boolean;
   /**
    * WR-03: registers an imperative toggle so the bundle entry (entry.tsx)
@@ -37,19 +76,45 @@ interface StorefrontDrawerProps {
 }
 
 export function StorefrontDrawer(props: StorefrontDrawerProps = {}): React.ReactElement | null {
-  const { shop, visitorId, customerId, accent = '#008060', position = 'bottom_right', initialOpen = false, registerToggle } = props;
+  const {
+    shop,
+    visitorId,
+    customerId,
+    shopName,
+    fabPosition,
+    initialSettings,
+    initialOpen = false,
+    registerToggle,
+  } = props;
   const [isOpen, setIsOpen] = React.useState(initialOpen);
-  const [activeTab, setActiveTab] = React.useState<'chat' | 'history' | 'saved'>('chat');
-  // Merchant kill-switch (settings-redesign Task 6): DrawerBody fetches the
-  // settings bundle and reports drawerEnabled:false (or design-mode preview
-  // hidden) via onDisabled — hide the FAB and the drawer shell entirely.
-  const [merchantDisabled, setMerchantDisabled] = React.useState(false);
+  const [activeTab, setActiveTab] = React.useState<TabId>('chat');
+  const [settings, setSettings] = React.useState<ShopSettingsBundle>(() =>
+    initialSettings != null ? parseShopSettings(initialSettings) : DEFAULT_SHOP_SETTINGS,
+  );
+  const [counts, setCounts] = React.useState({ history: 0, saved: 0 });
   const fabRef = React.useRef<HTMLButtonElement>(null);
   const closeRef = React.useRef<HTMLButtonElement>(null);
 
-  const handleDisabled = React.useCallback(() => {
-    setMerchantDisabled(true);
-  }, []);
+  // Single mount-time settings fetch (lifted from DrawerBody so the Fab and
+  // DrawerShell can use it before the lazy body ever loads). Fail-open.
+  // Skipped entirely when the loader already handed us its fetched settings
+  // (initialSettings) — refetching here caused a visible flash of
+  // DEFAULT_SHOP_SETTINGS on first open. The fetch stays as a fallback for
+  // older cached loaders that don't pass settings through.
+  const hasInitialSettings = initialSettings != null;
+  React.useEffect(() => {
+    if (hasInitialSettings) return;
+    let cancelled = false;
+    fetch('/apps/smartdiscovery/meta/appearance')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (!cancelled && data) setSettings(parseShopSettings(data));
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [hasInitialSettings]);
 
   const closeDrawer = React.useCallback(() => {
     setIsOpen(false);
@@ -80,135 +145,134 @@ export function StorefrontDrawer(props: StorefrontDrawerProps = {}): React.React
     return () => window.removeEventListener('keydown', onKey);
   }, [isOpen, closeDrawer]);
 
-  if (merchantDisabled) return null;
+  const handleSwitchToChat = React.useCallback(() => setActiveTab('chat'), []);
+  const handleCountsChange = React.useCallback(
+    (next: { history: number; saved: number }) => setCounts(next),
+    [],
+  );
+
+  // Merchant kill-switch: the shell owns the settings now, so it hides itself
+  // directly — drawerEnabled:false, or Theme Editor preview toggled off.
+  const designMode =
+    typeof window !== 'undefined' &&
+    (window as unknown as { Shopify?: { designMode?: boolean } }).Shopify?.designMode === true;
+  if (!settings.drawerEnabled || (designMode && !settings.editorPreviewVisible)) {
+    return null;
+  }
 
   return (
-    <div className="sd-root">
-      <button
+    <div
+      className="sd-root"
+      style={{ '--sd-accent': settings.drawerAccent } as React.CSSProperties}
+    >
+      <Fab
         ref={fabRef}
-        type="button"
-        aria-label={isOpen ? 'Close SmartDiscovery AI chat' : 'Open SmartDiscovery AI chat'}
-        aria-expanded={isOpen}
-        aria-controls="sd-drawer"
+        fabStyle={settings.fabStyle}
+        position={fabPosition}
+        shopName={shopName}
+        ariaLabel={isOpen ? 'Close SmartDiscovery AI chat' : 'Open SmartDiscovery AI chat'}
         onClick={handleFabClick}
-        className={`sd-fab sd-fab--${position}`}
-        style={{
-          position: 'fixed',
-          bottom: 24,
-          [position === 'bottom_right' ? 'right' : 'left']: 24,
-          width: 56,
-          height: 56,
-          borderRadius: 9999,
-          border: 0,
-          background: accent,
-          color: '#fff',
-          zIndex: 2002,
-          cursor: 'pointer',
-        }}
-      >
-        {isOpen ? '×' : '✨'}
-      </button>
+      />
       {isOpen ? (
-        <aside
-          id="sd-drawer"
-          role="complementary"
-          aria-label="SmartDiscovery AI chat drawer"
-          style={{
-            position: 'fixed',
-            top: 0,
-            // WR-07: slide out on the side the merchant configured (mirrors
-            // the FAB position logic) instead of hard-coding the right edge.
-            [position === 'bottom_right' ? 'right' : 'left']: 0,
-            height: '100%',
-            // WR-07: cap to the viewport so sub-400px (mobile) screens don't
-            // overflow horizontally.
-            width: 'min(400px, 100vw)',
-            background: '#fff',
-            boxShadow:
-              position === 'bottom_right'
-                ? '-10px 0 30px rgba(0, 0, 0, 0.08)'
-                : '10px 0 30px rgba(0, 0, 0, 0.08)',
-            zIndex: 2001,
-            display: 'flex',
-            flexDirection: 'column',
-          }}
+        <DrawerShell
+          position={settings.drawerPosition}
+          onClose={closeDrawer}
+          ariaLabel="SmartDiscovery AI chat drawer"
         >
-          <header
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              padding: '12px 16px',
-              borderBottom: '1px solid #e5e7eb',
-            }}
-          >
-            <div>
-              <h2 style={{ margin: 0, fontSize: 18, fontWeight: 600 }}>SmartDiscovery AI</h2>
-              <p style={{ margin: 0, fontSize: 12, color: '#6b7280' }}>Shopify Assistant</p>
+          <header className="flex shrink-0 items-center gap-2.5 border-b border-[#ededed] bg-white py-3 pr-3.5 pl-4">
+            <SDLogo size={28} />
+            <div className="flex-1 leading-[1.1]">
+              <h2 className="m-0 text-[13.5px] font-semibold text-[#1a1a1a]">
+                Ask {shopName || 'us'}
+              </h2>
+              <p className="m-0 mt-0.5 flex items-center gap-1 text-[11px] text-[#8c8c8c]">
+                <span className="h-1.5 w-1.5 rounded-full bg-[#10b981]" aria-hidden="true" />
+                AI-powered · usually replies instantly
+              </p>
             </div>
             <button
               ref={closeRef}
               type="button"
               aria-label="Close chat drawer"
               onClick={closeDrawer}
-              style={{
-                width: 24,
-                height: 24,
-                border: 0,
-                background: 'transparent',
-                cursor: 'pointer',
-              }}
+              className="flex h-[30px] w-[30px] shrink-0 cursor-pointer items-center justify-center rounded-lg border-none bg-[#f5f5f5]"
             >
-              ×
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#404040"
+                strokeWidth="2"
+                strokeLinecap="round"
+                aria-hidden="true"
+              >
+                <path d="M6 6l12 12M18 6l-12 12" />
+              </svg>
             </button>
           </header>
-          <div role="tablist" style={{ display: 'flex', borderBottom: '1px solid #e5e7eb' }}>
-            {(['chat', 'history', 'saved'] as const).map((tab) => (
-              <button
-                key={tab}
-                type="button"
-                role="tab"
-                aria-selected={activeTab === tab}
-                onClick={() => setActiveTab(tab)}
-                style={{
-                  flex: 1,
-                  padding: '12px 16px',
-                  border: 0,
-                  background: activeTab === tab ? '#f3f4f6' : '#fff',
-                  cursor: 'pointer',
-                  fontSize: 14,
-                  fontWeight: activeTab === tab ? 600 : 400,
-                }}
-              >
-                {tab === 'chat' ? 'Chat' : tab === 'history' ? 'History' : 'Saved'}
-              </button>
-            ))}
+          <div role="tablist" className="flex shrink-0 border-b border-[#ededed] bg-white">
+            {TABS.map((tab) => {
+              const active = activeTab === tab.id;
+              const badge =
+                tab.id === 'history' ? counts.history : tab.id === 'saved' ? counts.saved : 0;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={active}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`relative flex-1 cursor-pointer border-none bg-transparent px-2 py-2.5 text-[12.5px] ${
+                    active ? 'font-semibold text-[#1a1a1a]' : 'font-medium text-[#8c8c8c]'
+                  }`}
+                >
+                  {tab.label}
+                  {badge > 0 ? (
+                    <span className="ml-1 rounded-[5px] bg-[color-mix(in_srgb,var(--sd-accent,#5B4FE9)_12%,transparent)] px-[5px] py-px text-[10px] font-bold text-[var(--sd-accent,#5B4FE9)]">
+                      {badge}
+                    </span>
+                  ) : null}
+                  {active ? (
+                    <span
+                      aria-hidden="true"
+                      className="absolute right-[15%] -bottom-px left-[15%] h-0.5 rounded-[1px] bg-[var(--sd-accent,#5B4FE9)]"
+                    />
+                  ) : null}
+                </button>
+              );
+            })}
           </div>
-          <div role="tabpanel" style={{ flex: 1, padding: 16, overflow: 'auto' }}>
+          <div role="tabpanel" className="flex min-h-0 flex-1 flex-col">
             {shop && visitorId ? (
-              <React.Suspense fallback={<p style={{ margin: 0, color: '#6b7280' }}>Loading…</p>}>
+              <React.Suspense
+                fallback={<p className="m-0 p-4 text-[13px] text-[#8c8c8c]">Loading…</p>}
+              >
                 <DrawerBody
                   activeTab={activeTab}
                   shop={shop}
                   visitorId={visitorId}
                   customerId={customerId ?? null}
-                  onSwitchToChat={() => setActiveTab('chat')}
-                  onDisabled={handleDisabled}
+                  settings={settings}
+                  onSwitchToChat={handleSwitchToChat}
+                  onCountsChange={handleCountsChange}
                 />
               </React.Suspense>
             ) : (
-              <>
-                {activeTab === 'chat' && <p style={{ margin: 0, color: '#6b7280' }}>Chat coming up…</p>}
+              <div className="flex-1 overflow-auto bg-[#fafafa] p-4">
+                {activeTab === 'chat' && (
+                  <p className="m-0 text-[13px] text-[#8c8c8c]">Chat coming up…</p>
+                )}
                 {activeTab === 'history' && (
-                  <p style={{ margin: 0, color: '#6b7280' }}>No history yet.</p>
+                  <p className="m-0 text-[13px] text-[#8c8c8c]">No history yet.</p>
                 )}
                 {activeTab === 'saved' && (
-                  <p style={{ margin: 0, color: '#6b7280' }}>No saved products yet.</p>
+                  <p className="m-0 text-[13px] text-[#8c8c8c]">No saved products yet.</p>
                 )}
-              </>
+              </div>
             )}
           </div>
-        </aside>
+        </DrawerShell>
       ) : null}
     </div>
   );

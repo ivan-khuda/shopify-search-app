@@ -20,6 +20,8 @@ interface ChatMessageProps {
   density?: CardDensity;
   /** Result count from the message's tool-searchCatalog output (computed in ChatPane). */
   groundedCount?: number;
+  productUrlBase?: string;
+  linkTarget?: '_blank' | '_self';
 }
 
 export const ChatMessage = forwardRef<HTMLDivElement, ChatMessageProps>(
@@ -32,6 +34,8 @@ export const ChatMessage = forwardRef<HTMLDivElement, ChatMessageProps>(
       onToggleSave,
       density = 'standard',
       groundedCount,
+      productUrlBase,
+      linkTarget,
     },
     ref
   ) => {
@@ -64,6 +68,8 @@ export const ChatMessage = forwardRef<HTMLDivElement, ChatMessageProps>(
                 variant="user"
                 savedProductIds={savedProductIds}
                 onToggleSave={onToggleSave}
+                productUrlBase={productUrlBase}
+                linkTarget={linkTarget}
               />
             )}
             {additionalComponents}
@@ -92,6 +98,8 @@ export const ChatMessage = forwardRef<HTMLDivElement, ChatMessageProps>(
               density={density}
               savedProductIds={savedProductIds}
               onToggleSave={onToggleSave}
+              productUrlBase={productUrlBase}
+              linkTarget={linkTarget}
             />
           )}
           {additionalComponents}

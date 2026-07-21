@@ -24,7 +24,7 @@ afterEach(() => {
 });
 
 describe('resolveSignedVisitorId — fetch-mint path (no prior token)', () => {
-  it('fetches GET /apps/smartdiscovery/_meta/visitor when no token in storage', async () => {
+  it('fetches GET /apps/smartdiscovery/meta/visitor when no token in storage', async () => {
     vi.mocked(fetch).mockResolvedValue(
       new Response(JSON.stringify({ visitor_id: SIGNED_TOKEN }), {
         status: 200,
@@ -35,7 +35,7 @@ describe('resolveSignedVisitorId — fetch-mint path (no prior token)', () => {
     const { resolveSignedVisitorId } = await import('@/lib/chat-ui/identity/visitor-bootstrap');
     const token = await resolveSignedVisitorId();
 
-    expect(fetch).toHaveBeenCalledWith('/apps/smartdiscovery/_meta/visitor');
+    expect(fetch).toHaveBeenCalledWith('/apps/smartdiscovery/meta/visitor');
     expect(token).toBe(SIGNED_TOKEN);
   });
 

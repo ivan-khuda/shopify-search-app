@@ -1,38 +1,66 @@
 /**
- * DrawerBody — appearance fetch + resume wiring (chat-redesign Task 14).
+ * DrawerBody — drawer pane composition (drawer-redesign Task 8).
  *
- * Mocks the @/lib/chat-ui barrel (same idiom as StorefrontDrawer.test.tsx)
- * but with prop-capturing stubs so the suite can pin what DrawerBody threads
- * into ChatPane / SavedProductsPanel. The appearance module is intentionally
- * NOT mocked — DrawerBody imports it from the `@/lib/chat-ui/appearance`
- * sub-path and its parseAppearance/DEFAULT_APPEARANCE are pure.
+ * The settings fetch was lifted into StorefrontDrawer: DrawerBody now
+ * receives the parsed `settings` bundle as a prop and renders the compact
+ * drawer panes (DrawerChat / DrawerHistory / DrawerSaved) instead of the
+ * admin ChatPane / HistoryPanel / SavedProductsPanel. The drawer pane
+ * components are mocked with prop-capturing stubs; the DbBacked store hooks
+ * are mocked so jsdom never hits the network (Pitfall 3).
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
-const chatPaneProps: Array<Record<string, unknown>> = [];
-const savedPanelProps: Array<Record<string, unknown>> = [];
+import {
+  DEFAULT_SHOP_SETTINGS,
+  type ShopSettingsBundle,
+} from '@/lib/settings/contract';
+import type { ChatHistoryItem, ChatProduct } from '@/types/product';
 
-vi.mock('@/lib/chat-ui', () => ({
-  ChatPane: (props: Record<string, unknown>) => {
-    chatPaneProps.push(props);
-    return <div data-testid="chat-pane" />;
+const chatProps: Array<Record<string, unknown>> = [];
+const historyProps: Array<Record<string, unknown>> = [];
+const savedProps: Array<Record<string, unknown>> = [];
+
+vi.mock('@/extensions-src/chat-drawer/components/DrawerChat', () => ({
+  DrawerChat: (props: Record<string, unknown>) => {
+    chatProps.push(props);
+    return <div data-testid="drawer-chat" />;
   },
-  HistoryPanel: ({ onResume }: { onResume: (query: string) => void }) => (
-    <div data-testid="history-panel">
-      <button type="button" onClick={() => onResume('blue running shoes')}>
-        resume-row
-      </button>
-    </div>
-  ),
-  SavedProductsPanel: (props: Record<string, unknown>) => {
-    savedPanelProps.push(props);
-    return <div data-testid="saved-products-panel" />;
+}));
+
+vi.mock('@/extensions-src/chat-drawer/components/DrawerHistory', () => ({
+  DrawerHistory: (props: { onResume: (query: string) => void }) => {
+    historyProps.push(props as unknown as Record<string, unknown>);
+    return (
+      <div data-testid="drawer-history">
+        <button type="button" onClick={() => props.onResume('blue running shoes')}>
+          resume-row
+        </button>
+      </div>
+    );
   },
-  useDbBackedHistoryStore: () => ({ items: [], add: vi.fn(), clear: vi.fn(), refresh: vi.fn() }),
+}));
+
+vi.mock('@/extensions-src/chat-drawer/components/DrawerSaved', () => ({
+  DrawerSaved: (props: Record<string, unknown>) => {
+    savedProps.push(props);
+    return <div data-testid="drawer-saved" />;
+  },
+}));
+
+let historyItems: ChatHistoryItem[] = [];
+let savedItems: ChatProduct[] = [];
+
+vi.mock('@/lib/chat-ui/stores/hooks', () => ({
+  useDbBackedHistoryStore: () => ({
+    items: historyItems,
+    add: vi.fn(),
+    clear: vi.fn(),
+    refresh: vi.fn(),
+  }),
   useDbBackedSavedProductsStore: () => ({
-    items: [],
+    items: savedItems,
     toggle: vi.fn(),
     clear: vi.fn(),
     has: () => false,
@@ -42,18 +70,15 @@ vi.mock('@/lib/chat-ui', () => ({
 
 import DrawerBody from '@/extensions-src/chat-drawer/components/DrawerBody';
 
-let resolveFetch: (value: { ok: boolean; json: () => Promise<unknown> }) => void;
 let fetchMock: ReturnType<typeof vi.fn>;
 
 beforeEach(() => {
-  chatPaneProps.length = 0;
-  savedPanelProps.length = 0;
-  fetchMock = vi.fn(
-    () =>
-      new Promise<{ ok: boolean; json: () => Promise<unknown> }>((resolve) => {
-        resolveFetch = resolve;
-      }),
-  );
+  chatProps.length = 0;
+  historyProps.length = 0;
+  savedProps.length = 0;
+  historyItems = [];
+  savedItems = [];
+  fetchMock = vi.fn().mockRejectedValue(new Error('network'));
   vi.stubGlobal('fetch', fetchMock);
 });
 
@@ -61,141 +86,134 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
+function settings(overrides: Partial<ShopSettingsBundle> = {}): ShopSettingsBundle {
+  return { ...DEFAULT_SHOP_SETTINGS, ...overrides };
+}
+
 const baseProps = {
   shop: 'test.myshopify.com',
   visitorId: 'v-test-1',
   customerId: null,
 } as const;
 
-async function resolveAppearance(body: unknown): Promise<void> {
-  await act(async () => {
-    resolveFetch({ ok: true, json: async () => body });
-  });
-}
-
-describe('DrawerBody — appearance fetch (Task 14)', () => {
-  it('fetches the app-proxy appearance meta exactly once', async () => {
-    const { rerender } = render(<DrawerBody activeTab="chat" {...baseProps} />);
-
-    expect(fetchMock).toHaveBeenCalledTimes(1);
-    expect(fetchMock).toHaveBeenCalledWith('/apps/smartdiscovery/_meta/appearance');
-
-    // Tab flips must not re-trigger the one-shot fetch.
-    rerender(<DrawerBody activeTab="saved" {...baseProps} />);
-    rerender(<DrawerBody activeTab="chat" {...baseProps} />);
-    expect(fetchMock).toHaveBeenCalledTimes(1);
+describe('DrawerBody — settings come from props, not a fetch', () => {
+  it('never fetches — the settings lookup was lifted into StorefrontDrawer', () => {
+    render(<DrawerBody activeTab="chat" {...baseProps} settings={settings()} />);
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it('renders ChatPane with DEFAULT_APPEARANCE before the fetch resolves', () => {
-    render(<DrawerBody activeTab="chat" {...baseProps} />);
+  it('applies settings.drawerAccent as --sd-accent on the pane wrapper', () => {
+    render(
+      <DrawerBody
+        activeTab="chat"
+        {...baseProps}
+        settings={settings({ drawerAccent: '#008060' })}
+      />,
+    );
 
-    expect(screen.getByTestId('chat-pane')).toBeInTheDocument();
-    const props = chatPaneProps[chatPaneProps.length - 1];
-    expect(props.density).toBe('standard');
-    expect(props.emptyStateVariant).toBe('cards');
-  });
-
-  it('threads fetched density + emptyStateVariant into ChatPane', async () => {
-    render(<DrawerBody activeTab="chat" {...baseProps} />);
-
-    await resolveAppearance({ emptyStateVariant: 'hero', cardDensity: 'compact' });
-
-    const props = chatPaneProps[chatPaneProps.length - 1];
-    expect(props.density).toBe('compact');
-    expect(props.emptyStateVariant).toBe('hero');
-  });
-
-  it('threads fetched density into SavedProductsPanel', async () => {
-    render(<DrawerBody activeTab="saved" {...baseProps} />);
-
-    await resolveAppearance({ emptyStateVariant: 'hero', cardDensity: 'compact' });
-
-    const props = savedPanelProps[savedPanelProps.length - 1];
-    expect(props.density).toBe('compact');
-  });
-});
-
-describe('DrawerBody — settings bundle (settings-redesign Task 6)', () => {
-  it('applies the fetched drawerAccent as --sd-accent on the pane wrapper', async () => {
-    render(<DrawerBody activeTab="chat" {...baseProps} />);
-
-    // Default accent before the fetch resolves.
-    let wrapper = screen.getByTestId('chat-pane').parentElement as HTMLElement;
-    expect(wrapper.style.getPropertyValue('--sd-accent')).toBe('#5B4FE9');
-
-    await resolveAppearance({ drawerAccent: '#008060' });
-
-    wrapper = screen.getByTestId('chat-pane').parentElement as HTMLElement;
+    const wrapper = screen.getByTestId('drawer-chat').parentElement as HTMLElement;
     expect(wrapper.style.getPropertyValue('--sd-accent')).toBe('#008060');
   });
 
-  it('threads greeting and prompts into ChatPane', async () => {
-    render(<DrawerBody activeTab="chat" {...baseProps} />);
+  it('threads greeting and prompts into DrawerChat', () => {
+    render(
+      <DrawerBody
+        activeTab="chat"
+        {...baseProps}
+        settings={settings({
+          greetingMessage: 'Welcome to Acme!',
+          suggestedPrompts: [{ icon: '☕', text: 'coffee' }],
+        })}
+      />,
+    );
 
-    await resolveAppearance({
-      greetingMessage: 'Welcome to Acme!',
-      suggestedPrompts: [{ icon: '☕', text: 'coffee' }],
-    });
-
-    const props = chatPaneProps[chatPaneProps.length - 1];
+    const props = chatProps[chatProps.length - 1];
     expect(props.greeting).toBe('Welcome to Acme!');
     expect(props.prompts).toEqual([{ icon: '☕', text: 'coffee' }]);
   });
+});
 
-  it('drawerEnabled:false renders nothing and notifies the parent', async () => {
-    const onDisabled = vi.fn();
-    render(<DrawerBody activeTab="chat" {...baseProps} onDisabled={onDisabled} />);
-
-    await resolveAppearance({ drawerEnabled: false });
-
-    expect(screen.queryByTestId('chat-pane')).not.toBeInTheDocument();
-    expect(onDisabled).toHaveBeenCalledTimes(1);
+describe('DrawerBody — drawer panes per tab', () => {
+  it('renders DrawerChat on the chat tab', () => {
+    render(<DrawerBody activeTab="chat" {...baseProps} settings={settings()} />);
+    expect(screen.getByTestId('drawer-chat')).toBeInTheDocument();
   });
 
-  it('design mode + editorPreviewVisible:false hides the drawer body', async () => {
-    vi.stubGlobal('Shopify', { designMode: true });
-    const onDisabled = vi.fn();
-    render(<DrawerBody activeTab="chat" {...baseProps} onDisabled={onDisabled} />);
+  it('renders DrawerHistory with the store items on the history tab', () => {
+    historyItems = [
+      { id: 'h1', query: 'desk lamp', timestamp: 'today', productCount: 2 } as ChatHistoryItem,
+    ];
+    render(<DrawerBody activeTab="history" {...baseProps} settings={settings()} />);
 
-    await resolveAppearance({ editorPreviewVisible: false });
-
-    expect(screen.queryByTestId('chat-pane')).not.toBeInTheDocument();
-    expect(onDisabled).toHaveBeenCalled();
+    expect(screen.getByTestId('drawer-history')).toBeInTheDocument();
+    expect(historyProps[historyProps.length - 1].items).toEqual(historyItems);
   });
 
-  it('design mode with editorPreviewVisible:true keeps the drawer body', async () => {
-    vi.stubGlobal('Shopify', { designMode: true });
-    render(<DrawerBody activeTab="chat" {...baseProps} />);
+  it('renders DrawerSaved with the store items on the saved tab', () => {
+    savedItems = [{ id: 'p1', title: 'Lamp' } as ChatProduct];
+    render(<DrawerBody activeTab="saved" {...baseProps} settings={settings()} />);
 
-    await resolveAppearance({ editorPreviewVisible: true });
-
-    expect(screen.getByTestId('chat-pane')).toBeInTheDocument();
+    expect(screen.getByTestId('drawer-saved')).toBeInTheDocument();
+    expect(savedProps[savedProps.length - 1].products).toEqual(savedItems);
   });
 
-  it('storefront (non-design-mode) ignores editorPreviewVisible:false', async () => {
-    render(<DrawerBody activeTab="chat" {...baseProps} />);
+  it('passes the saved-product id set into DrawerChat', () => {
+    savedItems = [{ id: 'p1', title: 'Lamp' } as ChatProduct];
+    render(<DrawerBody activeTab="chat" {...baseProps} settings={settings()} />);
 
-    await resolveAppearance({ editorPreviewVisible: false });
-
-    expect(screen.getByTestId('chat-pane')).toBeInTheDocument();
+    const ids = chatProps[chatProps.length - 1].savedProductIds as Set<string>;
+    expect(ids.has('p1')).toBe(true);
   });
 });
 
-describe('DrawerBody — history resume (Task 14)', () => {
+describe('DrawerBody — onCountsChange (tab badges)', () => {
+  it('reports history/saved counts to the parent', () => {
+    historyItems = [
+      { id: 'h1', query: 'a', timestamp: 't', productCount: 0 } as ChatHistoryItem,
+      { id: 'h2', query: 'b', timestamp: 't', productCount: 0 } as ChatHistoryItem,
+    ];
+    savedItems = [{ id: 'p1', title: 'Lamp' } as ChatProduct];
+
+    const onCountsChange = vi.fn();
+    render(
+      <DrawerBody
+        activeTab="chat"
+        {...baseProps}
+        settings={settings()}
+        onCountsChange={onCountsChange}
+      />,
+    );
+
+    expect(onCountsChange).toHaveBeenCalledWith({ history: 2, saved: 1 });
+  });
+});
+
+describe('DrawerBody — history resume', () => {
   it('resume asks the parent for the chat tab and auto-submits the query', async () => {
     const user = userEvent.setup();
     const onSwitchToChat = vi.fn();
     const { rerender } = render(
-      <DrawerBody activeTab="history" {...baseProps} onSwitchToChat={onSwitchToChat} />,
+      <DrawerBody
+        activeTab="history"
+        {...baseProps}
+        settings={settings()}
+        onSwitchToChat={onSwitchToChat}
+      />,
     );
 
     await user.click(screen.getByRole('button', { name: 'resume-row' }));
     expect(onSwitchToChat).toHaveBeenCalledTimes(1);
 
-    // Parent owns the tab state — simulate it switching back to chat.
-    rerender(<DrawerBody activeTab="chat" {...baseProps} onSwitchToChat={onSwitchToChat} />);
+    rerender(
+      <DrawerBody
+        activeTab="chat"
+        {...baseProps}
+        settings={settings()}
+        onSwitchToChat={onSwitchToChat}
+      />,
+    );
 
-    const props = chatPaneProps[chatPaneProps.length - 1];
+    const props = chatProps[chatProps.length - 1];
     const autoSubmit = props.autoSubmitQuery as { id: number; query: string } | null;
     expect(autoSubmit).not.toBeNull();
     expect(autoSubmit?.query).toBe('blue running shoes');
@@ -205,26 +223,27 @@ describe('DrawerBody — history resume (Task 14)', () => {
   it('clears a consumed resume so leaving and re-entering the chat tab does not re-submit', async () => {
     const user = userEvent.setup();
     const { rerender } = render(
-      <DrawerBody activeTab="history" {...baseProps} onSwitchToChat={vi.fn()} />,
+      <DrawerBody
+        activeTab="history"
+        {...baseProps}
+        settings={settings()}
+        onSwitchToChat={vi.fn()}
+      />,
     );
 
     await user.click(screen.getByRole('button', { name: 'resume-row' }));
-    rerender(<DrawerBody activeTab="chat" {...baseProps} />);
+    rerender(<DrawerBody activeTab="chat" {...baseProps} settings={settings()} />);
 
-    const props = chatPaneProps[chatPaneProps.length - 1];
+    const props = chatProps[chatProps.length - 1];
     expect(props.autoSubmitQuery).not.toBeNull();
 
-    // The real ChatPane fires this right after the auto-submit; the stubbed
-    // pane reports consumption manually.
     await act(async () => {
       (props.onAutoSubmitConsumed as () => void)();
     });
 
-    // Tab away and back — ChatPane unmounts and remounts (fresh
-    // lastAutoSubmitIdRef), so a stale query here would re-fire the search.
-    rerender(<DrawerBody activeTab="saved" {...baseProps} />);
-    rerender(<DrawerBody activeTab="chat" {...baseProps} />);
+    rerender(<DrawerBody activeTab="saved" {...baseProps} settings={settings()} />);
+    rerender(<DrawerBody activeTab="chat" {...baseProps} settings={settings()} />);
 
-    expect(chatPaneProps[chatPaneProps.length - 1].autoSubmitQuery).toBeNull();
+    expect(chatProps[chatProps.length - 1].autoSubmitQuery).toBeNull();
   });
 });

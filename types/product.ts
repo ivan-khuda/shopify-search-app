@@ -4,6 +4,7 @@ export interface ChatProduct {
   price: string;
   description: string;
   image?: string;
+  handle?: string;
   category?: string;
   vendor?: string;
   type?: string;

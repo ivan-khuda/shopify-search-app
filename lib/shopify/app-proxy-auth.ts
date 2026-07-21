@@ -22,7 +22,7 @@
  * CR-03: resolveVerifiedVisitorId() is the single gate every proxy route
  * calls after HMAC to verify the signed visitor token before any rate-limit
  * or DB access. Invalid/unsigned/legacy tokens return 'invalid_visitor_signature'
- * → 401 so the client re-mints via /_meta/visitor.
+ * → 401 so the client re-mints via /meta/visitor.
  */
 import { NextResponse } from 'next/server';
 import { shopifyClient } from '@/lib/shopify/client';

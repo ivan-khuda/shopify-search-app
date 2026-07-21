@@ -197,6 +197,8 @@ export function ChatShell({ shop, modelName, appearance, catalogCount }: ChatShe
                             modelName={modelName}
                             autoSubmitQuery={resume}
                             onAutoSubmitConsumed={handleAutoSubmitConsumed}
+                            productUrlBase={`https://${shop}`}
+                            linkTarget="_blank"
                         />
                     </TabsContent>
                     <TabsContent value="history" className="h-full overflow-y-auto bg-[#fafbfb]">
@@ -211,6 +213,8 @@ export function ChatShell({ shop, modelName, appearance, catalogCount }: ChatShe
                             products={saved.items}
                             onToggleSave={saved.toggle}
                             density={density}
+                            productUrlBase={`https://${shop}`}
+                            linkTarget="_blank"
                         />
                     </TabsContent>
                 </TabsContents>

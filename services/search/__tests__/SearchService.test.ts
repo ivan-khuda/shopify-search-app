@@ -162,6 +162,28 @@ describe('hybridSearch', () => {
     expect(result).toEqual([]);
   });
 
+  it('projects handle from RankedProductRow to ChatProduct.handle', async () => {
+    embedMock.mockResolvedValueOnce(makeVector());
+    queryRawMock.mockResolvedValueOnce([
+      {
+        id: 99,
+        title: 'Runner',
+        description: 'Fast',
+        handle: 'runner-shoe',
+        priceMin: '50.00',
+        priceMax: '50.00',
+        tags: [],
+        vendor: null,
+        productType: null,
+        image: null,
+        rrf_score: 0.3,
+      },
+    ]);
+
+    const result = await hybridSearch('shop.myshopify.com', 'runner');
+    expect(result[0].handle).toBe('runner-shoe');
+  });
+
   it('projects RankedProductRow rows to ChatProduct shape (id is string, image undefined for null DB value, price formatted as $min – $max with en-dash U+2013 when min!==max)', async () => {
     embedMock.mockResolvedValueOnce(makeVector());
     queryRawMock.mockResolvedValueOnce([

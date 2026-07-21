@@ -1,5 +1,5 @@
 /**
- * GET /api/proxy/_meta/visitor — Server-mint a signed visitor identity token (CR-03).
+ * GET /api/proxy/meta/visitor — Server-mint a signed visitor identity token (CR-03).
  *
  * This is the ONLY endpoint that mints visitor identities. The client calls
  * this on first load (when no valid signed token exists in localStorage) and

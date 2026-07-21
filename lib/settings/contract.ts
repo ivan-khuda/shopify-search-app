@@ -14,6 +14,11 @@ export const DRAWER_ACCENT_PALETTE = [
 ] as const;
 export type DrawerAccent = (typeof DRAWER_ACCENT_PALETTE)[number];
 
+export const FAB_STYLES = ['circle', 'pill', 'labeled'] as const;
+export type FabStyle = (typeof FAB_STYLES)[number];
+export const DRAWER_POSITIONS = ['side', 'bottom-sheet', 'center-modal'] as const;
+export type DrawerPosition = (typeof DRAWER_POSITIONS)[number];
+
 export const MAX_SUGGESTED_PROMPTS = 6;
 export const MAX_PROMPT_TEXT = 120;
 export const MAX_PROMPT_ICON = 8;
@@ -32,6 +37,8 @@ export interface ShopSettingsBundle extends ShopAppearance {
   notificationEmail: string | null;
   drawerEnabled: boolean;
   editorPreviewVisible: boolean;
+  fabStyle: FabStyle;
+  drawerPosition: DrawerPosition;
 }
 
 export const DEFAULT_SHOP_SETTINGS: ShopSettingsBundle = {
@@ -43,6 +50,8 @@ export const DEFAULT_SHOP_SETTINGS: ShopSettingsBundle = {
   notificationEmail: null,
   drawerEnabled: true,
   editorPreviewVisible: true,
+  fabStyle: 'circle',
+  drawerPosition: 'side',
 };
 
 function parsePrompts(raw: unknown): SuggestedPrompt[] {
@@ -74,6 +83,12 @@ export function parseShopSettings(raw: unknown): ShopSettingsBundle {
     Number.isInteger(obj.monthlyCapRequests) && obj.monthlyCapRequests > 0
     ? obj.monthlyCapRequests
     : null;
+  const fabStyle = FAB_STYLES.includes(obj.fabStyle as FabStyle)
+    ? (obj.fabStyle as FabStyle)
+    : DEFAULT_SHOP_SETTINGS.fabStyle;
+  const drawerPosition = DRAWER_POSITIONS.includes(obj.drawerPosition as DrawerPosition)
+    ? (obj.drawerPosition as DrawerPosition)
+    : DEFAULT_SHOP_SETTINGS.drawerPosition;
   return {
     ...appearance,
     drawerAccent: accent,
@@ -89,5 +104,7 @@ export function parseShopSettings(raw: unknown): ShopSettingsBundle {
         : null,
     drawerEnabled: obj.drawerEnabled === false ? false : true,
     editorPreviewVisible: obj.editorPreviewVisible === false ? false : true,
+    fabStyle,
+    drawerPosition,
   };
 }
